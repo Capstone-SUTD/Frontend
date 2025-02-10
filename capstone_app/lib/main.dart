@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'pages/all_project.dart';
 
 void main() {
   runApp(const MyApp());
 }
+
 class SplashScreen extends StatelessWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +23,7 @@ class SplashScreen extends StatelessWidget {
 }
 
 class DashboardPage extends StatelessWidget {
-  const DashboardPage({Key? key}) : super(key: key);
+  const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +44,7 @@ class DashboardPage extends StatelessWidget {
 }
 
 class SettingsPage extends StatelessWidget {
-  const SettingsPage({Key? key}) : super(key: key);
+  const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +65,7 @@ class SettingsPage extends StatelessWidget {
 }
 
 class ProjectPage extends StatelessWidget {
-  const ProjectPage({Key? key}) : super(key: key);
+  const ProjectPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +86,7 @@ class ProjectPage extends StatelessWidget {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -99,14 +101,14 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const MyHomePage(title: 'Login', isLogin: true),
         '/dashboard': (context) => const DashboardPage(),
         '/settings': (context) => const SettingsPage(),
-        '/project': (context) => const ProjectPage(),
+        '/project': (context) => const AllProjectsPage(),
       },
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title, required this.isLogin}) : super(key: key);
+  const MyHomePage({super.key, required this.title, required this.isLogin});
 
   final String title;
   final bool isLogin;
