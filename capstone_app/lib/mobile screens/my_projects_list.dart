@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.grey,
+        primarySwatch: Colors.blueGrey, // Changed from Colors.grey
         scaffoldBackgroundColor: Colors.white,
       ),
       home: const MyProjectsList(),
@@ -21,7 +21,6 @@ class MyApp extends StatelessWidget {
 }
 
 class MyProjectsList extends StatelessWidget {
-  // ignore: use_super_parameters
   const MyProjectsList({Key? key}) : super(key: key);
 
   @override
@@ -51,6 +50,7 @@ class MyProjectsList extends StatelessWidget {
                 ),
               ),
               child: const Row(
+                mainAxisSize: MainAxisSize.min, // Fixes layout issue
                 children: [
                   Text('ONSITE', style: TextStyle(color: Colors.black)),
                   Icon(Icons.arrow_drop_down, color: Colors.black),
@@ -125,7 +125,7 @@ class MyProjectsList extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Expanded(
+          Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -147,7 +147,8 @@ class MyProjectsList extends StatelessWidget {
               ],
             ),
           ),
-          Expanded(
+          const SizedBox(width: 16),
+          Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -191,22 +192,12 @@ class MyProjectsList extends StatelessWidget {
           ),
         );
       case CargoStatus.pending:
-        return Container(
+        return SizedBox(
           width: 24,
           height: 24,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.grey,
-              width: 2,
-            ),
-          ),
-          child: const Padding(
-            padding: EdgeInsets.all(4.0),
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-            ),
+          child: const CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
           ),
         );
     }

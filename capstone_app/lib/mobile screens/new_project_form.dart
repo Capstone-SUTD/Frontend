@@ -23,6 +23,7 @@ class MyApp extends StatelessWidget {
 
 // New Project Form (Stateful Widget)
 class NewProjectForm extends StatefulWidget {
+  // ignore: use_super_parameters
   const NewProjectForm({Key? key}) : super(key: key);
 
   @override

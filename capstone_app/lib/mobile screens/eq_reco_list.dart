@@ -21,7 +21,6 @@ class MyApp extends StatelessWidget {
 }
 
 class EqRecoList extends StatelessWidget {
-  // ignore: use_super_parameters
   const EqRecoList({Key? key}) : super(key: key);
 
   @override
@@ -51,6 +50,7 @@ class EqRecoList extends StatelessWidget {
                 ),
               ),
               child: const Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('ONSITE', style: TextStyle(color: Colors.black)),
                   Icon(Icons.arrow_drop_down, color: Colors.black),
@@ -67,9 +67,9 @@ class EqRecoList extends StatelessWidget {
             _buildEquipmentGroup(
               'Crane',
               [
-                EquipmentItem('X Crane', 'max capacity: x ton'),
-                EquipmentItem('Y Crane', 'max capacity: x ton'),
-                EquipmentItem('Z Crane', 'max capacity: x ton'),
+                EquipmentItem('X Crane', 'Max capacity: x ton'),
+                EquipmentItem('Y Crane', 'Max capacity: x ton'),
+                EquipmentItem('Z Crane', 'Max capacity: x ton'),
               ],
             ),
             const SizedBox(height: 16),
@@ -83,11 +83,11 @@ class EqRecoList extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildEquipmentGroup(
-              'Trailer Bed',
+              'Flatbed Trailer',
               [
-                EquipmentItem('X Bed', 'Length: x metres'),
-                EquipmentItem('Y Bed', 'Length: x metres'),
-                EquipmentItem('Z Bed', 'Length: x metres'),
+                EquipmentItem('A Flatbed', 'Length: x metres'),
+                EquipmentItem('B Flatbed', 'Length: x metres'),
+                EquipmentItem('C Flatbed', 'Length: x metres'),
               ],
             ),
             const SizedBox(height: 24),
@@ -139,18 +139,20 @@ class EqRecoList extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 1, // Default selected index
+        onTap: (index) {},
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications),
-            label: '',
+            label: 'Alerts',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
-            label: '',
+            label: 'Home',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
-            label: '',
+            label: 'Settings',
           ),
         ],
       ),
@@ -177,32 +179,32 @@ class EqRecoList extends StatelessWidget {
             ),
           ),
           ...items.map((item) => Column(
-            children: [
-              const Divider(height: 1),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      item.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
+                children: [
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          item.name,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          item.specification,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      item.specification,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          )).toList(),
+                  ),
+                ],
+              ))
         ],
       ),
     );
