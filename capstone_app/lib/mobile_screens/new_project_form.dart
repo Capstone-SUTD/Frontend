@@ -42,22 +42,11 @@ class _NewProjectFormState extends State<NewProjectForm> {
         leading: const BackButton(color: Colors.black),
         title: const Text(
           'New Project',
-          style: TextStyle(color: Colors.black, fontSize: 20),
+          style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
         ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.all(8),
-            child: OutlinedButton(
-              onPressed: () {},
-              child: const Row(
-                children: [
-                  Text('ONSITE', style: TextStyle(color: Colors.black)),
-                  Icon(Icons.arrow_drop_down, color: Colors.black),
-                ],
-              ),
-            ),
-          ),
-        ],
+       
+
+      
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -175,13 +164,6 @@ class _NewProjectFormState extends State<NewProjectForm> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: ''),
-        ],
       ),
     );
   }

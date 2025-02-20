@@ -194,7 +194,7 @@ class DashboardScreen extends StatelessWidget {
                   Expanded(
                     child: entry.key > 0
                         ? Divider(
-                            color: isCompleted ? Colors.black : Colors.grey[300],
+                            color: isCompleted ? Colors.green : Colors.grey[300],
                             thickness: 1,
                           )
                         : Container(),
@@ -204,13 +204,13 @@ class DashboardScreen extends StatelessWidget {
                     height: 20,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isCompleted ? Colors.black : Colors.grey[300],
+                      color: isCompleted ? Colors.green : Colors.grey[300],
                     ),
                   ),
                   Expanded(
                     child: entry.key < steps.length - 1
                         ? Divider(
-                            color: entry.key < 2 ? Colors.black : Colors.grey[300],
+                            color: entry.key < 2 ? Colors.green : Colors.grey[300],
                             thickness: 1,
                           )
                         : Container(),
