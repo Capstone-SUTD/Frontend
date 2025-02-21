@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:capstone_app/common/nav_bar.dart';
+import 'dashboard_screen.dart';
+import 'package:capstone_app/common/settings.dart';
+import 'my_projects_list.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,6 +19,12 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.grey,
         scaffoldBackgroundColor: Colors.white,
       ),
+      routes: {
+        '/': (context) => const EqRecoList(),
+        '/dashboard': (context) => DashboardScreen(),
+        '/settings': (context) => SettingsScreen(),
+        '/my-projects': (context) => MyProjectsList(),
+      },
       home: const EqRecoList(),
     );
   }

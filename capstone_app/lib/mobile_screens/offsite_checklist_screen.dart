@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-
+import 'package:capstone_app/common/nav_bar.dart';
+import 'dashboard_screen.dart';
+import 'my_projects_list.dart';
+import 'package:capstone_app/common/settings.dart';
 
 // ignore: use_key_in_widget_constructors
 class OffsiteChecklistScreen extends StatefulWidget {
@@ -49,6 +52,7 @@ class _OffsiteChecklistScreenState extends State<OffsiteChecklistScreen> {
         ],
       ),
     ),
+    bottomNavigationBar: const NavBar(), 
     body: ListView.builder(
         itemCount: checklistItems.length,
         itemBuilder: (context, index) {

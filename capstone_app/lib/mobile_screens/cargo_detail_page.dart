@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:capstone_app/common/settings.dart';
+import 'package:capstone_app/common/nav_bar.dart';
+import 'dashboard_screen.dart';
+import 'my_projects_list.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,6 +19,12 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.white,
       ),
+        routes: {
+        '/': (context) => const CargoDetailPage(),
+        '/settings': (context) => SettingsScreen(),
+        '/dashboard': (context) => DashboardScreen(),
+        '/my-projects': (context) => MyProjectsList(),
+      },
       home: const CargoDetailPage(),
     );
   }
@@ -42,6 +51,7 @@ Widget build(BuildContext context) {
         ],
       ),
     ),
+    bottomNavigationBar: NavBar(currentIndex: 1), 
     body: Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(

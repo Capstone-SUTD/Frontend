@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:capstone_app/common/nav_bar.dart';
+import 'dashboard_screen.dart';
+import 'package:capstone_app/common/settings.dart';
+import 'my_projects_list.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,6 +21,11 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
       ),
       home: const NewProjectForm(),
+      routes: {
+        '/dashboard': (context) => DashboardScreen(),
+        '/settings': (context) => SettingsScreen(),
+        '/my-projects': (context) => MyProjectsList(),
+      },
     );
   }
 }
@@ -44,9 +53,6 @@ class _NewProjectFormState extends State<NewProjectForm> {
           'New Project',
           style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
         ),
-       
-
-      
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -154,17 +160,47 @@ class _NewProjectFormState extends State<NewProjectForm> {
             ),
 
             const SizedBox(height: 20),
+
+            // Work Scope Section
+            // const Text(
+            //   'Work Scope',
+            //   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            // ),
+            //const SizedBox(height: 10),
+            // _buildWorkScopeTimeline(),
+            // const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Upload Vendor MSRA File'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[300],
+                foregroundColor: Colors.black,
+                minimumSize: const Size(double.infinity, 50),
+              ),
+            ),
+            const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[700],
+                backgroundColor: Colors.grey[300],
                 minimumSize: const Size(double.infinity, 50),
               ),
               child: const Text('Run'),
             ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[300],
+                minimumSize: const Size(double.infinity, 50),
+              ),
+              child: const Text('View Offsite Checklist'),
+            ),
           ],
         ),
       ),
+      bottomNavigationBar: const NavBar(), 
     );
   }
 
@@ -233,4 +269,57 @@ class _NewProjectFormState extends State<NewProjectForm> {
       ],
     );
   }
+
+  // Widget _buildWorkScopeTimeline() {
+  //   return Column(
+  //     children: [
+  //       ElevatedButton(
+  //         onPressed: () {},
+  //         style: ElevatedButton.styleFrom(
+  //           backgroundColor: Colors.grey[300],
+  //           foregroundColor: Colors.black,
+  //           minimumSize: const Size(double.infinity, 40),
+  //         ),
+  //         child: const Text('Add Work +'),
+  //       ),
+  //       const SizedBox(height: 5),
+  //       Row(
+  //         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  //         children: [
+  //           _buildTimelineItem(true, 'Location'),
+  //           _buildTimelineConnector(true),
+  //           _buildTimelineItem(true, 'Transport'),
+  //           _buildTimelineConnector(true),
+  //           _buildTimelineItem(true, 'Current State'),
+  //           _buildTimelineConnector(false),
+  //           _buildTimelineItem(false, '+ Work'),
+  //         ],
+  //       ),
+  //     ],
+  //   );
+  // }
+
+//   Widget _buildTimelineItem(bool isCompleted, String label) {
+//     return Column(
+//       children: [
+//         Container(
+//           width: 30,
+//           height: 30,
+//           decoration: BoxDecoration(
+//             shape: BoxShape.circle,
+//             color: isCompleted ? Colors.grey : Colors.grey[200],
+//           ),
+//         ),
+//         Text(label),
+//       ],
+//     );
+//   }
+
+//   Widget _buildTimelineConnector(bool isCompleted) {
+//     return Container(
+//       height: 1,
+//       width: 20,
+//       color: isCompleted ? Colors.grey : Colors.grey[200],
+//     );
+// }
 }

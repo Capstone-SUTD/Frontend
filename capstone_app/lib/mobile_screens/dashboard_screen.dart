@@ -4,6 +4,7 @@ import 'my_projects_list.dart';
 import 'new_project_form.dart';
 import 'offsite_checklist_screen.dart';
 import 'package:capstone_app/common/settings.dart';
+import 'package:capstone_app/common/nav_bar.dart'; 
 import 'cargo_detail_page.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -11,25 +12,49 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      bottomNavigationBar: const NavBar(currentIndex: 1), 
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context),
-              const SizedBox(height: 24),
-              _buildNavigationButtons(context),
-              const SizedBox(height: 24),
-              _buildCurrentShipping(context),
-              const SizedBox(height: 24),
-              _buildRecentlyOpened(),
-            ],
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context),
+                const SizedBox(height: 24),
+                _buildNavigationButtons(context),
+                const SizedBox(height: 24),
+                _buildCurrentShipping(context),
+                const SizedBox(height: 24),
+                _buildRecentlyOpened(),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+  //   backgroundColor: Colors.blue[900],
+  //   items: const [
+  //     BottomNavigationBarItem(
+  //       icon: Icon(Icons.account_circle, color: Colors.white),
+  //       label: '',
+  //     ),
+  //     BottomNavigationBarItem(
+  //       icon: Icon(Icons.home, color: Colors.white),
+  //       label: '',
+  //     ),
+  //     BottomNavigationBarItem(
+  //       icon: Icon(Icons.folder, color: Colors.white),
+  //       label: '',
+  //     ),
+  //   ],
+  //   selectedItemColor: Colors.white,
+  //   unselectedItemColor: Colors.white54,
+  // ),
+  // );
+  
+
 
   Widget _buildHeader(BuildContext context) {
     return Row(
@@ -53,21 +78,21 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
           ],
-        ),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => SettingsScreen()),
-            );
-          },
-          child: CircleAvatar(
-            backgroundColor: Colors.grey[200],
-            child: const Icon(Icons.person, color: Colors.grey),
-          ),
-        ),
-      ],
-    );
+        )
+  //       GestureDetector(
+  //         onTap: () {
+  //           Navigator.push( // you'll need to import SettingsScreen
+  //           context,
+  //           MaterialPageRoute(builder: (context) => SettingsScreen()),
+  //           );
+  //         },
+  //         child: CircleAvatar(
+  //           backgroundColor: Colors.grey[200],
+  //           child: const Icon(Icons.person, color: Colors.grey),
+  //         ),
+  //       ),
+  ],
+  );
   }
 
   Widget _buildNavigationButtons(BuildContext context) {
@@ -75,22 +100,22 @@ class DashboardScreen extends StatelessWidget {
       {
         'title': 'New Project',
         'icon': Icons.add,
-        'page': NewProjectForm(),
+        'page': NewProjectForm(), 
       },
       {
         'title': 'Equipment',
         'icon': Icons.build,
-        'page': EqRecoList(),
+        'page': EqRecoList(), 
       },
       {
         'title': 'Add Work',
         'icon': Icons.work,
-        'page': OffsiteChecklistScreen(),
+        'page': OffsiteChecklistScreen(), 
       },
       {
         'title': 'My Projects',
         'icon': Icons.folder,
-        'page': MyProjectsList(),
+        'page': MyProjectsList(), 
       },
     ];
 
@@ -99,9 +124,9 @@ class DashboardScreen extends StatelessWidget {
       children: buttons.map((button) {
         return GestureDetector(
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => button['page'] as Widget),
+            Navigator.push( // you'll need to import these pages
+            context,
+            MaterialPageRoute(builder: (context) => button['page'] as Widget),
             );
           },
           child: Column(
@@ -126,9 +151,9 @@ class DashboardScreen extends StatelessWidget {
   Widget _buildCurrentShipping(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => CargoDetailPage()),
+        Navigator.push( // you'll need to import CargoDetailPage
+        context,
+        MaterialPageRoute(builder: (context) => CargoDetailPage()),
         );
       },
       child: Container(
@@ -268,13 +293,7 @@ class DashboardScreen extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            Text(
-              'See All',
-              style: TextStyle(
-                color: Colors.blue[700],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            
           ],
         ),
         const SizedBox(height: 16),
