@@ -3,16 +3,90 @@ import 'eq_reco_list.dart';
 import 'my_projects_list.dart';
 import 'new_project_form.dart';
 import 'offsite_checklist_screen.dart';
-import 'package:capstone_app/common/settings.dart';
-import 'package:capstone_app/common/nav_bar.dart'; 
+//import 'package:capstone_app/common/main_screen.dart';
 import 'cargo_detail_page.dart';
 
 class DashboardScreen extends StatelessWidget {
+  const DashboardScreen({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: const NavBar(currentIndex: 1), 
+      appBar: AppBar(
+        toolbarHeight: 90,
+        backgroundColor: const Color.fromARGB(255, 7, 23, 114),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,          
+          children: [
+            const Text(
+              'Welcome Back, User',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              'HSE OFFICER • USER ID: 12345',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.indigo[900],
+              ),
+              child: ListTile(
+                leading: const CircleAvatar(
+                  radius: 40,
+                  backgroundImage: AssetImage('assets/profile_picture.png'),
+                ),
+                title: const Text(
+                  'John Doe',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                  ),
+                ),
+                subtitle: const Text(
+                  'HSE OFFICER • USER ID: 12345',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/settings');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/login_signup_screen');
+                // Add logout logic here
+              },
+            ),
+          ],
+        ),
+      ),
+    
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -20,7 +94,6 @@ class DashboardScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(context),
                 const SizedBox(height: 24),
                 _buildNavigationButtons(context),
                 const SizedBox(height: 24),
@@ -34,88 +107,28 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
-  //   backgroundColor: Colors.blue[900],
-  //   items: const [
-  //     BottomNavigationBarItem(
-  //       icon: Icon(Icons.account_circle, color: Colors.white),
-  //       label: '',
-  //     ),
-  //     BottomNavigationBarItem(
-  //       icon: Icon(Icons.home, color: Colors.white),
-  //       label: '',
-  //     ),
-  //     BottomNavigationBarItem(
-  //       icon: Icon(Icons.folder, color: Colors.white),
-  //       label: '',
-  //     ),
-  //   ],
-  //   selectedItemColor: Colors.white,
-  //   unselectedItemColor: Colors.white54,
-  // ),
-  // );
-  
-
-
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
-              'Welcome back, User',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              'HSE OFFICER • USER ID: 12345',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        )
-  //       GestureDetector(
-  //         onTap: () {
-  //           Navigator.push( // you'll need to import SettingsScreen
-  //           context,
-  //           MaterialPageRoute(builder: (context) => SettingsScreen()),
-  //           );
-  //         },
-  //         child: CircleAvatar(
-  //           backgroundColor: Colors.grey[200],
-  //           child: const Icon(Icons.person, color: Colors.grey),
-  //         ),
-  //       ),
-  ],
-  );
-  }
 
   Widget _buildNavigationButtons(BuildContext context) {
     final buttons = [
       {
         'title': 'New Project',
         'icon': Icons.add,
-        'page': NewProjectForm(), 
+        'page': NewProjectForm(),
       },
       {
         'title': 'Equipment',
         'icon': Icons.build,
-        'page': EqRecoList(), 
+        'page': EqRecoList(),
       },
       {
-        'title': 'Add Work',
-        'icon': Icons.work,
-        'page': OffsiteChecklistScreen(), 
+        'title': 'Offsite Checklist',
+        'icon': Icons.assignment,
+        'page': OffsiteChecklistScreen(),
       },
       {
-        'title': 'My Projects',
+        'title': 'All Projects',
         'icon': Icons.folder,
-        'page': MyProjectsList(), 
+        'page': MyProjectsList(),
       },
     ];
 
@@ -124,9 +137,9 @@ class DashboardScreen extends StatelessWidget {
       children: buttons.map((button) {
         return GestureDetector(
           onTap: () {
-            Navigator.push( // you'll need to import these pages
-            context,
-            MaterialPageRoute(builder: (context) => button['page'] as Widget),
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => button['page'] as Widget),
             );
           },
           child: Column(
@@ -151,9 +164,9 @@ class DashboardScreen extends StatelessWidget {
   Widget _buildCurrentShipping(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.push( // you'll need to import CargoDetailPage
-        context,
-        MaterialPageRoute(builder: (context) => CargoDetailPage()),
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CargoDetailPage()),
         );
       },
       child: Container(
@@ -169,14 +182,14 @@ class DashboardScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Current Shipping',
+                  'Cargo ID: 12345567',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  'Expand',
+                  'Expand MSRA',
                   style: TextStyle(
                     color: Colors.blue[700],
                     fontWeight: FontWeight.w500,
@@ -185,10 +198,10 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Cargo Name • ID: 12345567',
-              style: TextStyle(color: Colors.grey),
-            ),
+            // const Text(
+            //   'Cargo ID: 12345567',
+            //   style: TextStyle(color: Colors.grey),
+            // ),
             const SizedBox(height: 24),
             _buildShippingProgress(),
             const SizedBox(height: 24),
@@ -206,7 +219,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildShippingProgress() {
-    final steps = ['Lifted', 'Loaded', 'Shipped', 'Arrived at Port'];
+    const steps = ['Lifted', 'Loaded', 'Shipped', 'Arrived at Port'];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: steps.asMap().entries.map((entry) {
@@ -283,21 +296,15 @@ class DashboardScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Recently Opened',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            
-          ],
+        const Text(
+          'Recently Opened',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        const SizedBox(height: 16),
-        _buildSearchBar(),
+        // const SizedBox(height: 16),
+        // _buildSearchBar(),
         const SizedBox(height: 16),
         _buildRecentItem('Completed'),
         const SizedBox(height: 8),
@@ -308,30 +315,30 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSearchBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: const [
-          Icon(Icons.search, color: Colors.grey),
-          SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: 'Search',
-                hintStyle: TextStyle(color: Colors.grey),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildSearchBar() {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 16),
+  //     decoration: BoxDecoration(
+  //       color: Colors.grey[100],
+  //       borderRadius: BorderRadius.circular(8),
+  //     ),
+  //     child: const Row(
+  //       children: [
+  //         Icon(Icons.search, color: Colors.grey),
+  //         SizedBox(width: 8),
+  //         Expanded(
+  //           child: TextField(
+  //             decoration: InputDecoration(
+  //               border: InputBorder.none,
+  //               hintText: 'Search',
+  //               hintStyle: TextStyle(color: Colors.grey),
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildRecentItem(String status) {
     return Container(
@@ -344,9 +351,9 @@ class DashboardScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
+          const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
                 'SENDER',
                 style: TextStyle(

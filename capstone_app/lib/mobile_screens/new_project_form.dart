@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:capstone_app/common/nav_bar.dart';
+import 'package:capstone_app/common/main_screen.dart';
 import 'dashboard_screen.dart';
 import 'package:capstone_app/common/settings.dart';
 import 'my_projects_list.dart';
+//import 'package:capstone_app/common/nav_bar.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,12 +21,6 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.grey,
         scaffoldBackgroundColor: Colors.white,
       ),
-      home: const NewProjectForm(),
-      routes: {
-        '/dashboard': (context) => DashboardScreen(),
-        '/settings': (context) => SettingsScreen(),
-        '/my-projects': (context) => MyProjectsList(),
-      },
     );
   }
 }
@@ -46,12 +41,12 @@ class _NewProjectFormState extends State<NewProjectForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.indigo[900],
         elevation: 0,
-        leading: const BackButton(color: Colors.black),
+        leading: const BackButton(color: Colors.white),
         title: const Text(
           'New Project',
-          style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
         ),
       ),
       body: SingleChildScrollView(
@@ -200,7 +195,7 @@ class _NewProjectFormState extends State<NewProjectForm> {
           ],
         ),
       ),
-      bottomNavigationBar: const NavBar(), 
+      //BottomNavigationBar: NavBar(), 
     );
   }
 

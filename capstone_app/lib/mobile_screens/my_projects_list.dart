@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:capstone_app/common/nav_bar.dart'; 
-import 'dashboard_screen.dart';
-import 'package:capstone_app/common/settings.dart';
+import 'package:capstone_app/common/main_screen.dart';
+
+//import 'package:capstone_app/common/main_screen.dart'; 
+// import 'dashboard_screen.dart';
+// import 'package:capstone_app/common/settings.dart';
+//import 'package:capstone_app/common/nav_bar.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,7 +17,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: MyProjectsList(),
+  
     );
   }
 }
@@ -35,14 +38,14 @@ class MyProjectsList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.indigo[900],
         elevation: 0,
-        leading: BackButton(color: Colors.black, onPressed: () {Navigator.pop(context);},
+        leading: BackButton(color: Colors.white, onPressed: () {Navigator.pop(context);},
         ),
 
         title: const Text(
           'All Projects',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
             
         actions: [
@@ -54,7 +57,7 @@ class MyProjectsList extends StatelessWidget {
           ),
         ],
       ),
-      bottomNavigationBar: const NavBar(currentIndex: 2),
+      //bottomNavigationBar: MainScreen(),
       body: Column(
         children: [
           Expanded(

@@ -1,47 +1,35 @@
 import 'package:flutter/material.dart';
 
-class NavBar extends StatelessWidget {
+class NavBar extends StatefulWidget {
   final int currentIndex;
-  
-  const NavBar({
-    Key? key, 
-    this.currentIndex = 1
-  }) : super(key: key);
+  final Function(int) onTap;
 
+  const NavBar({Key? key, required this.currentIndex, required this.onTap}) : super(key: key);
+
+  @override
+  _NavBarState createState() => _NavBarState();
+}
+
+class _NavBarState extends State<NavBar> {
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
+      currentIndex: widget.currentIndex,
+      onTap: widget.onTap,
       items: const <BottomNavigationBarItem>[
         BottomNavigationBarItem(
           icon: Icon(Icons.account_circle),
-          label: 'Settings',
+          label: 'Profile',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.home),
-          label: 'Dashboard',
+          label: 'Home',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.folder),
-          label: 'My Projects',
+          label: 'All Projects',
         ),
       ],
-      currentIndex: currentIndex,
-      selectedItemColor: Colors.blue[700],
-      onTap: (index) {
-        if (index != currentIndex) {
-          switch (index) {
-            case 0:
-              Navigator.pushReplacementNamed(context, '/settings');
-              break;
-            case 1:
-              Navigator.pushReplacementNamed(context, '/dashboard-screen');
-              break;
-            case 2:
-              Navigator.pushReplacementNamed(context, '/my-projects-list');
-              break;
-          }
-        }
-      },
     );
   }
 }

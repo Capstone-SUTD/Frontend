@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:capstone_app/common/settings.dart';
-import 'package:capstone_app/common/nav_bar.dart';
-import 'dashboard_screen.dart';
-import 'my_projects_list.dart';
+// import 'package:capstone_app/common/settings.dart';
+// import 'dashboard_screen.dart';
+// import 'my_projects_list.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,121 +16,107 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.white,
+        scaffoldBackgroundColor: Colors.indigo[900],
       ),
-        routes: {
-        '/': (context) => const CargoDetailPage(),
-        '/settings': (context) => SettingsScreen(),
-        '/dashboard': (context) => DashboardScreen(),
-        '/my-projects': (context) => MyProjectsList(),
-      },
-      home: const CargoDetailPage(),
     );
   }
 }
 
 class CargoDetailPage extends StatelessWidget {
-  // ignore: use_super_parameters
   const CargoDetailPage({Key? key}) : super(key: key);
 
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text('Cargo Details',
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('MSRA',
           style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            fontSize: 24,
+            color : Colors.white,
+            fontWeight: FontWeight.bold,
           ),
-
-        ],
+        ),
       ),
-    ),
-    bottomNavigationBar: NavBar(currentIndex: 1), 
-    body: Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Cargo Name',
-            style: TextStyle(
-              fontSize: 28,
-            ),
-          ),
-          const Text(
-            'Cargo ID: 12345',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Checklist',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Cargo Name',
+              style: TextStyle(
+                fontSize: 28,
               ),
-              Text(
-                '20% complete',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
-                ),
+            ),
+            const Text(
+              'Cargo ID: 12345',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 16,
               ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 120,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
+            ),
+            const SizedBox(height: 20),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildChecklistItem(
-                  'Photo Verification',
-                  Icons.camera_alt,
-                  true,
+                Text(
+                  'Checklist',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                const SizedBox(width: 12),
-                _buildChecklistItem(
-                  'Remarks',
-                  Icons.edit,
-                  true,
-                ),
-                const SizedBox(width: 12),
-                _buildChecklistItem(
-                  'Verification',
-                  Icons.check_circle_outline,
-                  false,
+                Text(
+                  '20% complete',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 16,
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 30),
-          const Text(
-            'Project Progress',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 120,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  _buildChecklistItem(
+                    'Photo Verification',
+                    Icons.camera_alt,
+                    true,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildChecklistItem(
+                    'Remarks',
+                    Icons.edit,
+                    true,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildChecklistItem(
+                    'Verification',
+                    Icons.check_circle_outline,
+                    false,
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          _buildProgressTimeline(),
-        ],
+            const SizedBox(height: 30),
+            const Text(
+              'Project Progress',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildProgressTimeline(),
+          ],
+        ),
       ),
-    ),
-  );
-}
-
+    );
+  }
 
   Widget _buildChecklistItem(String title, IconData icon, bool completed) {
     return Container(

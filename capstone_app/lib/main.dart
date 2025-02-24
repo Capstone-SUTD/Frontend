@@ -1,25 +1,24 @@
-// main.dart
-
 import 'package:flutter/material.dart';
-import 'package:capstone_app/mobile_screens/dashboard_screen.dart';
-import 'package:capstone_app/common/settings.dart';
-import 'package:capstone_app/mobile_screens/my_projects_list.dart';
+import 'package:capstone_app/common/splash_screen.dart';
 
 void main() {
-  runApp(MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      initialRoute: '/dashboard',
-      routes: {
-        '/settings': (context) => SettingsScreen(),
-        '/dashboard': (context) => DashboardScreen(),
-        '/my-projects': (context) => MyProjectsList(),
-      },
+      title: 'Capstone App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      home: SplashScreen(),  // Start with SplashScreen
+      debugShowCheckedModeBanner: false,  // Remove debug banner
     );
   }
 }
