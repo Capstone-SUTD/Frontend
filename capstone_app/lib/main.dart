@@ -1,12 +1,15 @@
+import 'package:capstone_app/web_screens/all_project_screen.dart';
+import 'package:capstone_app/web_screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
-import 'screens/splash_screen.dart';
-import 'pages/all_project.dart';
+import 'web_screens/splash_screen.dart';
 
 void main() {
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}):super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -15,6 +18,10 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: SplashScreen(),
+      routes: {
+        '/dashboard': (context) => DashboardScreen(),
+        '/projects': (context) => AllProjectsScreen(),
+      }
     );
   }
 }
