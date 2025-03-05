@@ -57,7 +57,6 @@ class MyProjectsList extends StatelessWidget {
           ),
         ],
       ),
-      //bottomNavigationBar: MainScreen(),
       body: Column(
         children: [
           Expanded(

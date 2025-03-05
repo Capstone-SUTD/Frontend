@@ -60,6 +60,8 @@ class _OffsiteChecklistScreenState extends State<OffsiteChecklistScreen> {
         itemBuilder: (context, index) {
           return CheckboxListTile(
             title: Text(checklistItems[index]),
+            activeColor: Colors.green,
+            checkColor: Colors.white,
             value: checkedItems[index],
             onChanged: (bool? value) {
               setState(() {
