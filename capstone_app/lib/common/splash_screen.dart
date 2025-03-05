@@ -10,7 +10,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(Duration(seconds: 3), () {
+    Future.delayed(Duration(seconds: 4), () {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginSignUpScreen()));
     });
   }
@@ -19,7 +19,13 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Text('Splash Screen'),
+        child: Text('OOG Navigator',
+          style: TextStyle(
+            fontSize: 24,
+            color: Colors.red,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

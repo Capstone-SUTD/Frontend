@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:capstone_app/common/nav_bar.dart';
+import 'offsite_checklist_screen.dart';
 import 'dashboard_screen.dart';
-import 'package:capstone_app/common/settings.dart';
 import 'my_projects_list.dart';
+import 'package:file_picker/file_picker.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,12 +20,6 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.grey,
         scaffoldBackgroundColor: Colors.white,
       ),
-      home: const NewProjectForm(),
-      routes: {
-        '/dashboard': (context) => DashboardScreen(),
-        '/settings': (context) => SettingsScreen(),
-        '/my-projects': (context) => MyProjectsList(),
-      },
     );
   }
 }
@@ -40,18 +34,28 @@ class NewProjectForm extends StatefulWidget {
 }
 
 class _NewProjectFormState extends State<NewProjectForm> {
+  final List<Widget> _cargoDetailsSections = [];
   DateTime? startDate;
+  DateTime? endDate;
+  bool _showOffsiteChecklistButton = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Add the first cargo details section by default
+    _cargoDetailsSections.add(_buildCargoDetailsSection());
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.indigo[900],
         elevation: 0,
-        leading: const BackButton(color: Colors.black),
+        leading: const BackButton(color: Colors.white),
         title: const Text(
           'New Project',
-          style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
         ),
       ),
       body: SingleChildScrollView(
@@ -80,6 +84,7 @@ class _NewProjectFormState extends State<NewProjectForm> {
                   setState(() => startDate = date);
                 }
               },
+          
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
                 decoration: BoxDecoration(
@@ -100,6 +105,45 @@ class _NewProjectFormState extends State<NewProjectForm> {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            const Text(
+              'End Date',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime(2100),
+                );
+                if (date != null) {
+                  setState(() => endDate = date);
+                }
+              },
+
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      endDate != null
+                          ? '${endDate!.day}/${endDate!.month}/${endDate!.year}'
+                          : 'DD/MM/YYYY',
+                      style: TextStyle(
+                        color: endDate != null ? Colors.black : Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
             const SizedBox(height: 20),
             Row(
@@ -113,94 +157,131 @@ class _NewProjectFormState extends State<NewProjectForm> {
                   ),
                 ),
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    setState(() {
+                      // Add a new cargo details section
+                      _cargoDetailsSections.add(_buildCargoDetailsSection());
+                    });
+                  },
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('Add Cargo'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[300],
-                    foregroundColor: Colors.black,
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
                   ),
                 ),
               ],
             ),
-
-            _buildTextField('Cargo Name'),
-
-            const Text(
-              'Dimensions',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(child: _buildDimensionField('Length', 'm')),
-                const SizedBox(width: 8),
-                Expanded(child: _buildDimensionField('Breadth', 'm')),
-                const SizedBox(width: 8),
-                Expanded(child: _buildDimensionField('Height', 'm')),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(child: _buildDimensionField('Weight', 'tons')),
-                const SizedBox(width: 16),
-                Expanded(child: _buildTextField('No of Units')),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(child: _buildDropdownField('Start Destination')),
-                const SizedBox(width: 16),
-                Expanded(child: _buildDropdownField('End Destination')),
-              ],
-            ),
+            
+            // This is where we display all cargo details sections
+            ...List.generate(_cargoDetailsSections.length, (index) => _cargoDetailsSections[index]),
 
             const SizedBox(height: 20),
 
-            // Work Scope Section
-            // const Text(
-            //   'Work Scope',
-            //   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            // ),
-            //const SizedBox(height: 10),
-            // _buildWorkScopeTimeline(),
-            // const SizedBox(height: 10),
             ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () async {
+                FilePickerResult? result = await FilePicker.platform.pickFiles(
+                  type: FileType.custom,
+                  allowedExtensions: ['jpg', 'png', 'pdf', 'doc', 'docx'],
+                );
+
+                if (result != null) {
+                  String? filePath = result.files.single.path;
+                  print('Selected file: $filePath');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('File Selected: ${result.files.single.name}')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('No file selected')),
+                  );
+                }
+              },
               icon: const Icon(Icons.upload_file),
               label: const Text('Upload Vendor MSRA File'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[300],
+                backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
                 minimumSize: const Size(double.infinity, 50),
               ),
             ),
-            const SizedBox(height: 10),
+            
+           
+            const SizedBox(height: 20),
+            if (_showOffsiteChecklistButton)
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (context) => OffsiteChecklistScreen()));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                child: const Text('View Offsite Checklist'),
+              ),
+            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                setState(() {
+                  _showOffsiteChecklistButton = true;
+                });
+              },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[300],
+                backgroundColor: Colors.red,
                 minimumSize: const Size(double.infinity, 50),
               ),
               child: const Text('Run'),
             ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[300],
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              child: const Text('View Offsite Checklist'),
-            ),
           ],
         ),
       ),
-      bottomNavigationBar: const NavBar(), 
+    );
+  }
+
+  // Create a complete cargo details section
+  Widget _buildCargoDetailsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        const Divider(),
+        _buildTextField('Cargo Name'),
+
+        const Text(
+          'Dimensions',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(child: _buildDimensionField('Length', 'm')),
+            const SizedBox(width: 8),
+            Expanded(child: _buildDimensionField('Breadth', 'm')),
+            const SizedBox(width: 8),
+            Expanded(child: _buildDimensionField('Height', 'm')),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(child: _buildDimensionField('Weight', 'tons')),
+            const SizedBox(width: 8),
+            Expanded(child: _buildDimensionField('No of Units', 'nos.')),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(child: _buildDropdownField('Start Destination')),
+            const SizedBox(width: 16),
+            Expanded(child: _buildDropdownField('End Destination')),
+          ],
+        ),
+      ],
     );
   }
 
@@ -231,7 +312,7 @@ class _NewProjectFormState extends State<NewProjectForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey)),
+        Text(label, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         TextField(
           decoration: InputDecoration(
             border: OutlineInputBorder(
@@ -269,57 +350,4 @@ class _NewProjectFormState extends State<NewProjectForm> {
       ],
     );
   }
-
-  // Widget _buildWorkScopeTimeline() {
-  //   return Column(
-  //     children: [
-  //       ElevatedButton(
-  //         onPressed: () {},
-  //         style: ElevatedButton.styleFrom(
-  //           backgroundColor: Colors.grey[300],
-  //           foregroundColor: Colors.black,
-  //           minimumSize: const Size(double.infinity, 40),
-  //         ),
-  //         child: const Text('Add Work +'),
-  //       ),
-  //       const SizedBox(height: 5),
-  //       Row(
-  //         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-  //         children: [
-  //           _buildTimelineItem(true, 'Location'),
-  //           _buildTimelineConnector(true),
-  //           _buildTimelineItem(true, 'Transport'),
-  //           _buildTimelineConnector(true),
-  //           _buildTimelineItem(true, 'Current State'),
-  //           _buildTimelineConnector(false),
-  //           _buildTimelineItem(false, '+ Work'),
-  //         ],
-  //       ),
-  //     ],
-  //   );
-  // }
-
-//   Widget _buildTimelineItem(bool isCompleted, String label) {
-//     return Column(
-//       children: [
-//         Container(
-//           width: 30,
-//           height: 30,
-//           decoration: BoxDecoration(
-//             shape: BoxShape.circle,
-//             color: isCompleted ? Colors.grey : Colors.grey[200],
-//           ),
-//         ),
-//         Text(label),
-//       ],
-//     );
-//   }
-
-//   Widget _buildTimelineConnector(bool isCompleted) {
-//     return Container(
-//       height: 1,
-//       width: 20,
-//       color: isCompleted ? Colors.grey : Colors.grey[200],
-//     );
-// }
 }

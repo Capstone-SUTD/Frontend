@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:capstone_app/common/nav_bar.dart';
-import 'dashboard_screen.dart';
-import 'package:capstone_app/common/settings.dart';
-import 'my_projects_list.dart';
+import 'package:capstone_app/common/main_screen.dart';
+// import 'dashboard_screen.dart';
+// import 'package:capstone_app/common/settings.dart';
+// import 'my_projects_list.dart';
+//import 'package:capstone_app/common/nav_bar.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,13 +20,14 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.grey,
         scaffoldBackgroundColor: Colors.white,
       ),
-      routes: {
-        '/': (context) => const EqRecoList(),
-        '/dashboard': (context) => DashboardScreen(),
-        '/settings': (context) => SettingsScreen(),
-        '/my-projects': (context) => MyProjectsList(),
-      },
-      home: const EqRecoList(),
+      // Add routes for navigation
+      // routes: {
+      //   '/': (context) => const EqRecoList(),
+      //   '/dashboard': (context) => DashboardScreen(),
+      //   '/settings': (context) => SettingsScreen(),
+      //   '/my-projects': (context) => MyProjectsList(),
+      // },
+      //home: MainScreen(),
     );
   }
 }
@@ -37,18 +39,25 @@ class EqRecoList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.indigo[900],
         elevation: 0,
-        leading: const BackButton(color: Colors.black),
+        leading: const BackButton(color: Colors.white),
         title: const Text(
           'Equipment Recommendation',
           style: TextStyle(
-            color: Colors.black,
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
-        
       ),
+      // Add the NavBar here
+    //   bottomNavigationBar: NavBar(
+    //     currentIndex: 1, 
+    //     onTap: (index) {
+    // // Handle navigation here
+    //     }
+    //   ),
+ // Using 1 since this is accessed from dashboard
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

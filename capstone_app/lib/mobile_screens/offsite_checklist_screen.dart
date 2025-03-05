@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:capstone_app/common/nav_bar.dart';
+import 'package:capstone_app/common/main_screen.dart';
 import 'dashboard_screen.dart';
 import 'my_projects_list.dart';
 import 'package:capstone_app/common/settings.dart';
+//import 'package:capstone_app/common/nav_bar.dart';
 
 // ignore: use_key_in_widget_constructors
 class OffsiteChecklistScreen extends StatefulWidget {
@@ -34,10 +35,10 @@ class _OffsiteChecklistScreenState extends State<OffsiteChecklistScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.indigo[900],
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -47,17 +48,20 @@ class _OffsiteChecklistScreenState extends State<OffsiteChecklistScreen> {
           SizedBox(width: 10),
           Text(
             "Offsite Checklist",
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ],
       ),
     ),
-    bottomNavigationBar: const NavBar(), 
+    
+    //bottomNavigationBar: NavBar(), 
     body: ListView.builder(
         itemCount: checklistItems.length,
         itemBuilder: (context, index) {
           return CheckboxListTile(
             title: Text(checklistItems[index]),
+            activeColor: Colors.green,
+            checkColor: Colors.white,
             value: checkedItems[index],
             onChanged: (bool? value) {
               setState(() {

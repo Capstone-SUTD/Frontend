@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:capstone_app/mobile_screens/dashboard_screen.dart';
 
@@ -7,9 +8,9 @@ class LoginSignUpScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Login/Sign Up'),
-      ),
+      // appBar: AppBar(
+      //   title: Text('Login/Sign Up'),
+      // ),
       body: Scaffold(
       body: Center(
         child: SingleChildScrollView(
@@ -23,14 +24,18 @@ class LoginSignUpScreen extends StatelessWidget {
                 height: 100,
                 ),
               SizedBox(height: 20),
-              Text(
-                'Log In',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
+              // Text(
+              //   'Log In',
+              //   style: TextStyle(
+              //     fontSize: 24, 
+              //     color: Colors.red,
+              //     fontWeight:FontWeight.bold),
+              // ),
               SizedBox(height: 20),
               TextField(
                 decoration: InputDecoration(
-                  labelText: 'Email',
+                  //labelText: 'Email',
+                  hintText: 'Email',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -38,17 +43,30 @@ class LoginSignUpScreen extends StatelessWidget {
               TextField(
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: 'Password',
+                  hintText: 'Password',
                   border: OutlineInputBorder(),
                 ),
               ),
-              SizedBox(height: 20),
+              SizedBox(height: 40),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  padding: EdgeInsets.symmetric(horizontal: 70, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
                 onPressed: () {
                   // Handle login/signup action
                   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DashboardScreen()));
                 },
-                child: Text('Log In'),
+                child: Text(
+                  'Log In',
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: Colors.white,
+                  ),
+                  ),
               ),
               SizedBox(height: 20),
             ],
