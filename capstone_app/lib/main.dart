@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:capstone_app/common/splash_screen.dart';
+import 'package:capstone_app/web_screens/all_project_screen.dart';
+import 'package:capstone_app/web_screens/dashboard_screen.dart';
+import 'web_screens/splash_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
