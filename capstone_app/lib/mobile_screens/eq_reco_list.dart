@@ -20,14 +20,6 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.grey,
         scaffoldBackgroundColor: Colors.white,
       ),
-      // Add routes for navigation
-      // routes: {
-      //   '/': (context) => const EqRecoList(),
-      //   '/dashboard': (context) => DashboardScreen(),
-      //   '/settings': (context) => SettingsScreen(),
-      //   '/my-projects': (context) => MyProjectsList(),
-      // },
-      //home: MainScreen(),
     );
   }
 }
