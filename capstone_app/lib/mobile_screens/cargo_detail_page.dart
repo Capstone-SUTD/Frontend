@@ -7,7 +7,7 @@ class CargoDetailPage extends StatelessWidget {
   final String startLocation;
   final String endLocation;
   final String status;
-  final String lastUpdatedDate;
+  final String startDate;
   final String length;
   final String width;
   final String height;
@@ -20,7 +20,7 @@ class CargoDetailPage extends StatelessWidget {
     required this.startLocation,
     required this.endLocation,
     required this.status,
-    required this.lastUpdatedDate,
+    required this.startDate,
     required this.length,
     required this.width,
     required this.height,
@@ -82,7 +82,7 @@ class CargoDetailPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                        'Last Updated Date: $lastUpdatedDate',
+                        'Start Date: $startDate',
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.grey,

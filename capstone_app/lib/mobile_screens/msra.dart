@@ -68,7 +68,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
     ),
     MSRAProject(
       id: 'MSRA-002',
-      title: 'MSRA Approval by Product Manager',
+      title: 'MSRA Approval by Operations Manager',
       assignee: 'Sarah Williams',
       createdOn: DateTime(2024, 11, 10, 23, 45),
       status: 'pending',
@@ -77,7 +77,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
     ),
     MSRAProject(
       id: 'MSRA-003',
-      title: 'MSRA Approval by Operation Manager',
+      title: 'MSRA Approval by Project Manager',
       assignee: 'Michael Chen',
       createdOn: DateTime(2024, 11, 10, 23, 45),
       status: 'pending',
@@ -86,7 +86,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
     ),
     MSRAProject(
       id: 'MSRA-004',
-      title: 'MSRA Approval by Logistics Supervisor',
+      title: 'MSRA Approval by Jhong',
       assignee: 'Emily Roberts',
       createdOn: DateTime(2024, 11, 9, 16, 30),
       status: 'pending',

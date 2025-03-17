@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:capstone_app/common/main_screen.dart';
 // import 'dashboard_screen.dart';
 // import 'package:capstone_app/common/settings.dart';
 // import 'my_projects_list.dart';

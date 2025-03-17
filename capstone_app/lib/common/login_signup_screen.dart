@@ -1,79 +1,196 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:capstone_app/mobile_screens/dashboard_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:capstone_app/common/sign_up.dart'; // Or wherever your SignUpScreen is located
 
+class LoginSignUpScreen extends StatefulWidget {
+  const LoginSignUpScreen({Key? key}) : super(key: key);
 
-// ignore: use_key_in_widget_constructors
-class LoginSignUpScreen extends StatelessWidget {
+  @override
+  _LoginSignUpScreenState createState() => _LoginSignUpScreenState();
+}
+
+class _LoginSignUpScreenState extends State<LoginSignUpScreen> {
+  final TextEditingController _userIdController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final FocusNode _userIdFocus = FocusNode();
+  final FocusNode _passwordFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _userIdController.text = '';
+    _passwordController.text = '';
+  }
+
+  @override
+  void dispose() {
+    _userIdController.dispose();
+    _passwordController.dispose();
+    _userIdFocus.dispose();
+    _passwordFocus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login(BuildContext context) async {
+    if (_userIdController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      // Store token for 1 day
+      await prefs.setString('auth_token', 'dummy_token');
+      await prefs.setInt(
+          'token_expiry', DateTime.now().millisecondsSinceEpoch + (24 * 60 * 60 * 1000));
+
+      // Show success banner
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showMaterialBanner(
+        MaterialBanner(
+          content: const Text(
+            'Successful!',
+            style: TextStyle(fontSize: 18, color: Colors.white),
+          ),
+          backgroundColor: Colors.green,
+          leading: const Icon(Icons.check_circle, color: Colors.white),
+          margin: const EdgeInsets.all(10),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+              },
+            ),
+          ],
+        ),
+      );
+
+      // Auto-dismiss the banner and navigate to the dashboard
+      Future.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
+        
+        ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+        );
+      });
+    } else {
+      // Show login failed banner
+      ScaffoldMessenger.of(context).showMaterialBanner(
+        MaterialBanner(
+          content: const Text(
+            'Login Failed!',
+            style: TextStyle(fontSize: 18, color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+          margin: const EdgeInsets.all(10),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+              },
+            ),
+          ],
+        ),
+      );
+
+      // Auto-dismiss the failure banner
+      Future.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // appBar: AppBar(
-      //   title: Text('Login/Sign Up'),
-      // ),
-      body: Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              // Placeholder for company logo
-                Image.asset(
-                'assets/images/logo.png',
-                height: 100,
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                // Company logo
+                const Text(
+                  'OOG Navigator',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 24),
                 ),
-              SizedBox(height: 20),
-              // Text(
-              //   'Log In',
-              //   style: TextStyle(
-              //     fontSize: 24, 
-              //     color: Colors.red,
-              //     fontWeight:FontWeight.bold),
-              // ),
-              SizedBox(height: 20),
-              TextField(
-                decoration: InputDecoration(
-                  //labelText: 'Email',
-                  hintText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 20),
-              TextField(
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: 'Password',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 40),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  padding: EdgeInsets.symmetric(horizontal: 70, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: _userIdController,
+                  focusNode: _userIdFocus,
+                  keyboardType: TextInputType.text,
+                  textInputAction: TextInputAction.next,
+                  onSubmitted: (_) {
+                    FocusScope.of(context).requestFocus(_passwordFocus);
+                  },
+                  decoration: const InputDecoration(
+                    hintText: 'User ID',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
                   ),
                 ),
-                onPressed: () {
-                  // Handle login/signup action
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DashboardScreen()));
-                },
-                child: Text(
-                  'Log In',
-                  style: TextStyle(
-                    fontSize: 20,
-                    color: Colors.white,
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _passwordController,
+                  focusNode: _passwordFocus,
+                  obscureText: true,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _login(context),
+                  decoration: const InputDecoration(
+                    hintText: 'Password',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock),
                   ),
+                ),
+                const SizedBox(height: 40),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: const EdgeInsets.symmetric(horizontal: 70, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-              ),
-              SizedBox(height: 20),
-            ],
+                  onPressed: () => _login(context),
+                  child: const Text(
+                    'Log In',
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: const EdgeInsets.symmetric(horizontal: 70, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                   onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => SignUpScreen()), // This should be a class, not a method
+                    );
+                  },
+                  child: const Text(
+                    'Sign Up',
+                    style: TextStyle(fontSize: 20, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 }
