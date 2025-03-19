@@ -1,16 +1,12 @@
-import 'package:capstone_app/web_screens/msra_generation_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:capstone_app/web_screens/msra_generation_screen.dart';
 
 class WorkScopeWidget extends StatefulWidget {
-  final Function(String) onScopeSelected;
   final bool isNewProject;
-  final Map<String, dynamic>? projectData; // 🔹 Add this for existing OOG projects
 
   const WorkScopeWidget({
     Key? key,
-    required this.onScopeSelected,
     required this.isNewProject,
-    this.projectData, // 🔹 Nullable, means it's a new project if null
   }) : super(key: key);
 
   @override
@@ -18,20 +14,37 @@ class WorkScopeWidget extends StatefulWidget {
 }
 
 class _WorkScopeWidgetState extends State<WorkScopeWidget> {
-  late TextEditingController startDestinationController;
-  late TextEditingController endDestinationController;
+  List<Map<String, String>> _workScopeList = [];
+
+  final List<String> _scopeOptions = ["Lifting", "Lashing", "Transportation"];
 
   @override
   void initState() {
     super.initState();
+    // Default to one row if it's a new project
+    if (widget.isNewProject) {
+      _workScopeList = [
+        {"startDestination": "", "endDestination": "", "scope": "", "equipmentList": ""}
+      ];
+    }
+  }
 
-    // 🔹 Check if existing OOG project, then prefill with database values
-    startDestinationController = TextEditingController(
-      text: widget.projectData != null ? widget.projectData!['startDestination'] ?? '' : '',
-    );
-    endDestinationController = TextEditingController(
-      text: widget.projectData != null ? widget.projectData!['endDestination'] ?? '' : '',
-    );
+  void _addRow() {
+    setState(() {
+      _workScopeList.add({"startDestination": "", "endDestination": "", "scope": "", "equipmentList": ""});
+    });
+  }
+
+  void _updateWorkScope(int index, String key, String value) {
+    setState(() {
+      _workScopeList[index][key] = value;
+    });
+  }
+
+  void _removeRow(int index) {
+    setState(() {
+      _workScopeList.removeAt(index);
+    });
   }
 
   @override
@@ -39,219 +52,189 @@ class _WorkScopeWidgetState extends State<WorkScopeWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 🔹 Start & End Destination Fields
+        // **Work Scope Details Header with Add Row Button**
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(child: _buildTextField("Start Destination", startDestinationController)),
-            SizedBox(width: 20),
-            Expanded(child: _buildTextField("End Destination", endDestinationController)),
+            const Text(
+              "Work Scope Details",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            ElevatedButton.icon(
+              onPressed: _addRow,
+              icon: const Icon(Icons.add),
+              label: const Text("Add Row"),
+            ),
           ],
         ),
-        SizedBox(height: 15),
-        
-        // 🔹 Work Scope Dropdown
-        DropdownButtonFormField<String>(
-          decoration: InputDecoration(
-            labelText: "Work Scope",
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(horizontal: 10),
-          ),
-          items: ["Scope 1", "Scope 2"].map((String option) {
-            return DropdownMenuItem(value: option, child: Text(option));
-          }).toList(),
-          onChanged: (value) => widget.onScopeSelected(value!),
-        ),
-        SizedBox(height: 20),
+        const SizedBox(height: 8),
 
-        // 🔹 Work Scope Flow Layout
-        _buildWorkScopeFlow(),
-        
-        SizedBox(height: 20),
-        
-        // 🔹 Upload Section & Run Button
+        Table(
+          border: TableBorder.all(color: Colors.grey),
+          columnWidths: const {
+            0: FlexColumnWidth(3),
+            1: FlexColumnWidth(3),
+            2: FlexColumnWidth(2),
+            3: FlexColumnWidth(3),
+            4: FlexColumnWidth(1), // Action column
+          },
+          children: [
+            // Table Header
+            TableRow(
+              decoration: BoxDecoration(color: Colors.grey[300]),
+              children: [
+                _buildHeaderCell("Start Destination"),
+                _buildHeaderCell("End Destination"),
+                _buildHeaderCell("Scope"),
+                _buildHeaderCell("Equipment List"),
+                _buildHeaderCell("Action"),
+              ],
+            ),
+
+            // Table Data Rows
+            for (int i = 0; i < _workScopeList.length; i++)
+              TableRow(
+                children: [
+                  _buildTableCell(i, "startDestination"),
+                  _buildTableCell(i, "endDestination"),
+                  _buildDropdownCell(i),
+                  _buildTableCell(i, "equipmentList"),
+                  i == 0 ? _buildEmptyActionCell() : _buildActionCell(i), // Empty action for first row
+                ],
+              ),
+          ],
+        ),
+        const SizedBox(height: 15),
+
+        // 🔹 **File Upload & Run Button Section**
         _buildUploadSection(),
       ],
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(),
-        contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+  // ✅ **Header Cell Builder**
+  Widget _buildHeaderCell(String title) {
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
 
-  Widget _buildWorkScopeFlow() {
-    return Align(
-      alignment: Alignment.center,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          _buildLocationField("Location"),
-          _buildArrowWithText("Lifting only"),
-          _buildLocationField("Location 2"),
-          _buildArrowWithTextField(),
-          _buildLocationField("Final Destination"),
-        ],
+  // ✅ **Table Cell Builder for Editable Text Fields**
+  Widget _buildTableCell(int index, String key) {
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: TextFormField(
+          initialValue: _workScopeList[index][key],
+          textAlign: TextAlign.center,
+          onChanged: (value) => _updateWorkScope(index, key, value),
+          decoration: const InputDecoration(border: InputBorder.none),
+        ),
       ),
     );
   }
 
+  // ✅ **Dropdown Cell for Scope**
+  Widget _buildDropdownCell(int index) {
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: DropdownButtonFormField<String>(
+          value: _workScopeList[index]["scope"]!.isNotEmpty ? _workScopeList[index]["scope"] : null,
+          items: _scopeOptions.map((option) {
+            return DropdownMenuItem(value: option, child: Text(option));
+          }).toList(),
+          onChanged: (value) => _updateWorkScope(index, "scope", value!),
+          decoration: const InputDecoration(border: InputBorder.none),
+        ),
+      ),
+    );
+  }
+
+  // ✅ **Action Cell with Remove Button**
+  Widget _buildActionCell(int index) {
+    return TableCell(
+      verticalAlignment: TableCellVerticalAlignment.middle,
+      child: Center(
+        child: IconButton(
+          icon: const Icon(Icons.delete, color: Colors.red),
+          onPressed: () => _removeRow(index),
+        ),
+      ),
+    );
+  }
+
+  // ✅ **Empty Action Cell for First Row**
+  Widget _buildEmptyActionCell() {
+    return const TableCell(
+      verticalAlignment: TableCellVerticalAlignment.middle,
+      child: Center(child: SizedBox()), // Empty placeholder
+    );
+  }
+
+  // 🔹 **File Upload Section & Run Buttons**
   Widget _buildUploadSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Upload Vendor MSRA here"),
-        SizedBox(height: 5),
+        const Text("Upload Vendor MSRA here"),
+        const SizedBox(height: 5),
         Container(
-          padding: EdgeInsets.all(10),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey),
             borderRadius: BorderRadius.circular(5),
           ),
           child: Column(
             children: [
-              Icon(Icons.cloud_upload, size: 40, color: Colors.grey),
-              Text("Choose a file or drag & drop it here"),
+              const Icon(Icons.cloud_upload, size: 40, color: Colors.grey),
+              const Text("Choose a file or drag & drop it here"),
               TextButton(
                 onPressed: () {},
-                child: Text("Browse File", style: TextStyle(color: Colors.blue)),
+                child: const Text("Browse File", style: TextStyle(color: Colors.blue)),
               ),
             ],
           ),
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
 
-        // 🔹 Run Button
+        // 🔹 **Run & Generate MS/RA Buttons (Side by Side)**
         Align(
           alignment: Alignment.centerRight,
-          child: SizedBox(
-            width: 100,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context, 
-                  MaterialPageRoute(
-                    builder: (context) => MSRAGenerationScreen(),
-                  ),
-                );
-              },
-              child: Text("Run"),
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MSRAGenerationScreen(),
+                    ),
+                  );
+                },
+                child: const Text("Run"),
+              ),
+              const SizedBox(width: 10), // Space between buttons
+              ElevatedButton(
+                onPressed: () {
+                  // Add your logic for generating MS/RA
+                },
+                child: const Text("Generate MS/RA"),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
-
-  Widget _buildLocationField(String label) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 10),
-      child: SizedBox(
-        width: 180,
-        child: TextField(
-          decoration: InputDecoration(
-            labelText: label,
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildArrowWithText(String label) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 10),
-      child: Column(
-        children: [
-          Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
-          Row(
-            children: [
-              Container(width: 30, height: 2, color: Colors.black),
-              Icon(Icons.arrow_right_alt, size: 36),
-              Container(width: 30, height: 2, color: Colors.black),
-            ],
-          ),
-          SizedBox(height: 5),
-          SizedBox(
-            width: 120,
-            height: 25,
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: "Crane",
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
-              ),
-              textAlign: TextAlign.center,
-              style:TextStyle(fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildArrowWithTextField() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 10),
-      child: Column(
-        children: [
-          SizedBox(
-            width: 120,
-            height: 25,
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: "Activity Scope",
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
-              ),
-              textAlign: TextAlign.center,
-              style:TextStyle(fontSize: 12),
-            ),
-          ),
-          Row(
-            children: [
-              Container(width: 30, height: 2, color: Colors.black),
-              Icon(Icons.arrow_right_alt, size: 36),
-              Container(width: 30, height: 2, color: Colors.black),
-            ],
-          ),
-          SizedBox(height: 5),
-          SizedBox(
-            width: 120,
-            height: 25,
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: "Equipment List",
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 2, horizontal: 8),
-              ),
-              textAlign: TextAlign.center,
-              style:TextStyle(fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 

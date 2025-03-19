@@ -188,15 +188,10 @@ void onTabSelected(int index) {
 
                           // **Work Scope (Only if Project is OOG)**
                           if (isOOG)
-                            ConstrainedBox( // ✅ Prevents WorkScope from overflowing
+                            ConstrainedBox( 
                               constraints: const BoxConstraints(maxHeight: 500), // ✅ Adjust max height if needed
                               child: WorkScopeWidget(
-                                onScopeSelected: (String scope) {},
                                 isNewProject: isNewProject,
-                                projectData: isNewProject ? null:{
-                                "startDestination": _project?.startDestination ?? "",
-                                "endDestination": _project?.endDestination ?? "",
-                                },
                                 ),
                             ),
 
