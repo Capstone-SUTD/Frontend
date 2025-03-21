@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'cargo_detail_page.dart';
+import 'onsite_checklist.dart'; // Import Onsite Checklist Screen
+import 'offsite_checklist.dart'; // Import Offsite Checklist Screen
+import 'package:intl/intl.dart'; // Import intl package for DateFormat
 
 void main() {
   runApp(const MyApp());
@@ -22,15 +24,18 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Model class for MSRA projects
 class MSRAProject {
   final String id;
   final String title;
   final String assignee;
   final DateTime createdOn;
   final String status; // 'pending', 'approved', 'denied'
-  // final String cargoType;
-  // final String destination;
+  final String task;
+  final String assignedTo;
+  DateTime? completionDate;
+  List<String> attachments;
+  bool isChecked;
+  String? comment; // Added comment field
 
   MSRAProject({
     required this.id,
@@ -38,8 +43,12 @@ class MSRAProject {
     required this.assignee,
     required this.createdOn,
     required this.status,
-    // required this.cargoType,
-    // required this.destination,
+    required this.task,
+    required this.assignedTo,
+    this.completionDate,
+    this.attachments = const [],
+    this.isChecked = false,
+    this.comment,
   });
 }
 
@@ -50,12 +59,12 @@ class MSRAGenerationScreen extends StatefulWidget {
   State<MSRAGenerationScreen> createState() => _MSRAGenerationScreenState();
 }
 
-class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with SingleTickerProviderStateMixin {
+class _MSRAGenerationScreenState extends State<MSRAGenerationScreen>
+    with SingleTickerProviderStateMixin {
+  _MSRAGenerationScreenState(); // Add default constructor
   late TabController _tabController;
-  int _currentStage = 0;
   int _selectedStatusTab = 0; // 0 for Pending, 1 for Approved, 2 for Denied
 
-  // Sample data for each tab
   final List<MSRAProject> _pendingProjects = [
     MSRAProject(
       id: 'MSRA-001',
@@ -63,35 +72,10 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
       assignee: 'Alex Johnson',
       createdOn: DateTime(2024, 11, 10, 23, 45),
       status: 'pending',
-      // cargoType: 'Hazardous Materials',
-      // destination: 'Hamburg Port',
-    ),
-    MSRAProject(
-      id: 'MSRA-002',
-      title: 'MSRA Approval by Operations Manager',
-      assignee: 'Sarah Williams',
-      createdOn: DateTime(2024, 11, 10, 23, 45),
-      status: 'pending',
-      // cargoType: 'Electronics',
-      // destination: 'Rotterdam Port',
-    ),
-    MSRAProject(
-      id: 'MSRA-003',
-      title: 'MSRA Approval by Project Manager',
-      assignee: 'Michael Chen',
-      createdOn: DateTime(2024, 11, 10, 23, 45),
-      status: 'pending',
-      // cargoType: 'Automotive Parts',
-      // destination: 'Singapore Port',
-    ),
-    MSRAProject(
-      id: 'MSRA-004',
-      title: 'MSRA Approval by Jhong',
-      assignee: 'Emily Roberts',
-      createdOn: DateTime(2024, 11, 9, 16, 30),
-      status: 'pending',
-      // cargoType: 'Perishable Goods',
-      // destination: 'Dubai Port',
+      task: "Ensure All Safety Protocols Are In Place",
+      assignedTo: "HSE Officer",
+      completionDate: DateTime(2024, 11, 10, 23, 45),
+      attachments: ["Attachment 1.jpg", "Attachment 2.jpg"],
     ),
   ];
 
@@ -102,38 +86,25 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
       assignee: 'James Wilson',
       createdOn: DateTime(2024, 11, 8, 14, 20),
       status: 'approved',
-      // cargoType: 'Consumer Goods',
-      // destination: 'Los Angeles Port',
-    ),
-    MSRAProject(
-      id: 'MSRA-006',
-      title: 'MSRA Approval by Product Manager',
-      assignee: 'Linda Garcia',
-      createdOn: DateTime(2024, 11, 7, 10, 15),
-      status: 'approved',
-      // cargoType: 'Textile Products',
-      // destination: 'New York Port',
+      task: "Ensure All Safety Protocols Are In Place",
+      assignedTo: "HSE Officer",
+      completionDate: DateTime(2024, 11, 10, 23, 45),
+      attachments: ["Attachment 1.jpg", "Attachment 2.jpg"],
     ),
   ];
 
   final List<MSRAProject> _deniedProjects = [
     MSRAProject(
       id: 'MSRA-007',
-      title: 'MSRA Approval by Operation Manager',
+      title: 'MSRA Approval by Operations Manager',
       assignee: 'Robert Taylor',
       createdOn: DateTime(2024, 11, 6, 9, 45),
       status: 'denied',
-      // cargoType: 'Chemical Products',
-      // destination: 'Shanghai Port',
-    ),
-    MSRAProject(
-      id: 'MSRA-008',
-      title: 'MSRA Approval by Logistics Supervisor',
-      assignee: 'Patricia Martinez',
-      createdOn: DateTime(2024, 11, 5, 15, 30),
-      status: 'denied',
-      // cargoType: 'Construction Materials',
-      // destination: 'Sydney Port',
+      task: "Ensure All Safety Protocols Are In Place",
+      assignedTo: "HSE Officer",
+      completionDate: DateTime(2024, 11, 10, 23, 45),
+      attachments: ["Attachment 1.jpg", "Attachment 2.jpg"],
+      comment: "Rejected due to incomplete safety protocols.", // Example comment
     ),
   ];
 
@@ -141,16 +112,24 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _tabController.index = 1; // Start on the middle tab (MS/RA Generation)
+    _tabController.addListener(_handleTabChange);
   }
+
+  void _handleTabChange() {
+  if (_tabController.indexIsChanging) {
+    setState(() {
+      _selectedStatusTab = _tabController.index;
+    });
+  }
+}
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     super.dispose();
   }
 
-  // Helper to get the active project list based on selected tab
   List<MSRAProject> get _activeProjects {
     switch (_selectedStatusTab) {
       case 0:
@@ -179,7 +158,6 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
       ),
       body: Column(
         children: [
-          // Tab bar
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
@@ -190,101 +168,94 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
               controller: _tabController,
               indicator: BoxDecoration(
                 color: Colors.orange,
-                borderRadius: BorderRadius.horizontal(left: Radius.circular(5), right: Radius.circular(5)),
+                borderRadius: BorderRadius.horizontal(
+                  left: Radius.circular(5),
+                  right: Radius.circular(5),
+                ),
+                border: Border.all(color: Colors.orange, width: 2),
               ),
-              
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
               labelColor: Colors.white,
               unselectedLabelColor: Colors.black54,
               tabs: const [
-                Tab(text: "Offsite"),
                 Tab(text: "MS/RA"),
-                Tab(text: "Onsite"),
+                Tab(text: "Offsite Checklist"),
+                Tab(text: "Onsite Checklist"),
               ],
             ),
           ),
-          
-          const Divider(height: 32),
-          
-          // Document download section
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildDownloadButton("Download MS", Icons.download_outlined),
-                _buildDownloadButton("Download RA", Icons.download_outlined),
-              ],
-            ),
-          ),
-          
-          // Creation date info
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildCreationInfo("Created on: 23:45\n10 Nov 2024"),
-                _buildCreationInfo("Created on: 23:45\n10 Nov 2024"),
-              ],
-            ),
-          ),
-          
-          const Divider(height: 32),
-          
-          // Status tabs
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                _buildStatusTab(
-                  "Pending (${_pendingProjects.length})", 
-                  index: 0,
-                ),
-                _buildStatusTab(
-                  "Approved (${_approvedProjects.length})", 
-                  index: 1,
-                ),
-                _buildStatusTab(
-                  "Denied (${_deniedProjects.length})", 
-                  index: 2,
-                ),
-              ],
-            ),
-          ),
-          
-          // Project items list based on selected tab
           Expanded(
-            child: _activeProjects.isEmpty
-                ? Center(
-                    child: Text(
-                      "No ${_selectedStatusTab == 0 ? 'pending' : _selectedStatusTab == 1 ? 'approved' : 'denied'} projects found",
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _activeProjects.length,
-                    itemBuilder: (context, index) {
-                      final project = _activeProjects[index];
-                      return _buildProjectItem(project);
-                    },
-                  ),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                Center(child: _buildMSRATabContent()),
+                Center(child: OffsiteChecklistScreen()), // Navigate to Offsite Checklist
+                Center(child: OnsiteChecklistScreen()), // Navigate to Onsite Checklist
+              ],
+            ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.orange,
-        child: const Icon(Icons.add),
-        onPressed: () {
-          // Add new MSRA project functionality
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Create new MSRA project')),
-          );
-        },
-      ),
     );
   }
-  
+
+  Widget _buildMSRATabContent() {
+    return Column(
+      children: [
+        const Divider(height: 32),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildDownloadButton("Download MS", Icons.download_outlined),
+              _buildDownloadButton("Download RA", Icons.download_outlined),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildCreationInfo("Created on: 23:45\n10 Nov 2024"),
+              _buildCreationInfo("Created on: 23:45\n10 Nov 2024"),
+            ],
+          ),
+        ),
+        const Divider(height: 32),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              _buildStatusTab("Pending (${_pendingProjects.length})", index: 0),
+              _buildStatusTab("Approved (${_approvedProjects.length})", index: 1),
+              _buildStatusTab("Denied (${_deniedProjects.length})", index: 2),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _activeProjects.isEmpty
+              ? Center(
+                  child: Text(
+                    "No ${_selectedStatusTab == 0 ? 'pending' : _selectedStatusTab == 1 ? 'approved' : 'denied'} projects found",
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _activeProjects.length,
+                  itemBuilder: (context, index) {
+                    final project = _activeProjects[index];
+                    return _buildProjectItem(project);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildDownloadButton(String text, IconData icon) {
     return InkWell(
       onTap: () {
@@ -307,7 +278,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
       ),
     );
   }
-  
+
   Widget _buildCreationInfo(String text) {
     return Text(
       text,
@@ -318,10 +289,9 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
       textAlign: TextAlign.center,
     );
   }
-  
+
   Widget _buildStatusTab(String text, {required int index}) {
     final isActive = _selectedStatusTab == index;
-    
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -351,27 +321,15 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
       ),
     );
   }
-  
+
   Widget _buildProjectItem(MSRAProject project) {
-    // Define colors based on status
     final Color statusColor = project.status == 'pending'
         ? Colors.orange
         : project.status == 'approved'
             ? Colors.green
             : Colors.red;
-            
-    final bool showActions = project.status == 'pending';
-    
+
     return GestureDetector(
-      onTap: () {
-        // Navigate to detail page (assumed to be implemented in cargo_detail_page.dart)
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CargoDetailPage(projectId: project.id),
-          ),
-        );
-      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
@@ -426,32 +384,124 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            // Row(
-            //   children: [
-            //     Icon(Icons.local_shipping_outlined, size: 14, color: Colors.grey.shade600),
-            //     const SizedBox(width: 4),
-            //     Text(
-            //       "Cargo: ${project.cargoType}",
-            //       style: TextStyle(
-            //         color: Colors.grey.shade600,
-            //         fontSize: 12,
-            //       ),
-            //     ),
-            //     const SizedBox(width: 12),
-            //     Icon(Icons.location_on_outlined, size: 14, color: Colors.grey.shade600),
-            //     const SizedBox(width: 4),
-            //     Text(
-            //       project.destination,
-            //       style: TextStyle(
-            //         color: Colors.grey.shade600,
-            //         fontSize: 12,
-            //       ),
-            //     ),
-            //   ],
-            // ),
-            // const SizedBox(height: 8),
-            if (showActions)
+            if (project.status == 'denied') ...[
+  const SizedBox(height: 8),
+  Text(
+    "Rejected by ${project.assignee}",
+    style: TextStyle(
+      color: Colors.red.shade600,
+      fontSize: 12,
+    ),
+  ),
+  const SizedBox(height: 8),
+  Text(
+    "Created on: ${DateFormat('HH:mm dd-MM-yyyy').format(project.createdOn)}",
+    style: const TextStyle(
+      color: Colors.grey,
+      fontSize: 12,
+    ),
+  ),
+  const SizedBox(height: 8),
+  Row(
+    children: [
+      ElevatedButton(
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: const Text("Re-upload MS/RA"),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        // Logic to upload MS document
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("MS document uploaded")),
+                        );
+                      },
+                      icon: const Icon(Icons.upload_file),
+                      label: const Text("Upload MS Document"),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        // Logic to upload RA document
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("RA document uploaded")),
+                        );
+                      },
+                      icon: const Icon(Icons.upload_file),
+                      label: const Text("Upload RA Document"),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("Close"),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+        ),
+        child: const Text(
+          "Re-upload MS/RA",
+          style: TextStyle(color: Colors.white),
+        ),
+      ),
+      const SizedBox(width: 8),
+      ElevatedButton(
+        onPressed: () {
+          if (project.comment == null) {
+            _showCommentDialog(project); // Open the "Leave Comment" dialog
+          } else {
+            _showViewCommentDialog(project); // Open the "View Comment" dialog
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (project.comment != null) const Icon(Icons.comment, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              project.comment == null ? "Leave Comment" : "View Comment",
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+],
+            if (project.status == 'approved') ...[
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () {
+              if (project.comment == null) {
+                _showCommentDialog(project); // Open the "Leave Comment" dialog
+              } else {
+                _showViewCommentDialog(project); // Open the "View Comment" dialog
+              }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                ),
+                child: const Text(
+                  "View Comment",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+            if (project.status == 'pending')
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -469,7 +519,73 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
       ),
     );
   }
-  
+
+ void _showCommentDialog(MSRAProject project) {
+  TextEditingController commentController = TextEditingController(text: project.comment);
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text("Leave Comment"),
+        content: TextField(
+          controller: commentController,
+          decoration: const InputDecoration(hintText: "Enter your comment"),
+          maxLines: null, // Allows multiple lines for the comment
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                project.comment = commentController.text; // Save the comment
+              });
+              Navigator.pop(context);
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      );
+    },
+  );
+}
+void _showViewCommentDialog(MSRAProject project) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text("View Comment"),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                project.comment ?? "No comment available", // Display the comment
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), // Close the dialog
+            child: const Text("Close"),
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit, size: 20),
+            onPressed: () {
+              Navigator.pop(context); // Close the view dialog
+              _showCommentDialog(project); // Open the edit dialog
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
   Widget _buildActionButton(String text, Color color, {required Function() onTap}) {
     return GestureDetector(
       onTap: onTap,
@@ -489,13 +605,10 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
       ),
     );
   }
-  
+
   void _handleApprove(MSRAProject project) {
     setState(() {
-      // Remove from pending
       _pendingProjects.removeWhere((p) => p.id == project.id);
-      
-      // Add to approved with updated status
       _approvedProjects.add(
         MSRAProject(
           id: project.id,
@@ -503,23 +616,21 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
           assignee: project.assignee,
           createdOn: project.createdOn,
           status: 'approved',
-          // cargoType: project.cargoType,
-          // destination: project.destination,
+          task: project.task,
+          assignedTo: project.assignedTo,
+          completionDate: DateTime.now(),
+          attachments: project.attachments,
         ),
       );
     });
-    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${project.title} has been approved')),
     );
   }
-  
+
   void _handleReject(MSRAProject project) {
     setState(() {
-      // Remove from pending
       _pendingProjects.removeWhere((p) => p.id == project.id);
-      
-      // Add to denied with updated status
       _deniedProjects.add(
         MSRAProject(
           id: project.id,
@@ -527,44 +638,15 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> with Single
           assignee: project.assignee,
           createdOn: project.createdOn,
           status: 'denied',
-          // cargoType: project.cargoType,
-          // destination: project.destination,
+          task: project.task,
+          assignedTo: project.assignedTo,
+          completionDate: DateTime.now(),
+          attachments: project.attachments,
         ),
       );
     });
-    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${project.title} has been rejected')),
-    );
-  }
-}
-
-// Stub implementation for the CargoDetailPage
-class CargoDetailPage extends StatelessWidget {
-  final String projectId;
-  
-  const CargoDetailPage({Key? key, required this.projectId}) : super(key: key);
-  
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Project $projectId Details'),
-        backgroundColor: Colors.indigo[900],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Cargo Details for $projectId', style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Back to List'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

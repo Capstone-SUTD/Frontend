@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:capstone_app/mobile_screens/dashboard_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 import 'package:capstone_app/common/sign_up.dart'; // Or wherever your SignUpScreen is located
 
 class LoginSignUpScreen extends StatefulWidget {
@@ -33,75 +34,170 @@ class _LoginSignUpScreenState extends State<LoginSignUpScreen> {
   }
 
   Future<void> _login(BuildContext context) async {
-    if (_userIdController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final email = _userIdController.text.trim();
+  final password = _passwordController.text.trim();
 
-      // Store token for 1 day
-      await prefs.setString('auth_token', 'dummy_token');
+  if (email.isEmpty || password.isEmpty) {
+    _showErrorBanner("Email and password cannot be empty.");
+    return;
+  }
+
+  try {
+    Dio dio = Dio();
+    final response = await dio.post(
+      'http://10.0.2.2:3000/auth/login', // 🔁 Replace with your actual login API
+      data: {
+        'email': email,
+        'password': password,
+      },
+    );
+
+    if (response.statusCode == 200 && response.data['token'] != null) {
+      String token = response.data['token'];
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', token);
       await prefs.setInt(
-          'token_expiry', DateTime.now().millisecondsSinceEpoch + (24 * 60 * 60 * 1000));
+          'token_expiry', DateTime.now().millisecondsSinceEpoch + (24 * 60 * 60 * 1000)); // 1 day
 
-      // Show success banner
-      if (!mounted) return;
-      
-      ScaffoldMessenger.of(context).showMaterialBanner(
-        MaterialBanner(
-          content: const Text(
-            'Successful!',
-            style: TextStyle(fontSize: 18, color: Colors.white),
-          ),
-          backgroundColor: Colors.green,
-          leading: const Icon(Icons.check_circle, color: Colors.white),
-          margin: const EdgeInsets.all(10),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () {
-                ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-              },
-            ),
-          ],
-        ),
-      );
+      // if (!mounted) return;
 
-      // Auto-dismiss the banner and navigate to the dashboard
+      _showSuccessBanner();
+
       Future.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;
-        
         ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const DashboardScreen()),
         );
       });
     } else {
-      // Show login failed banner
-      ScaffoldMessenger.of(context).showMaterialBanner(
-        MaterialBanner(
-          content: const Text(
-            'Login Failed!',
-            style: TextStyle(fontSize: 18, color: Colors.white),
-          ),
-          backgroundColor: Colors.red,
-          margin: const EdgeInsets.all(10),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
-              onPressed: () {
-                ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-              },
-            ),
-          ],
-        ),
-      );
-
-      // Auto-dismiss the failure banner
-      Future.delayed(const Duration(seconds: 2), () {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-      });
+      _showErrorBanner("Login failed. Please check your credentials.");
     }
+  } catch (e) {
+    print("Login error: $e");
+    _showErrorBanner("An error occurred. Please try again.");
   }
+}
+
+void _showSuccessBanner() {
+  ScaffoldMessenger.of(context).showMaterialBanner(
+    MaterialBanner(
+      content: const Text(
+        'Login Successful!',
+        style: TextStyle(fontSize: 18, color: Colors.white),
+      ),
+      backgroundColor: Colors.green,
+      leading: const Icon(Icons.check_circle, color: Colors.white),
+      margin: const EdgeInsets.all(10),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+void _showErrorBanner(String message) {
+  ScaffoldMessenger.of(context).showMaterialBanner(
+    MaterialBanner(
+      content: Text(
+        message,
+        style: const TextStyle(fontSize: 18, color: Colors.white),
+      ),
+      backgroundColor: Colors.red,
+      margin: const EdgeInsets.all(10),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+          },
+        ),
+      ],
+    ),
+  );
+
+  Future.delayed(const Duration(seconds: 2), () {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+  });
+}
+
+  // Future<void> _login(BuildContext context) async {
+  //   if (_userIdController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
+  //     final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  //     // Store token for 1 day
+  //     await prefs.setString('auth_token', 'dummy_token');
+  //     await prefs.setInt(
+  //         'token_expiry', DateTime.now().millisecondsSinceEpoch + (24 * 60 * 60 * 1000));
+
+  //     // Show success banner
+  //     if (!mounted) return;
+      
+  //     ScaffoldMessenger.of(context).showMaterialBanner(
+  //       MaterialBanner(
+  //         content: const Text(
+  //           'Successful!',
+  //           style: TextStyle(fontSize: 18, color: Colors.white),
+  //         ),
+  //         backgroundColor: Colors.green,
+  //         leading: const Icon(Icons.check_circle, color: Colors.white),
+  //         margin: const EdgeInsets.all(10),
+  //         actions: [
+  //           IconButton(
+  //             icon: const Icon(Icons.close, color: Colors.white),
+  //             onPressed: () {
+  //               ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+  //             },
+  //           ),
+  //         ],
+  //       ),
+  //     );
+
+  //     // Auto-dismiss the banner and navigate to the dashboard
+  //     Future.delayed(const Duration(seconds: 2), () {
+  //       if (!mounted) return;
+        
+  //       ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+
+  //       Navigator.of(context).pushReplacement(
+  //         MaterialPageRoute(builder: (context) => const DashboardScreen()),
+  //       );
+  //     });
+  //   } else {
+  //     // Show login failed banner
+  //     ScaffoldMessenger.of(context).showMaterialBanner(
+  //       MaterialBanner(
+  //         content: const Text(
+  //           'Login Failed!',
+  //           style: TextStyle(fontSize: 18, color: Colors.white),
+  //         ),
+  //         backgroundColor: Colors.red,
+  //         margin: const EdgeInsets.all(10),
+  //         actions: [
+  //           IconButton(
+  //             icon: const Icon(Icons.close, color: Colors.white),
+  //             onPressed: () {
+  //               ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+  //             },
+  //           ),
+  //         ],
+  //       ),
+  //     );
+
+  //     // Auto-dismiss the failure banner
+  //     Future.delayed(const Duration(seconds: 2), () {
+  //       if (!mounted) return;
+  //       ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+  //     });
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {

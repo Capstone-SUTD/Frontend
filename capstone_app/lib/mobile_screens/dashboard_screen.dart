@@ -1,5 +1,4 @@
 import 'package:capstone_app/common/splash_screen.dart';
-import 'package:capstone_app/mobile_screens/my_projects_list.dart';
 import 'package:flutter/material.dart';
 import 'new_project_form.dart';
 import 'package:capstone_app/common/login_signup_screen.dart';

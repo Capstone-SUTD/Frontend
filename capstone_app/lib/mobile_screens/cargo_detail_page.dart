@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'msra.dart';
+import 'package:file_picker/file_picker.dart';
 
 class CargoDetailPage extends StatelessWidget {
   final String cargoId;
@@ -161,7 +162,7 @@ class CargoDetailPage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     ElevatedButton.icon(
-                      label: const Text('View Project Dashboard'),
+                      label: const Text('View MS/RA Dashboard'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
@@ -181,16 +182,30 @@ class CargoDetailPage extends StatelessWidget {
                       //),
                       const SizedBox(width: 8),
                       ElevatedButton.icon(
-                        icon: const Icon(Icons.download),
-                        label: const Text('Download MS/RA'),
+                        icon: const Icon(Icons.upload),
+                        label: const Text('Upload MS/RA'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         ),
-                        onPressed: () {
-                          // Export functionality
-                        },
+                        onPressed: () async {
+                      FilePickerResult? result = await FilePicker.platform.pickFiles(
+                        type: FileType.any,
+                      );
+
+                      if (result != null) {
+                        PlatformFile file = result.files.first;
+                        // Handle the selected file
+                        print('File selected: ${file.name}');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('File uploaded: ${file.name}')),
+                        );
+                      } else {
+                        // User canceled the picker
+                        print('File selection canceled.');
+                      }
+                    },
                       ),
                     ],
                   ),
