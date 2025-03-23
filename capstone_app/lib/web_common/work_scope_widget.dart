@@ -105,9 +105,6 @@ class _WorkScopeWidgetState extends State<WorkScopeWidget> {
           ],
         ),
         const SizedBox(height: 15),
-
-        // 🔹 **File Upload & Run Button Section**
-        _buildUploadSection(),
       ],
     );
   }
@@ -176,63 +173,6 @@ class _WorkScopeWidgetState extends State<WorkScopeWidget> {
     return const TableCell(
       verticalAlignment: TableCellVerticalAlignment.middle,
       child: Center(child: SizedBox()), // Empty placeholder
-    );
-  }
-
-  // 🔹 **File Upload Section & Run Buttons**
-  Widget _buildUploadSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Upload Vendor MSRA here"),
-        const SizedBox(height: 5),
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
-            borderRadius: BorderRadius.circular(5),
-          ),
-          child: Column(
-            children: [
-              const Icon(Icons.cloud_upload, size: 40, color: Colors.grey),
-              const Text("Choose a file or drag & drop it here"),
-              TextButton(
-                onPressed: () {},
-                child: const Text("Browse File", style: TextStyle(color: Colors.blue)),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-
-        // 🔹 **Run & Generate MS/RA Buttons (Side by Side)**
-        Align(
-          alignment: Alignment.centerRight,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MSRAGenerationScreen(),
-                    ),
-                  );
-                },
-                child: const Text("Run"),
-              ),
-              const SizedBox(width: 10), // Space between buttons
-              ElevatedButton(
-                onPressed: () {
-                  // Add your logic for generating MS/RA
-                },
-                child: const Text("Generate MS/RA"),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

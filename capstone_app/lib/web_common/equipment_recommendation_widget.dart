@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // For copying to clipboard
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class EquipmentRecommendationDialog extends StatefulWidget {
   const EquipmentRecommendationDialog({super.key});
@@ -17,16 +20,79 @@ class _EquipmentRecommendationDialogState
   final TextEditingController _weightController = TextEditingController();
 
   String crane = "";
-  String trailerBed = "";
-  String primeMover = "";
+  String threshold = "";
+  String trailer = "";
 
-  // Function to show the second popup (results)
+  bool _isLoading = false;
+
+  Future<void> _callBackendApi(BuildContext context) async {
+    final url = Uri.parse('http://127.0.0.1:5000/equipment');
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      if (token == null) {
+        throw Exception("Token not found");
+      }
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          "weight": double.parse(_weightController.text),
+          "length": double.parse(_lengthController.text),
+          "width": double.parse(_widthController.text),
+          "height": double.parse(_heightController.text),
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          crane = data['crane'] ?? "N/A";
+          threshold = data['threshold']?.toString() ?? "N/A";
+          trailer = data['trailer'] ?? "N/A";
+        });
+
+        if (mounted) {
+          Navigator.pop(context); // Close the input dialog
+          _showResultsDialog(context); // Show results
+        }
+      } else {
+        _showErrorSnackbar("Failed to get recommendation. (${response.statusCode})");
+      }
+    } catch (e) {
+      _showErrorSnackbar("Error: ${e.toString()}");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+
+  void _showErrorSnackbar(String message) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
   void _showResultsDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           child: SizedBox(
             width: 400,
             height: 320,
@@ -46,13 +112,13 @@ class _EquipmentRecommendationDialogState
                     readOnly: true,
                   ),
                   TextField(
-                    controller: TextEditingController(text: trailerBed),
-                    decoration: const InputDecoration(labelText: "Trailer Bed"),
+                    controller: TextEditingController(text: threshold),
+                    decoration: const InputDecoration(labelText: "Threshold"),
                     readOnly: true,
                   ),
                   TextField(
-                    controller: TextEditingController(text: primeMover),
-                    decoration: const InputDecoration(labelText: "Prime Mover"),
+                    controller: TextEditingController(text: trailer),
+                    decoration: const InputDecoration(labelText: "Trailer"),
                     readOnly: true,
                   ),
                   const SizedBox(height: 20),
@@ -61,9 +127,8 @@ class _EquipmentRecommendationDialogState
                     children: [
                       TextButton(
                         onPressed: () {
-                          // Copy to clipboard
                           String copyText =
-                              "Crane: $crane\nTrailer Bed: $trailerBed\nPrime Mover: $primeMover";
+                              "Crane: $crane\nThreshold: $threshold\nTrailer: $trailer";
                           Clipboard.setData(ClipboardData(text: copyText));
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Copied to clipboard")),
@@ -95,7 +160,7 @@ class _EquipmentRecommendationDialogState
         height: 320,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: SingleChildScrollView( // Prevents overflow
+          child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -121,7 +186,7 @@ class _EquipmentRecommendationDialogState
                 ),
                 TextField(
                   controller: _weightController,
-                  decoration: const InputDecoration(labelText: "Weight (tons)"),
+                  decoration: const InputDecoration(labelText: "Weight (kg)"),
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 20),
@@ -133,21 +198,16 @@ class _EquipmentRecommendationDialogState
                       child: const Text("Cancel"),
                     ),
                     ElevatedButton(
-                      onPressed: () {
-                        // TODO: Call backend API here
-
-                        // Mock values for now
-                        setState(() {
-                          crane = "Tower Crane";
-                          trailerBed = "Flatbed Trailer";
-                          primeMover = "Heavy-Duty Truck";
-                        });
-
-                        // Close this popup and open the results popup
-                        Navigator.pop(context);
-                        _showResultsDialog(context);
-                      },
-                      child: const Text("Run"),
+                      onPressed: _isLoading
+                          ? null
+                          : () => _callBackendApi(context),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text("Run"),
                     ),
                   ],
                 ),
@@ -159,3 +219,4 @@ class _EquipmentRecommendationDialogState
     );
   }
 }
+

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:capstone_app/web_screens/dashboard_screen.dart';
+import 'package:capstone_app/common/login_signup_screen.dart';
 
 class WebSplashScreen extends StatefulWidget {
   @override
@@ -11,7 +12,7 @@ class _WebSplashScreenState extends State<WebSplashScreen> {
   void initState() {
     super.initState();
     Future.delayed(Duration(seconds: 2), () {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => DashboardScreen()));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginSignUpScreen()));
     });
   }
 
