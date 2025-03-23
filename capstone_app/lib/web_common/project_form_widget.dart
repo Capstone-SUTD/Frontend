@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/project_model.dart';
 
 class ProjectFormWidget extends StatefulWidget {
@@ -64,22 +64,35 @@ class _ProjectFormWidgetState extends State<ProjectFormWidget> {
   // Fetch Stakeholders from API
   Future<void> _fetchStakeholders() async {
     try {
-      final response = await http.get(Uri.parse('http://localhost:5000/projectstakeholders'));
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
 
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-        setState(() {
-          stakeholdersList = data.map((s) => {
-            "userId": s["userid"].toString(),
-            "name": s["name"].toString(),
-          }).toList();
-        });
-      } else {
-        throw Exception("Failed to load stakeholders");
-      }
-    } catch (error) {
-      print("Error fetching stakeholders: $error");
+    if (token == null) {
+      throw Exception("Token not found");
     }
+
+    final response = await http.get(
+      Uri.parse('http://localhost:5000/project/stakeholders'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json', // optional but recommended
+      },
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      setState(() {
+        stakeholdersList = data.map((s) => {
+          "userId": s["userid"].toString(),
+          "name": s["name"].toString(),
+        }).toList();
+      });
+    } else {
+      throw Exception("Failed to load stakeholders");
+    }
+  } catch (e) {
+    print("Error fetching stakeholders: $e");
+  }
   }
 
   // Check if a Role is Already Assigned

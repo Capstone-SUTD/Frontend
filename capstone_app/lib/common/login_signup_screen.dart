@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:capstone_app/mobile_screens/dashboard_screen.dart';
+import 'package:capstone_app/web_screens/all_project_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 import 'package:dio/dio.dart';
 import 'package:capstone_app/common/sign_up.dart'; // Or wherever your SignUpScreen is located
 
@@ -45,7 +47,7 @@ class _LoginSignUpScreenState extends State<LoginSignUpScreen> {
   try {
     Dio dio = Dio();
     final response = await dio.post(
-      'http://10.0.2.2:3000/auth/login', // 🔁 Replace with your actual login API
+      'http://localhost:5000/auth/login', // 🔁 Replace with your actual login API
       data: {
         'email': email,
         'password': password,

@@ -6,6 +6,7 @@ import '../web_common/project_form_widget.dart';
 import '../web_common/cargo_details_table_widget.dart';
 import '../web_common/work_scope_widget.dart';
 import '../web_common/offsite_checklist_widget.dart';
+import '../web_common/msra_file_upload_widget.dart';
 import 'msra_generation_screen.dart';
 import 'onsite_checklist_screen.dart';
 
@@ -23,6 +24,9 @@ class _ProjectScreenState extends State<ProjectScreen> {
   bool isOOG = false;
   bool isLoading = true;
   bool hasRun = false; // Track whether "Run" button was pressed
+  bool isSaved = false; // Track whether 'Save' button was pressed
+  bool showChecklist = false; // Track if checklist should be displayed
+  bool isGenerateMSRAEnabled = false; // Track if "Generate MS/RA" should be enabled
   int selectedTabIndex = 0;
 
   @override
@@ -89,7 +93,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
         client: _project!.client,
         projectId: _project!.projectId,
         projectName: _project!.projectName,
-        projectType: "OOG", // ✅ Now properly updates projectType
+        projectType: "OOG",
         startDestination: _project!.startDestination,
         endDestination: _project!.endDestination,
         currentTask: _project!.currentTask,
@@ -101,37 +105,43 @@ class _ProjectScreenState extends State<ProjectScreen> {
     });
   }
 
-void onTabSelected(int index) {
-  setState(() {
-    selectedTabIndex = index;
-  });
+  void onSavePressed(){
+    setState(() {
+      isSaved = true;
+      showChecklist = true;
+      isGenerateMSRAEnabled = true;
+    });
+  }
 
-    switch (index) {
-      case 1: // ✅ Navigate to MS/RA Generation
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MSRAGenerationScreen(),
-          ),
-        );
-        break;
-        
-      case 2: // ✅ Navigate to Onsite Checklist
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OnsiteChecklistScreen(),
-          ),
-        );
-        break;
+  void onTabSelected(int index) {
+    setState(() {
+      selectedTabIndex = index;
+    });
 
-      default:
-        break;
-    }
-}
+      switch (index) {
+        case 1: // Navigate to MS/RA Generation
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MSRAGenerationScreen(),
+            ),
+          );
+          break;
+          
+        case 2: // Navigate to Onsite Checklist
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OnsiteChecklistScreen(),
+            ),
+          );
+          break;
 
+        default:
+          break;
+      }
+  }
 
-  
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -186,15 +196,43 @@ void onTabSelected(int index) {
 
                           const SizedBox(height: 20),
 
-                          // **Work Scope (Only if Project is OOG)**
-                          if (isOOG)
-                            ConstrainedBox( 
-                              constraints: const BoxConstraints(maxHeight: 500), // ✅ Adjust max height if needed
-                              child: WorkScopeWidget(
-                                isNewProject: isNewProject,
+                          // If OOG: Show work scope + upload
+                          if (isOOG) ...[
+                            WorkScopeWidget(isNewProject: isNewProject),
+                            const SizedBox(height: 20),
+                            
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 400,
+                                  child: FileUploadWidget(),
                                 ),
-                            ),
-
+                                const SizedBox(height: 20),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    ElevatedButton(
+                                      onPressed: onSavePressed, 
+                                      child: const Text("Save")
+                                    ),
+                                    const SizedBox(height: 10),
+                                    ElevatedButton(
+                                      onPressed: isGenerateMSRAEnabled ? (){
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:(context) => MSRAGenerationScreen(),
+                                          ),
+                                        );
+                                    }:null, 
+                                    child: const Text("Generate MS/RA"),
+                                    ),
+                                  ],
+                                )
+                              ],
+                            )
+                          ],
                           const SizedBox(height: 20),
                         ],
                       ),
@@ -202,12 +240,13 @@ void onTabSelected(int index) {
                   ),
                 ),
 
-                if (isOOG)
-                  Container(
-                    width: 250, // ✅ Fixed width
-                    padding: const EdgeInsets.all(16.0),
+                if (isOOG & isSaved)
+                Expanded(
+                  flex: 1,
+                  child: SingleChildScrollView(
                     child: OffsiteChecklistWidget(),
                   ),
+                ),
               ],
             ),
           ),
