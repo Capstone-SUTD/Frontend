@@ -40,7 +40,7 @@ class Project {
       projectType: json['projecttype'] ?? "",
       startDestination: json['startdestination'] ?? "",
       endDestination: json['enddestination'] ?? "",
-      projectStatus: "", 
+      projectStatus: json['projectStatus'] ?? "New", 
       emailsubjectheader: json['emailsubjectheader'].toString() ?? "",
       startDate: DateTime.tryParse(json['startdate']) ?? DateTime.now(),
       stakeholders: (json['stakeholders'] as List<dynamic>? ?? [])
@@ -123,7 +123,7 @@ class Stakeholder {
 
   factory Stakeholder.fromJson(Map<String, dynamic> json) {
     return Stakeholder(
-      userId: int.parse(json['userId'].toString()),
+      userId: int.parse(json['userid'].toString()),
       role: json['role'],
     );
   }
@@ -139,12 +139,13 @@ class Stakeholder {
 
 // Cargo Model
 class Cargo {
-  final String cargoname;
-  final String length;
-  final String breadth;
-  final String height;
-  final String weight;
-  final String quantity;
+  String cargoname;
+  String length;
+  String breadth;
+  String height;
+  String weight;
+  String quantity;
+  String result;
 
   Cargo({
     required this.cargoname,
@@ -153,16 +154,18 @@ class Cargo {
     required this.height,
     required this.weight,
     required this.quantity,
+    required this.result,
   });
 
   factory Cargo.fromJson(Map<String, dynamic> json) {
     return Cargo(
       cargoname: json['cargoname'],
-      length: json['length'],
-      breadth: json['breadth'],
-      height: json['height'],
-      weight: json['weight'],
-      quantity: json['quantity'],
+      length: json['length'].toString(),
+      breadth: json['breadth'].toString(),
+      height: json['height'].toString(),
+      weight: json['weight'].toString(),
+      quantity: json['quantity'].toString(),
+      result : json['oog'] ? "OOG" : "Normal",
     );
   }
 
@@ -174,35 +177,40 @@ class Cargo {
       'height': height,
       'weight': weight,
       'quantity': quantity,
+      'result' : result,
     };
   }
 }
 
 // Scope Model
 class Scope {
-  final String start;
-  final String description;
-  final String equipment;
+  final String startdestination;
+  final String enddestination;
+  final String scope;
+  final String equipmentList;
 
   Scope({
-    required this.start,
-    required this.description,
-    required this.equipment,
+    required this.startdestination,
+    required this.enddestination,
+    required this.scope,
+    required this.equipmentList,
   });
 
   factory Scope.fromJson(Map<String, dynamic> json) {
     return Scope(
-      start: json['start'],
-      description: json['description'],
-      equipment: json['equipment'],
+      startdestination: json['start'],
+      enddestination: json['end'],
+      scope: json['work'],
+      equipmentList: json['equipment'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'start': start,
-      'description': description,
-      'equipment': equipment,
+      'startdestination': startdestination,
+      'enddestination' : enddestination,
+      'scope': scope,
+      'equipmentList': equipmentList,
     };
   }
 }

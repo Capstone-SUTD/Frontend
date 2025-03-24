@@ -33,6 +33,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
   bool showChecklist = false;
   bool isGenerateMSRAEnabled = false;
   int selectedTabIndex = 0;
+  List<String> resultsOOG = [];
 
   final GlobalKey<ProjectFormWidgetState> _formKey = GlobalKey<ProjectFormWidgetState>();
   final GlobalKey<CargoDetailsTableWidgetState> _cargoKey = GlobalKey<CargoDetailsTableWidgetState>();
@@ -70,7 +71,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
         setState(() {
           _project = foundProject;
           isNewProject = false;
-          isOOG = foundProject.projectType == "OOG";
+          isOOG = true;
           hasRun = isOOG;
           isLoading = false;
         });
@@ -125,16 +126,33 @@ class _ProjectScreenState extends State<ProjectScreen> {
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
 
-      String? oogResult = responseData['cargo']?[0]?['oog'];
+      bool setOOG = false;
+      List<String> resultList = [];
+      if (responseData['cargo'] != null) {
+        for (int i = 0; i < responseData['cargo'].length; i++) {
+          String? oogResult = responseData['cargo'][i]['oog'];
+          String result = oogResult == "Yes" ? "OOG" : "Normal";
+          
+          // Create a new Cargo object and add it to the updatedCargo list
+          resultList.add(result);
+
+          if (oogResult == "Yes") {
+            setOOG = true;
+          }
+        }
+      }
 
       setState(() {
-        isOOG = oogResult == "Yes";
         hasRun = true;
+        isOOG = setOOG;
+        String projectType = isOOG ? "OOG" : "Normal";
+        resultsOOG = resultList;
+
         _project = Project(
           client: _formKey.currentState?.getClient() ?? '',
           projectId: responseData["projectid"]?.toString() ?? '',
           projectName: _formKey.currentState?.getProjectName() ?? '',
-          projectType: oogResult == "Yes" ? "OOG" : "Normal",
+          projectType: projectType,
           startDestination: '',
           endDestination: '',
           projectStatus: '',
@@ -144,6 +162,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
           cargo: [], 
           scope: [],
         );
+
       });
     } else {
       print("Failed to classify OOG. Status: ${response.statusCode}");
@@ -328,13 +347,14 @@ class _ProjectScreenState extends State<ProjectScreen> {
                             isEditable: isNewProject,
                             hasRun: hasRun,
                             onRunPressed: _onRunPressed,
-                            projectType: _project!.projectType,
+                            resultList: resultsOOG,
                           ),
                           const SizedBox(height: 20),
                           if (isOOG) ...[
                             WorkScopeWidget(
                               key: _workScopeKey,
                               isNewProject: isNewProject,
+                              workScopeList: isNewProject ? null : _project!.scope,
                             ),
                             const SizedBox(height: 20),
                             Container(

@@ -51,14 +51,21 @@ class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
         }),
       );
 
-      if (response.statusCode == 200) {
-        final blob = html.Blob([response.bodyBytes]);
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.AnchorElement(href: url)
-          ..setAttribute("download", "$fileType.pdf")
-          ..click();
-        html.Url.revokeObjectUrl(url);
-      } else {
+     if (response.statusCode == 200) {
+      final blob = html.Blob([response.bodyBytes]);
+      final url = html.Url.createObjectUrlFromBlob(blob);
+
+      // Map fileType to actual extensions (modify based on your server response)
+      String extension = fileType == "MS" ? "docx" : "xlsx"; // Example mapping
+      String fileName = "downloaded_file_$fileType.$extension"; 
+
+      final anchor = html.AnchorElement(href: url)
+      
+        ..setAttribute("download", fileName) // Set proper filename with extension
+        ..click();
+
+      html.Url.revokeObjectUrl(url);
+    } else {
         throw Exception("Download failed: ${response.body}");
       }
     } catch (e) {

@@ -29,7 +29,7 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
   List<Map<String, String>> stakeholdersList = []; 
   Set<String> selectedRoles = {};
 
-  final List<String> _roleOptions = ["HSE Officer", "Operations", "Project Manager", "Additional"];
+  final List<String> _roleOptions = ["HSEOfficer", "Operations", "ProjectManager", "Additional"];
 
   @override
   void initState() {
