@@ -80,7 +80,7 @@ class FileUploadWidgetState extends State<FileUploadWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Upload Vendor MSRA files",
+          "Upload MSRA files",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),

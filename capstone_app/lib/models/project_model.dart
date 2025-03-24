@@ -13,6 +13,7 @@ class Project {
   final DateTime startDate;
   final String emailsubjectheader;
   final String? stage;
+  final bool? msra;
   final List<Stakeholder> stakeholders;
   final List<Cargo> cargo;
   final List<Scope> scope;
@@ -28,6 +29,7 @@ class Project {
     required this.startDate,
     required this.emailsubjectheader,
     this.stage,
+    this.msra,
     required this.stakeholders,
     required this.cargo,
     required this.scope,
@@ -45,6 +47,7 @@ class Project {
       projectStatus: json['projectStatus'] ?? "New", 
       emailsubjectheader: json['emailsubjectheader'].toString() ?? "",
       stage: json['stage'],
+      msra: json['MSRA'],
       startDate: DateTime.tryParse(json['startdate']) ?? DateTime.now(),
       stakeholders: (json['stakeholders'] as List<dynamic>? ?? [])
           .map((item) => Stakeholder.fromJson(item))
@@ -71,6 +74,7 @@ class Project {
       'emailsubjectheader': emailsubjectheader,
       'startdate': startDate.toIso8601String(),
       'stage': stage,
+      'msra': msra,
       'stakeholders': stakeholders.map((item) => item.toJson()).toList(),
       'cargo': cargo.map((item) => item.toJson()).toList(),
       'scope': scope.map((item) => item.toJson()).toList(),
