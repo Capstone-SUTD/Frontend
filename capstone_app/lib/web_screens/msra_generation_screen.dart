@@ -58,12 +58,10 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
 
             // **Stepper Widget**
             ProjectStepperWidget(
-              currentStep: _currentStep,
-              projectId: _project?.projectId ?? "",
-              onStepTapped: (index) {
-                setState(() {
-                  _currentStep = index;
-                });
+              currentStage: _project.stage ?? 'Seller',
+              projectId: _project.projectId,
+              onStepTapped: (newIndex) {
+                
               },
             ),
 
