@@ -7,6 +7,7 @@ import '../web_common/project_stepper_widget.dart';
 import '../web_common/download_msra_widget.dart';
 import '../web_common/approval_list_widget.dart';
 import 'onsite_checklist_screen.dart';
+import 'project_screen.dart';
 
 class MSRAGenerationScreen extends StatefulWidget {
   final dynamic project;
@@ -117,6 +118,13 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
         context,
         MaterialPageRoute(builder: (context) => OnsiteChecklistScreen(project: _project)),
       );
+    }
+    if (index == 0) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => ProjectScreen(projectId: _project?.projectId))
+      );
+
     }
   }
 

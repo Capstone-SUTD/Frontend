@@ -4,6 +4,7 @@ import '../models/project_model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:html' as html;
 
 class ApprovalListWidget extends StatefulWidget {
   int selectedTab;
@@ -241,8 +242,65 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
     }
   }
 
-  void uploadFile() {
-    // Function intentionally left empty for now
+  void uploadFile() async {
+    final projectId = widget.projectid;
+    String filetype = "";
+    final uploadedFiles = _fileUploadKey.currentState?.getUploadedFiles() ?? [];
+
+    html.File? file;
+    for (final uploadedFile in uploadedFiles) {
+      final name = uploadedFile.name.toLowerCase();
+      if (name.contains('ms')) {
+        filetype = "MS";
+        file = uploadedFile;  
+      } else if (name.contains('ra')) {
+        filetype = "RA";
+        file = uploadedFile; 
+      }
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("Missing token");
+
+      final formData = html.FormData();
+      
+      // Append the files only if they exist
+      if (file != null) {
+        formData.appendBlob('file', file, file.name);
+      } 
+
+      formData.append('projectid', projectId.toString());
+      formData.append('filetype', filetype);
+
+      final request = html.HttpRequest();
+      request
+        ..open('POST', 'http://localhost:5000/app/reupload')
+        ..setRequestHeader('Authorization', 'Bearer $token')
+        ..onLoadEnd.listen((event) async {
+          if (request.status == 200) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("File uploaded successfully.")),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Error: ${request.status} - ${request.responseText}")),
+            );
+          }
+        })
+        ..onError.listen((e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error upload file: $e")),
+          );
+        })
+        ..send(formData);
+    } catch (e) {
+      print("Error saving project: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error saving project: $e")),
+      );
+    }
   }
 
   Widget _buildRejectedCard(int index, Map<String, dynamic> approval) {
