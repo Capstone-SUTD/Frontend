@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class OffsiteChecklistWidget extends StatefulWidget {
   final int projectId;
-
   const OffsiteChecklistWidget({Key? key, required this.projectId}) : super(key: key);
 
   @override
@@ -18,9 +17,9 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
     "Safety Precautions": false,
   };
 
-  Map<String, List<Map<String, dynamic>>> checklistData = {
-    "Administrative": [],
-    "Safety Precautions": [],
+  Map<String, Map<String, dynamic>> checklistStatus = {
+    "Administrative": {},
+    "Safety Precautions": {},
   };
 
   bool isLoading = true;
@@ -32,48 +31,37 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
   }
 
   Future<void> fetchChecklistData() async {
-    print("🟢 Sending GET request with projectid=${widget.projectId}");
+    print("🟢 Sending GET request with projectid=${widget.projectId} (type: ${widget.projectId.runtimeType})");
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
       final response = await http.get(
         Uri.parse("http://localhost:5000/project/get-project-checklist?projectid=${widget.projectId}"),
-        headers: {'Authorization': 'Bearer $token'},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
       );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = json.decode(response.body);
         final offsite = jsonData['OffSiteFixed'];
 
-        // Flatten administrative
-        final admin = offsite['Administrative'] as Map<String, dynamic>;
-        admin.remove('completed');
-        admin.remove('comments');
-        checklistData['Administrative'] = admin.entries.map((entry) {
-          return {
-            'taskid': entry.key,
-            'label': entry.value,
-            'completed': false,
-          };
-        }).toList();
-
-        // Flatten safety precaution Equipment + Route Survey
-        final safety = offsite['Safety precautions'];
-        final equipment = (safety['Equipment'] as List<dynamic>);
-        final routeSurvey = (safety['Route survey'] as List<dynamic>);
-
-        int taskIdCounter = 1000;
-        final allSafety = [...equipment, ...routeSurvey];
-        checklistData['Safety Precautions'] = allSafety.map((item) {
-          return {
-            'taskid': (taskIdCounter++).toString(),
-            'label': item,
-            'completed': false,
-          };
-        }).toList();
+        // Extract subtypes and completion status
+        final Map<String, dynamic> admin = offsite['Administrative'];
+        final Map<String, dynamic> safety = offsite['Safety precautions'];
 
         setState(() {
+          checklistStatus['Administrative'] = {
+            'taskid': admin['taskid'],
+            'completed': admin['completed'],
+          };
+          checklistStatus['Safety Precautions'] = {
+            'taskid': safety['taskid'],
+            'completed': safety['completed'],
+          };
           isLoading = false;
         });
       } else {
@@ -84,8 +72,11 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
     }
   }
 
-  Future<void> updateChecklistStatus(String taskid, bool completed) async {
+  Future<void> updateChecklistStatus(String section) async {
     try {
+      final taskid = checklistStatus[section]?['taskid'];
+      if (taskid == null) return;
+
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
@@ -95,11 +86,15 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({'taskid': taskid, 'completed': completed}),
+        body: jsonEncode({'taskid': taskid}),
       );
 
-      if (response.statusCode != 200) {
-        print("Failed to update checklist task $taskid");
+      if (response.statusCode == 200) {
+        setState(() {
+          checklistStatus[section]!['completed'] = !checklistStatus[section]!['completed'];
+        });
+      } else {
+        print("Failed to update checklist status for $section");
       }
     } catch (e) {
       print("Error updating checklist: $e");
@@ -144,11 +139,17 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
   }
 
   Widget _buildChecklistSection(String section) {
+    final isChecked = checklistStatus[section]?['completed'] ?? false;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ListTile(
           contentPadding: EdgeInsets.zero,
+          leading: Checkbox(
+            value: isChecked,
+            onChanged: (_) => updateChecklistStatus(section),
+          ),
           title: Text(
             section,
             style: const TextStyle(fontWeight: FontWeight.bold),
@@ -165,28 +166,18 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
           ),
         ),
         if (expandedSections[section]!)
-          Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: Column(
-              children: checklistData[section]!.map((item) {
-                return CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: item['completed'],
-                  onChanged: (bool? newValue) {
-                    setState(() {
-                      item['completed'] = newValue!;
-                    });
-                    updateChecklistStatus(item['taskid'], newValue!);
-                  },
-                  title: Text(item['label'], style: const TextStyle(fontSize: 13)),
-                );
-              }).toList(),
+          const Padding(
+            padding: EdgeInsets.only(left: 8.0),
+            child: Text(
+              "(Checklist details can go here)",
+              style: TextStyle(fontSize: 13, fontStyle: FontStyle.italic),
             ),
           ),
       ],
     );
   }
 }
+
 
 
 

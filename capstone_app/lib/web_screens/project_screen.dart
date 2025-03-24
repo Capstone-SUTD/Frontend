@@ -204,27 +204,30 @@ class _ProjectScreenState extends State<ProjectScreen> {
               const SnackBar(content: Text("Project saved successfully.")),
             );
 
-            setState(() {
-              isSaved = true;
-              showChecklist = true;
-              isGenerateMSRAEnabled = true;
-            });
-
-            // Generate checklist
+            // ✅ Generate Checklist (AFTER project is saved)
             final generateChecklistResponse = await http.post(
               Uri.parse('http://localhost:5000/project/generate-checklist'),
               headers: {
                 'Authorization': 'Bearer $token',
                 'Content-Type': 'application/json',
               },
-              body: jsonEncode({'scope': scopeList}),
+              body: jsonEncode({'projectid': int.tryParse(projectId)}),
             );
 
             if (generateChecklistResponse.statusCode == 200) {
-              print("Checklist generated successfully.");
+              print("✅ Checklist generated successfully.");
+              setState(() {
+                isSaved = true;
+                showChecklist = true;
+                isGenerateMSRAEnabled = true;
+              });
             } else {
-              print("Checklist generation failed: ${generateChecklistResponse.body}");
+              print("❌ Checklist generation failed: ${generateChecklistResponse.body}");
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Checklist generation failed")),
+              );
             }
+
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text("Error: ${request.status} - ${request.responseText}")),
@@ -244,7 +247,6 @@ class _ProjectScreenState extends State<ProjectScreen> {
       );
     }
   }
-
 
   void onTabSelected(int index) {
     setState(() {
@@ -269,14 +271,6 @@ class _ProjectScreenState extends State<ProjectScreen> {
         );
         break;
     }
-  }
-
-  int _getProjectIdAsInt() {
-    final rawId = _project?.projectId;
-    if (rawId is int) {
-      return rawId as int;
-    }
-    return int.tryParse(rawId?.toString() ?? '0') ?? 0;
   }
 
   @override
@@ -435,7 +429,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                     flex: 1,
                     child: SingleChildScrollView(
                       child: OffsiteChecklistWidget(
-                        projectId: _getProjectIdAsInt(),
+                        projectId: int.tryParse(_project?.projectId.toString() ?? '0') ?? 0,
                       ),
                     ),
                   ),
