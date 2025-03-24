@@ -114,7 +114,7 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
                   _buildTableCell(i, "startDestination"),
                   _buildTableCell(i, "endDestination"),
                   _buildDropdownCell(i),
-                  _buildTableCell(i, "equipmentList"),
+                  _buildEquipmentCell(i),
                   if (!isReadOnly) (i == 0 ? _buildEmptyActionCell() : _buildActionCell(i)),
                 ],
               ),
@@ -168,6 +168,51 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
                 onChanged: (value) => _updateWorkScope(index, "scope", value!),
                 decoration: const InputDecoration(border: InputBorder.none),
               ),
+      ),
+    );
+  }
+
+  Widget _buildEquipmentCell(int index) {
+    String equipmentValue = _workScopeList[index]["equipmentList"] ?? "";
+
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: isReadOnly
+            ? Text(equipmentValue, textAlign: TextAlign.center)
+            : _workScopeList[index]["scope"] == "Lifting"
+                ? TextFormField(
+                    textAlign: TextAlign.center,
+                    onChanged: (value) {
+                      _updateWorkScope(index, "equipmentList", "$value ton crane");
+                    },
+                    decoration: const InputDecoration(
+                      labelText: "Enter Crane Threshold (Tons)",
+                      border: InputBorder.none,
+                    ),
+                  )
+                : _workScopeList[index]["scope"] == "Transportation"
+                    ? TextFormField(
+                        textAlign: TextAlign.center,
+                        onChanged: (value) {
+                          _updateWorkScope(index, "equipmentList", "$value trailer");
+                        },
+                        decoration: const InputDecoration(
+                          labelText: "Enter Trailer",
+                          border: InputBorder.none,
+                        ),
+                      )
+                    : TextFormField(
+                        initialValue: equipmentValue,
+                        textAlign: TextAlign.center,
+                        onChanged: (value) {
+                          _updateWorkScope(index, "equipmentList", value);
+                        },
+                        decoration: const InputDecoration(
+                          labelText: "",
+                          border: InputBorder.none,
+                        ),
+                      ),
       ),
     );
   }

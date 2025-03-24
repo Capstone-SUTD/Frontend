@@ -117,17 +117,63 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16), // Ensure padding
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildTextField("Name", _nameController),
-          const SizedBox(height: 16),
-          _buildTextField("Client", _clientController),
-          const SizedBox(height: 16),
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16), // Ensure padding
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTextField("Name", _nameController),
+        const SizedBox(height: 16),
+        _buildTextField("Client", _clientController),
+        const SizedBox(height: 16),
 
-          // Stakeholder Section
+        // Stakeholder Section - Show table if not a new project
+        if (!widget.isNewProject && widget.project != null && widget.project!.stakeholders.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 1),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Stakeholders",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Table(
+                  border: TableBorder.all(color: Colors.grey),
+                  columnWidths: {
+                    0: FlexColumnWidth(3),
+                    1: FlexColumnWidth(3),
+                    2: FlexColumnWidth(3),
+                  },
+                  children: [
+                    // Table Header
+                    TableRow(
+                      decoration: BoxDecoration(color: Colors.grey[300]),
+                      children: [
+                        _buildHeaderCell("Name"),
+                        _buildHeaderCell("Email"),
+                        _buildHeaderCell("Role"),
+                      ],
+                    ),
+
+                    // Table Data Rows
+                    for (var i = 0; i < widget.project!.stakeholders.length; i++)
+                      TableRow(
+                        children: [
+                          _buildTableCell(widget.project!.stakeholders[i].name ?? "Error fetching name"),
+                          _buildTableCell(widget.project!.stakeholders[i].email ?? "Error fetching email"),
+                          _buildTableCell(widget.project!.stakeholders[i].role),
+                        ],
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 15),
+              ],
+            ),
+          ),
+
+        if (widget.isNewProject)
           Column(
             children: List.generate(selectedStakeholders.length, (index) {
               return Padding(
@@ -211,26 +257,49 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
             }),
           ),
 
-          const SizedBox(height: 16),
+        const SizedBox(height: 16),
 
-          _buildTextField("Email Subject Header", _emailController),
-          const SizedBox(height: 16),
+        _buildTextField("Email Subject Header", _emailController),
+        const SizedBox(height: 16),
 
-          // Auto-Generated Start Date Field (Read-Only)
-          _buildTextField("Start Date", _startDateController, readOnly: true),
-        ],
+        // Auto-Generated Start Date Field (Read-Only)
+        _buildTextField("Start Date", _startDateController, readOnly: true),
+      ],
+    ),
+  );
+}
+
+/// **Reusable TextField Builder**
+Widget _buildTextField(String label, TextEditingController controller, {bool readOnly = false}) {
+  return TextField(
+    controller: controller,
+    readOnly: readOnly,
+    decoration: InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(),
+    ),
+  );
+}
+
+Widget _buildHeaderCell(String title) {
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
 
-  /// **Reusable TextField Builder**
-  Widget _buildTextField(String label, TextEditingController controller, {bool readOnly = false}) {
-    return TextField(
-      controller: controller,
-      readOnly: readOnly,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(),
+  Widget _buildTableCell(String value) {
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: 
+        Text(value, textAlign: TextAlign.center)
       ),
     );
   }
