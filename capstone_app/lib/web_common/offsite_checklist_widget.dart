@@ -12,16 +12,8 @@ class OffsiteChecklistWidget extends StatefulWidget {
 }
 
 class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
-  Map<String, bool> expandedSections = {
-    "Administrative": false,
-    "Safety Precautions": false,
-  };
-
-  Map<String, Map<String, dynamic>> checklistStatus = {
-    "Administrative": {},
-    "Safety Precautions": {},
-  };
-
+  Map<String, bool> expandedSections = {};
+  Map<String, dynamic> checklistData = {};
   bool isLoading = true;
 
   @override
@@ -32,36 +24,51 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
 
   Future<void> fetchChecklistData() async {
     print("🟢 Sending GET request with projectid=${widget.projectId} (type: ${widget.projectId.runtimeType})");
-
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
       final response = await http.get(
         Uri.parse("http://localhost:5000/project/get-project-checklist?projectid=${widget.projectId}"),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = json.decode(response.body);
-        final offsite = jsonData['OffSiteFixed'];
+        final offsite = jsonData['OffSiteFixed'] as Map<String, dynamic>;
 
-        // Extract subtypes and completion status
-        final Map<String, dynamic> admin = offsite['Administrative'];
-        final Map<String, dynamic> safety = offsite['Safety precautions'];
+        // Process each section (e.g., Administrative, Safety Precautions)
+        offsite.forEach((section, content) {
+          List<String> descriptions = [];
+
+          int? taskId = content['taskid'];
+          bool completed = content['completed'] ?? false;
+          String comments = content['comments'] ?? "";
+
+          // Extract all other keys as descriptions
+          content.forEach((key, value) {
+            if (key != 'taskid' && key != 'completed' && key != 'comments') {
+              if (value is String) {
+                descriptions.add(value);
+              } else if (value is List) {
+                descriptions.addAll(value.map((v) => v.toString()));
+              } else if (value is Map) {
+                descriptions.addAll(value.values.map((v) => v.toString()));
+              }
+            }
+          });
+
+          checklistData[section] = {
+            'taskid': taskId,
+            'completed': completed,
+            'comments': comments,
+            'descriptions': descriptions
+          };
+
+          expandedSections[section] = false;
+        });
 
         setState(() {
-          checklistStatus['Administrative'] = {
-            'taskid': admin['taskid'],
-            'completed': admin['completed'],
-          };
-          checklistStatus['Safety Precautions'] = {
-            'taskid': safety['taskid'],
-            'completed': safety['completed'],
-          };
           isLoading = false;
         });
       } else {
@@ -72,11 +79,8 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
     }
   }
 
-  Future<void> updateChecklistStatus(String section) async {
+  Future<void> updateChecklistStatus(int taskid, bool completed) async {
     try {
-      final taskid = checklistStatus[section]?['taskid'];
-      if (taskid == null) return;
-
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
@@ -86,15 +90,13 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({'taskid': taskid}),
+        body: jsonEncode({'taskid': taskid, 'completed': completed}),
       );
 
-      if (response.statusCode == 200) {
-        setState(() {
-          checklistStatus[section]!['completed'] = !checklistStatus[section]!['completed'];
-        });
+      if (response.statusCode != 200) {
+        print("❌ Failed to update checklist task $taskid");
       } else {
-        print("Failed to update checklist status for $section");
+        print("✅ Checklist task $taskid updated to $completed");
       }
     } catch (e) {
       print("Error updating checklist: $e");
@@ -126,7 +128,7 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
                   Expanded(
                     child: SingleChildScrollView(
                       child: Column(
-                        children: expandedSections.keys.map((section) {
+                        children: checklistData.keys.map((section) {
                           return _buildChecklistSection(section);
                         }).toList(),
                       ),
@@ -139,7 +141,8 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
   }
 
   Widget _buildChecklistSection(String section) {
-    final isChecked = checklistStatus[section]?['completed'] ?? false;
+    final sectionData = checklistData[section];
+    final isExpanded = expandedSections[section] ?? false;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,36 +150,49 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: Checkbox(
-            value: isChecked,
-            onChanged: (_) => updateChecklistStatus(section),
+            value: sectionData['completed'],
+            onChanged: (bool? newValue) async {
+              if (newValue != null) {
+                setState(() {
+                  checklistData[section]['completed'] = newValue;
+                });
+                await updateChecklistStatus(sectionData['taskid'], newValue);
+              }
+            },
           ),
           title: Text(
             section,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           trailing: IconButton(
-            icon: Icon(
-              expandedSections[section]! ? Icons.expand_less : Icons.expand_more,
-            ),
+            icon: Icon(isExpanded ? Icons.expand_less : Icons.expand_more),
             onPressed: () {
               setState(() {
-                expandedSections[section] = !expandedSections[section]!;
+                expandedSections[section] = !isExpanded;
               });
             },
           ),
         ),
-        if (expandedSections[section]!)
-          const Padding(
-            padding: EdgeInsets.only(left: 8.0),
-            child: Text(
-              "(Checklist details can go here)",
-              style: TextStyle(fontSize: 13, fontStyle: FontStyle.italic),
+        if (isExpanded)
+          Padding(
+            padding: const EdgeInsets.only(left: 32.0, bottom: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...(sectionData['descriptions'] as List<String>).map((desc) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text("• $desc", style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 13)),
+                  );
+                }).toList(),
+              ],
             ),
           ),
       ],
     );
   }
 }
+
 
 
 

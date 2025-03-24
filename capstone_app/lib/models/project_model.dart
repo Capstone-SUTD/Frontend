@@ -12,6 +12,7 @@ class Project {
   final String projectStatus;
   final DateTime startDate;
   final String emailsubjectheader;
+  final String? stage;
   final List<Stakeholder> stakeholders;
   final List<Cargo> cargo;
   final List<Scope> scope;
@@ -26,6 +27,7 @@ class Project {
     required this.projectStatus,
     required this.startDate,
     required this.emailsubjectheader,
+    this.stage,
     required this.stakeholders,
     required this.cargo,
     required this.scope,
@@ -42,6 +44,7 @@ class Project {
       endDestination: json['enddestination'] ?? "",
       projectStatus: json['projectStatus'] ?? "New", 
       emailsubjectheader: json['emailsubjectheader'].toString() ?? "",
+      stage: json['stage'],
       startDate: DateTime.tryParse(json['startdate']) ?? DateTime.now(),
       stakeholders: (json['stakeholders'] as List<dynamic>? ?? [])
           .map((item) => Stakeholder.fromJson(item))
@@ -55,7 +58,6 @@ class Project {
     );
   }
 
-
   // Convert Dart object back to JSON
   Map<String, dynamic> toJson() {
     return {
@@ -68,6 +70,7 @@ class Project {
       'projectstatus': projectStatus,
       'emailsubjectheader': emailsubjectheader,
       'startdate': startDate.toIso8601String(),
+      'stage': stage,
       'stakeholders': stakeholders.map((item) => item.toJson()).toList(),
       'cargo': cargo.map((item) => item.toJson()).toList(),
       'scope': scope.map((item) => item.toJson()).toList(),
@@ -91,6 +94,7 @@ class Project {
     String? projectStatus,
     DateTime? startDate,
     String? emailsubjectheader,
+    String? stage,
     List<Stakeholder>? stakeholders,
     List<Cargo>? cargo,
     List<Scope>? scope,
