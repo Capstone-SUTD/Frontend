@@ -115,16 +115,22 @@ class Project {
 class Stakeholder {
   final int userId;
   final String role;
+  String? name;
+  String? email;
 
   Stakeholder({
     required this.userId,
     required this.role,
+    this.name,
+    this.email,
   });
 
   factory Stakeholder.fromJson(Map<String, dynamic> json) {
     return Stakeholder(
       userId: int.parse(json['userid'].toString()),
       role: json['role'],
+      name: json['name'],
+      email: json['email'],
     );
   }
 
@@ -132,6 +138,8 @@ class Stakeholder {
     return {
       'userId': userId,
       'role': role,
+      'name' : name,
+      'email' : email,
     };
   }
 }
