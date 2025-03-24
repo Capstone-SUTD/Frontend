@@ -10,16 +10,16 @@ class ProjectFormWidget extends StatefulWidget {
   final bool isNewProject;
 
   const ProjectFormWidget({
-    super.key,
+    Key? key,
     this.project,
     required this.isNewProject,
-  });
+  }) : super(key: key);
 
   @override
-  _ProjectFormWidgetState createState() => _ProjectFormWidgetState();
+  ProjectFormWidgetState createState() => ProjectFormWidgetState();
 }
 
-class _ProjectFormWidgetState extends State<ProjectFormWidget> {
+class ProjectFormWidgetState extends State<ProjectFormWidget> {
   late TextEditingController _nameController;
   late TextEditingController _clientController;
   late TextEditingController _emailController;
@@ -39,7 +39,7 @@ class _ProjectFormWidgetState extends State<ProjectFormWidget> {
 
     _nameController = TextEditingController(text: widget.project?.projectName ?? "");
     _clientController = TextEditingController(text: widget.project?.client ?? "");
-    _emailController = TextEditingController();
+    _emailController = TextEditingController(text: widget.project?.emailsubjectheader ?? "");
     _startDateController = TextEditingController(
       text: widget.isNewProject ? formattedDate : widget.project?.startDate.toString() ?? "",
     );
@@ -84,7 +84,7 @@ class _ProjectFormWidgetState extends State<ProjectFormWidget> {
       setState(() {
         stakeholdersList = data.map((s) => {
           "userId": s["userid"].toString(),
-          "name": s["name"].toString(),
+          "name": s["username"].toString(),
         }).toList();
       });
     } else {
@@ -234,6 +234,25 @@ class _ProjectFormWidgetState extends State<ProjectFormWidget> {
       ),
     );
   }
+
+  // Expose values to parent using GlobalKey
+  // List<Map<String, String>> getSelectedStakeholders() => selectedStakeholders;
+  List<Map<String, dynamic>> getSelectedStakeholders() {
+    return selectedStakeholders.map((s) {
+      final rawUserId = s["userId"];
+      final parsedUserId = int.tryParse(rawUserId ?? '') ?? -1;
+
+      print("Final userId to send: $parsedUserId, type: ${parsedUserId.runtimeType}");
+
+      return {
+        "userId": parsedUserId,
+        "role": s["role"] ?? "",
+      };
+    }).toList();
+  }
+  String getProjectName() => _nameController.text;
+  String getClient() => _clientController.text;
+  String getEmailSubjectHeader() => _emailController.text;
 }
 
 

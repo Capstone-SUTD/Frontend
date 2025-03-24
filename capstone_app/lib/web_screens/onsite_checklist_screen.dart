@@ -4,22 +4,38 @@ import '../web_common/project_stepper_widget.dart';
 import '../web_common/attachment_popup.dart';
 import '../web_common/comment_popup.dart';
 import 'msra_generation_screen.dart';
+import '../web_common/step_label.dart';
 
 class OnsiteChecklistScreen extends StatefulWidget {
-  const OnsiteChecklistScreen({super.key});
+  final dynamic project;
+  const OnsiteChecklistScreen({Key? key, required this.project}) : super(key: key);
 
   @override
   _OnsiteChecklistScreenState createState() => _OnsiteChecklistScreenState();
 }
 
 class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
-  int _currentStep = 12; // Stepper starts from step 12 (Unloading)
+  late int _currentStep;
+  late dynamic _project;
+
+  @override
+  void initState() {
+    super.initState();
+    _project = widget.project;
+
+    final stage = _project?.stage?.toString().toLowerCase();
+    const stepLabels = kStepLabels;
+
+    _currentStep = stage != null && stepLabels.contains(stage)
+        ? stepLabels.indexOf(stage)
+        : 0; // default to first step if null or unknown
+  }
 
   void _onTabSelected(int index) {
     if (index == 1) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MSRAGenerationScreen()),
+        MaterialPageRoute(builder: (context) => MSRAGenerationScreen(project: _project)),
       );
     }
   }
@@ -43,7 +59,12 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
             // **Stepper Widget**
             ProjectStepperWidget(
               currentStep: _currentStep,
-              onStepTapped: (step) {},
+              projectId: _project?.projectId ?? "",
+              onStepTapped: (index) {
+                setState(() {
+                  _currentStep = index;
+                });
+              },
             ),
 
             const SizedBox(height: 20),
@@ -76,7 +97,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
                             children: [
                               Checkbox(value: false, onChanged: (bool? value) {}),
                               Text(
-                                "Placeholder Checklist Item ${index + 1}",
+                                "Placeholder Checklist Item \${index + 1}",
                                 style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ],
@@ -84,7 +105,6 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
                           const Text("Assigned To: Placeholder"),
                           const Text("Completion Date: TBD"),
 
-                          // **Attachments Section**
                           Row(
                             children: [
                               const Text("Attachments: "),
@@ -110,7 +130,6 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
                             ],
                           ),
 
-                          // **Comment Buttons**
                           Row(
                             children: [
                               ElevatedButton(
@@ -119,8 +138,8 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
                                   builder: (BuildContext context) {
                                     return CommentPopup(
                                       initialComment: "",
-                                      onCommentAdded: (commentText){
-                                        print("Comment added: $commentText");
+                                      onCommentAdded: (commentText) {
+                                        print("Comment added: \$commentText");
                                       },
                                     );
                                   },
@@ -155,4 +174,6 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
     );
   }
 }
+
+
 

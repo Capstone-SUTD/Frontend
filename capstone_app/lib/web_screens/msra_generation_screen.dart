@@ -6,7 +6,8 @@ import '../web_common/approval_list_widget.dart';
 import 'onsite_checklist_screen.dart';
 
 class MSRAGenerationScreen extends StatefulWidget {
-  const MSRAGenerationScreen({super.key});
+  final dynamic project;
+  const MSRAGenerationScreen({Key? key, required this.project}) : super(key: key);
 
   @override
   _MSRAGenerationScreenState createState() => _MSRAGenerationScreenState();
@@ -15,6 +16,13 @@ class MSRAGenerationScreen extends StatefulWidget {
 class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
   int _selectedApprovalTab = 0;
   int _currentStep = 0;
+  late dynamic _project;
+
+  @override
+  void initState() {
+    super.initState();
+    _project = widget.project;
+  }
 
   void _onApprovalTabSelected(int index) {
     setState(() {
@@ -26,7 +34,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
     if (index == 2) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const OnsiteChecklistScreen()),
+        MaterialPageRoute(builder: (context) => OnsiteChecklistScreen(project: _project)),
       );
     }
   }
@@ -51,14 +59,22 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
             // **Stepper Widget**
             ProjectStepperWidget(
               currentStep: _currentStep,
-              onStepTapped: (step) {},
+              projectId: _project?.projectId ?? "",
+              onStepTapped: (index) {
+                setState(() {
+                  _currentStep = index;
+                });
+              },
             ),
 
             const SizedBox(height: 20),
             const Divider(),
 
             // **Download MS/RA Section**
-            const DownloadMSRAWidget(),
+            DownloadMSRAWidget(
+              projectId: _project?.projectId ?? "",
+              createdDateTime: _project?.startDate ?? DateTime.now(),
+            ),
 
             const SizedBox(height: 20),
             const Divider(),

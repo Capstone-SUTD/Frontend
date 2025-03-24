@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:capstone_app/mobile_screens/new_project_form.dart';
+
 class Project {
   final String client;
   final String projectId;
@@ -7,9 +9,10 @@ class Project {
   final String projectType;
   final String startDestination;
   final String endDestination;
-  final String currentTask;
   final String projectStatus;
   final DateTime startDate;
+  final String emailsubjectheader;
+  final List<Stakeholder> stakeholders;
   final List<Cargo> cargo;
   final List<Scope> scope;
 
@@ -20,9 +23,10 @@ class Project {
     required this.projectType,
     required this.startDestination,
     required this.endDestination,
-    required this.currentTask,
     required this.projectStatus,
     required this.startDate,
+    required this.emailsubjectheader,
+    required this.stakeholders,
     required this.cargo,
     required this.scope,
   });
@@ -30,19 +34,27 @@ class Project {
   // Factory constructor to parse JSON into Dart object
   factory Project.fromJson(Map<String, dynamic> json) {
     return Project(
-      client: json['client'],
-      projectId: json['projectId'],
-      projectName: json['projectname'],
-      projectType: json['projecttype'],
-      startDestination: json['startdestination'],
-      endDestination: json['enddestination'],
-      currentTask: json['currenttask'],
-      projectStatus: json['projectstatus'],
-      startDate: DateTime.parse(_convertDateFormat(json['startdate'])), // Handle date parsing
-      cargo: (json['cargo'] as List).map((item) => Cargo.fromJson(item)).toList(),
-      scope: (json['scope'] as List).map((item) => Scope.fromJson(item)).toList(),
+      client: json['client']?.toString() ?? "",
+      projectId: json['projectid'].toString(), // match API key
+      projectName: json['projectname'] ?? "",
+      projectType: json['projecttype'] ?? "",
+      startDestination: json['startdestination'] ?? "",
+      endDestination: json['enddestination'] ?? "",
+      projectStatus: "", 
+      emailsubjectheader: json['emailsubjectheader'].toString() ?? "",
+      startDate: DateTime.tryParse(json['startdate']) ?? DateTime.now(),
+      stakeholders: (json['stakeholders'] as List<dynamic>? ?? [])
+          .map((item) => Stakeholder.fromJson(item))
+          .toList(),
+      cargo: (json['cargo'] as List<dynamic>? ?? [])
+          .map((item) => Cargo.fromJson(item))
+          .toList(),
+      scope: (json['scope'] as List<dynamic>? ?? [])
+          .map((item) => Scope.fromJson(item))
+          .toList(),
     );
   }
+
 
   // Convert Dart object back to JSON
   Map<String, dynamic> toJson() {
@@ -53,19 +65,20 @@ class Project {
       'projecttype': projectType,
       'startdestination': startDestination,
       'enddestination': endDestination,
-      'currenttask': currentTask,
       'projectstatus': projectStatus,
+      'emailsubjectheader': emailsubjectheader,
       'startdate': startDate.toIso8601String(),
+      'stakeholders': stakeholders.map((item) => item.toJson()).toList(),
       'cargo': cargo.map((item) => item.toJson()).toList(),
       'scope': scope.map((item) => item.toJson()).toList(),
     };
   }
 
   // Helper function to convert date format from "DD/MM/YYYY" to "YYYY-MM-DD"
-  static String _convertDateFormat(String date) {
+  /**static String _convertDateFormat(String date) {
     List<String> parts = date.split('/');
     return '${parts[2]}-${parts[1]}-${parts[0]}';
-  }
+  }**/
 
   // ✅ ADD THIS METHOD TO ALLOW UPDATING FIELDS
   Project copyWith({
@@ -75,9 +88,10 @@ class Project {
     String? projectType,
     String? startDestination,
     String? endDestination,
-    String? currentTask,
     String? projectStatus,
     DateTime? startDate,
+    String? emailsubjectheader,
+    List<Stakeholder>? stakeholders,
     List<Cargo>? cargo,
     List<Scope>? scope,
   }) {
@@ -88,29 +102,54 @@ class Project {
         projectType: projectType ?? this.projectType,
         startDestination: startDestination ?? this.startDestination,
         endDestination: endDestination ?? this.endDestination,
-        currentTask: currentTask ?? this.currentTask,
         projectStatus: projectStatus ?? this.projectStatus,
         startDate: startDate ?? this.startDate,
+        emailsubjectheader: emailsubjectheader ?? this.emailsubjectheader,
+        stakeholders: stakeholders ?? this.stakeholders,
         cargo: cargo ?? this.cargo,
         scope: scope ?? this.scope,
       );
   }
 }
 
+class Stakeholder {
+  final int userId;
+  final String role;
+
+  Stakeholder({
+    required this.userId,
+    required this.role,
+  });
+
+  factory Stakeholder.fromJson(Map<String, dynamic> json) {
+    return Stakeholder(
+      userId: int.parse(json['userId'].toString()),
+      role: json['role'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'role': role,
+    };
+  }
+}
+
 
 // Cargo Model
 class Cargo {
-  final String name;
+  final String cargoname;
   final String length;
-  final String width;
+  final String breadth;
   final String height;
   final String weight;
   final String quantity;
 
   Cargo({
-    required this.name,
+    required this.cargoname,
     required this.length,
-    required this.width,
+    required this.breadth,
     required this.height,
     required this.weight,
     required this.quantity,
@@ -118,9 +157,9 @@ class Cargo {
 
   factory Cargo.fromJson(Map<String, dynamic> json) {
     return Cargo(
-      name: json['name'],
+      cargoname: json['cargoname'],
       length: json['length'],
-      width: json['width'],
+      breadth: json['breadth'],
       height: json['height'],
       weight: json['weight'],
       quantity: json['quantity'],
@@ -129,9 +168,9 @@ class Cargo {
 
   Map<String, dynamic> toJson() {
     return {
-      'name': name,
+      'cargoname': cargoname,
       'length': length,
-      'width': width,
+      'breadth': breadth,
       'height': height,
       'weight': weight,
       'quantity': quantity,

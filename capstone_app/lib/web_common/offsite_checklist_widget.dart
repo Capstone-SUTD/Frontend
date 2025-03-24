@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OffsiteChecklistWidget extends StatefulWidget {
-  const OffsiteChecklistWidget({super.key});
+  final int projectId;
+
+  const OffsiteChecklistWidget({Key? key, required this.projectId}) : super(key: key);
 
   @override
   _OffsiteChecklistWidgetState createState() => _OffsiteChecklistWidgetState();
@@ -13,37 +18,93 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
     "Safety Precautions": false,
   };
 
-  Map<String, bool> checkedSections = {
-    "Administrative": false,
-    "Safety Precautions": false,
+  Map<String, List<Map<String, dynamic>>> checklistData = {
+    "Administrative": [],
+    "Safety Precautions": [],
   };
 
-  final Map<String, List<String>> checklistDetails = {
-    "Administrative": [
-      "a. Is the permit to work approved?",
-      "b. Is the Toolbox meeting conducted and signed?",
-      "c. Have the operatives been informed about the type of cargo and rigging requirements?",
-      "d. Have all parties concerned been notified regarding the coordination information?",
-      "e. Are all required personnel available for the operations?",
-      "f. Ensure that a site-specific risk assessment is completed and communicated before work starts.",
-      "g. Is an emergency response plan in place, and has the team been briefed?",
-      "h. Is a first aid kit readily available, and are first aiders identified?",
-      "i. Have all workers undergone the necessary competency checks (e.g., lifting supervisor, signalman, rigger)?",
-      "j. Ensure fire extinguishers are accessible, especially near high-risk operations.",
-    ],
-    "Safety Precautions": [
-      "a. Equipment",
-      "   i. Are all workers equipped with required PPE, and has it been inspected for damage before use?",
-      "   ii. Are all equipment functionally checked?",
-      "   iii. Are all spare contingency equipment/materials available?",
-      "   iv. Is all equipment checked for functionality, with spare materials and fully charged backup batteries available?",
-      "   v. Are all workers aware of the SOPs for each equipment type?",
-      "b. Route survey",
-      "   i. Is the transportation path clear of obstacles, with pedestrian walkways separate from transport routes?",
-      "   ii. Is the traffic control engaged to guide the traffic at lifting zone?",
-      "   iii. Ensure proper warning signs and barricades are placed along high-risk routes.",
-    ],
-  };
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchChecklistData();
+  }
+
+  Future<void> fetchChecklistData() async {
+    print("🟢 Sending GET request with projectid=${widget.projectId}");
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      final response = await http.get(
+        Uri.parse("http://localhost:5000/project/get-project-checklist?projectid=${widget.projectId}"),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonData = json.decode(response.body);
+        final offsite = jsonData['OffSiteFixed'];
+
+        // Flatten administrative
+        final admin = offsite['Administrative'] as Map<String, dynamic>;
+        admin.remove('completed');
+        admin.remove('comments');
+        checklistData['Administrative'] = admin.entries.map((entry) {
+          return {
+            'taskid': entry.key,
+            'label': entry.value,
+            'completed': false,
+          };
+        }).toList();
+
+        // Flatten safety precaution Equipment + Route Survey
+        final safety = offsite['Safety precautions'];
+        final equipment = (safety['Equipment'] as List<dynamic>);
+        final routeSurvey = (safety['Route survey'] as List<dynamic>);
+
+        int taskIdCounter = 1000;
+        final allSafety = [...equipment, ...routeSurvey];
+        checklistData['Safety Precautions'] = allSafety.map((item) {
+          return {
+            'taskid': (taskIdCounter++).toString(),
+            'label': item,
+            'completed': false,
+          };
+        }).toList();
+
+        setState(() {
+          isLoading = false;
+        });
+      } else {
+        throw Exception("Failed to load checklist");
+      }
+    } catch (e) {
+      print("Error fetching checklist: $e");
+    }
+  }
+
+  Future<void> updateChecklistStatus(String taskid, bool completed) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      final response = await http.post(
+        Uri.parse("http://localhost:5000/project/update-checklist-completion"),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'taskid': taskid, 'completed': completed}),
+      );
+
+      if (response.statusCode != 200) {
+        print("Failed to update checklist task $taskid");
+      }
+    } catch (e) {
+      print("Error updating checklist: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,70 +118,67 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
           border: Border.all(color: Colors.grey.shade300),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Offsite Checklist",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: expandedSections.keys.map((key) {
-                    return _buildChecklistItem(key);
-                  }).toList(),
-                ),
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Offsite Checklist",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: expandedSections.keys.map((section) {
+                          return _buildChecklistSection(section);
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
 
-  Widget _buildChecklistItem(String title) {
+  Widget _buildChecklistSection(String section) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: Checkbox(
-            value: checkedSections[title],
-            onChanged: (bool? value) {
-              setState(() {
-                checkedSections[title] = value!;
-              });
-            },
-          ),
           title: Text(
-            title,
+            section,
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           trailing: IconButton(
             icon: Icon(
-              expandedSections[title]! ? Icons.expand_less : Icons.expand_more,
+              expandedSections[section]! ? Icons.expand_less : Icons.expand_more,
             ),
             onPressed: () {
               setState(() {
-                expandedSections[title] = !expandedSections[title]!;
+                expandedSections[section] = !expandedSections[section]!;
               });
             },
           ),
         ),
-        if (expandedSections[title]!)
+        if (expandedSections[section]!)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.only(left: 8.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: checklistDetails[title]!.map((item) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
-                  child: Text(
-                    item,
-                    style: const TextStyle(fontSize: 14),
-                  ),
+              children: checklistData[section]!.map((item) {
+                return CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: item['completed'],
+                  onChanged: (bool? newValue) {
+                    setState(() {
+                      item['completed'] = newValue!;
+                    });
+                    updateChecklistStatus(item['taskid'], newValue!);
+                  },
+                  title: Text(item['label'], style: const TextStyle(fontSize: 13)),
                 );
               }).toList(),
             ),
@@ -129,6 +187,7 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
     );
   }
 }
+
 
 
 

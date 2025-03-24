@@ -3,20 +3,17 @@ import 'package:capstone_app/web_screens/msra_generation_screen.dart';
 
 class WorkScopeWidget extends StatefulWidget {
   final bool isNewProject;
-
-  const WorkScopeWidget({
-    Key? key,
-    required this.isNewProject,
-  }) : super(key: key);
+  const WorkScopeWidget({Key? key, required this.isNewProject}) : super(key: key);
 
   @override
-  _WorkScopeWidgetState createState() => _WorkScopeWidgetState();
+  WorkScopeWidgetState createState() => WorkScopeWidgetState();
 }
 
-class _WorkScopeWidgetState extends State<WorkScopeWidget> {
+class WorkScopeWidgetState extends State<WorkScopeWidget> {
   List<Map<String, String>> _workScopeList = [];
+  final List<String> _scopeOptions = ["Lifting", "Transportation"];
 
-  final List<String> _scopeOptions = ["Lifting", "Lashing", "Transportation"];
+  List<Map<String, String>> getWorkScopeData() => _workScopeList;
 
   @override
   void initState() {

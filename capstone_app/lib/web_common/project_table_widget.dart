@@ -18,7 +18,7 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
   @override
   void initState() {
     super.initState();
-    _projectsFuture = DataService.getProjects(); // Fetch data
+    _projectsFuture = DataService.getProjects();
   }
 
   void _navigateToProject(String projectId) {
@@ -26,14 +26,6 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
       context,
       MaterialPageRoute(builder: (context) => ProjectScreen(projectId: projectId)),
     );
-  }
-
-  void _sortProjects() {
-    // TODO: Implement sorting logic
-  }
-
-  void _filterProjects() {
-    // TODO: Implement filtering logic
   }
 
   @override
@@ -52,77 +44,43 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
 
         return Column(
           children: [
-            // Sorting & Filtering
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: _sortProjects,
-                  icon: const Icon(Icons.sort),
-                  label: const Text("Sort"),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: _filterProjects,
-                  icon: const Icon(Icons.filter_list),
-                  label: const Text("Filter"),
-                ),
-                const SizedBox(width: 8),
-                const Icon(Icons.more_vert), // Placeholder for additional options
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Project Table
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: SizedBox(
                   width: MediaQuery.of(context).size.width * 0.95,
                   child: DataTable(
-                    columnSpacing: 20.0,
-                    headingRowHeight: 40.0,
-                    dataRowHeight: 50.0,
+                    columnSpacing: 20,
+                    headingRowHeight: 40,
+                    dataRowHeight: 50,
                     columns: const [
                       DataColumn(label: Text("Project Name")),
-                      DataColumn(label: Text("Project Type")),
                       DataColumn(label: Text("Start Destination")),
                       DataColumn(label: Text("End Destination")),
-                      DataColumn(label: Text("Task Status")),
                       DataColumn(label: Text("Status")),
-                      DataColumn(label: Text("Start Date")),
+                      DataColumn(label: Text("Date")),
                     ],
                     rows: projects
                         .skip(_currentPage * _rowsPerPage)
                         .take(_rowsPerPage)
-                        .map((project) {
-                      bool isOOG = project.projectType == "OOG";
-                      return DataRow(
-                        color: MaterialStateProperty.resolveWith<Color?>(
-                          (Set<MaterialState> states) {
-                            return isOOG ? Colors.orange.shade100 : Colors.white;
-                          },
-                        ),
-                        cells: [
-                          DataCell(
-                            Text(project.projectName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            onTap: () => _navigateToProject(project.projectId),
-                          ),
-                          DataCell(Text(project.projectType)),
-                          DataCell(Text(project.startDestination)),
-                          DataCell(Text(project.endDestination)),
-                          DataCell(Text(project.currentTask)),
-                          DataCell(_buildStatusBadge(project.projectStatus)),
-                          DataCell(Text(_formatDate(project.startDate))),
-                        ],
-                      );
-                    }).toList(),
+                        .map((project) => DataRow(
+                              cells: [
+                                DataCell(
+                                  Text(project.projectName),
+                                  onTap: () => _navigateToProject(project.projectId),
+                                ),
+                                DataCell(Text(project.startDestination)),
+                                DataCell(Text(project.endDestination)),
+                                DataCell(_buildStatusBadge(project.projectStatus)),
+                                DataCell(Text(_formatDate(project.startDate))),
+                              ],
+                            ))
+                        .toList(),
                   ),
                 ),
               ),
             ),
 
-            // Pagination Controls
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -131,16 +89,12 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
                 Row(
                   children: [
                     ElevatedButton(
-                      onPressed: _currentPage > 0
-                          ? () => setState(() => _currentPage--)
-                          : null,
+                      onPressed: _currentPage > 0 ? () => setState(() => _currentPage--) : null,
                       child: const Text("Previous"),
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton(
-                      onPressed: _currentPage < totalPages - 1
-                          ? () => setState(() => _currentPage++)
-                          : null,
+                      onPressed: _currentPage < totalPages - 1 ? () => setState(() => _currentPage++) : null,
                       child: const Text("Next"),
                     ),
                   ],
@@ -171,6 +125,7 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
       default:
         badgeColor = Colors.black;
     }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
@@ -185,7 +140,7 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
   }
 
   String _formatDate(DateTime date) {
-    return "${date.day}/${date.month}/${date.year}";
+    return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
   }
 }
 

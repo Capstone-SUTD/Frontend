@@ -20,10 +20,10 @@ class CargoDetailsTableWidget extends StatefulWidget {
   });
 
   @override
-  _CargoDetailsTableWidgetState createState() => _CargoDetailsTableWidgetState();
+  CargoDetailsTableWidgetState createState() => CargoDetailsTableWidgetState();
 }
 
-class _CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
+class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
   List<Map<String, String>> _cargoList = [];
 
   @override
@@ -31,14 +31,14 @@ class _CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
     super.initState();
     if (widget.isNewProject) {
       _cargoList = [
-        {"name": "", "length": "", "width": "", "height": "", "weight": "", "quantity": ""}
+        {"cargoname": "", "length": "", "breadth": "", "height": "", "weight": "", "quantity": ""}
       ];
     } else {
       _cargoList = widget.cargoList.map((cargo) {
         return {
-          "name": cargo.name,
+          "cargoname": cargo.cargoname,
           "length": cargo.length,
-          "width": cargo.width,
+          "breadth": cargo.breadth,
           "height": cargo.height,
           "weight": cargo.weight,
           "quantity": cargo.quantity,
@@ -49,7 +49,7 @@ class _CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
 
   void _addRow() {
     setState(() {
-      _cargoList.add({"name": "", "length": "", "width": "", "height": "", "weight": "", "quantity": ""});
+      _cargoList.add({"cargoname": "", "length": "", "breadth": "", "height": "", "weight": "", "quantity": ""});
     });
   }
 
@@ -110,7 +110,7 @@ class _CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
             for (int i = 0; i < _cargoList.length; i++)
               TableRow(
                 children: [
-                  _buildTableCell(i, "name"),
+                  _buildTableCell(i, "cargoname"),
                   _buildDimensionCell(i), // Updated Dimension field
                   _buildWeightCell(i), // Updated Weight field with "tons"
                   _buildTableCell(i, "quantity"),
@@ -134,6 +134,10 @@ class _CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
           ),
       ],
     );
+  }
+  
+  List<Map<String, String>> getCargoList() {
+    return _cargoList;
   }
 
   // ✅ **Header Cell Builder**
@@ -175,7 +179,7 @@ class _CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
           children: [
             _buildDimensionInput(index, "length"),
             const Text(" cm × "),
-            _buildDimensionInput(index, "width"),
+            _buildDimensionInput(index, "breadth"),
             const Text(" cm × "),
             _buildDimensionInput(index, "height"),
             const Text(" cm"),
@@ -224,7 +228,7 @@ class _CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
               ),
             ),
             const SizedBox(width: 5),
-            const Text("tons"),
+            const Text("kg"),
           ],
         ),
       ),
@@ -260,6 +264,7 @@ class _CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
       ),
     );
   }
+  
 }
 
 
