@@ -58,12 +58,10 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
 
             // **Stepper Widget**
             ProjectStepperWidget(
-              currentStep: _currentStep,
-              projectId: _project?.projectId ?? "",
+              currentStage: _project.stage ?? 'Seller',
+              projectId: _project.projectId,
               onStepTapped: (index) {
-                setState(() {
-                  _currentStep = index;
-                });
+                
               },
             ),
 

@@ -5,13 +5,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'step_label.dart';
 
 class ProjectStepperWidget extends StatefulWidget {
-  final int currentStep;
+  final String currentStage;
   final Function(int) onStepTapped;
-  final dynamic projectId; // Accepts int or String (can parse later)
+  final dynamic projectId;
 
   const ProjectStepperWidget({
     Key? key,
-    required this.currentStep,
+    required this.currentStage,
     required this.onStepTapped,
     required this.projectId,
   }) : super(key: key);
@@ -28,7 +28,11 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
   @override
   void initState() {
     super.initState();
-    _selectedStep = widget.currentStep;
+    final stage = widget.currentStage.toLowerCase();
+    _selectedStep = kStepLabels.indexWhere(
+      (label) => label.toLowerCase() == stage,
+    );
+    if (_selectedStep == -1) _selectedStep = 0;
   }
 
   void _onStepTapped(int index) async {
