@@ -186,12 +186,9 @@ class _ProjectScreenState extends State<ProjectScreen> {
       }
     }
 
-    if (vendorMS == null || vendorRA == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please ensure both MS and RA files are uploaded.")),
-      );
-      return;
-    }
+    // If neither file is uploaded, set them to null so nothing is appended
+    vendorMS ??= null;
+    vendorRA ??= null;
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -208,8 +205,22 @@ class _ProjectScreenState extends State<ProjectScreen> {
       }).toList();
 
       final formData = html.FormData();
-      formData.appendBlob('VendorMS', vendorMS, vendorMS.name);
-      formData.appendBlob('VendorRA', vendorRA, vendorRA.name);
+      
+      // Append the files only if they exist
+      if (vendorMS != null) {
+        formData.appendBlob('VendorMS', vendorMS, vendorMS.name);
+      } else {
+        // If no MS file, append an empty field or pass null
+        formData.append('VendorMS', '');
+      }
+      
+      if (vendorRA != null) {
+        formData.appendBlob('VendorRA', vendorRA, vendorRA.name);
+      } else {
+        // If no RA file, append an empty field or pass null
+        formData.append('VendorRA', '');
+      }
+
       formData.append('projectid', projectId);
       formData.append('scope', jsonEncode(scopeList));
 
@@ -246,7 +257,6 @@ class _ProjectScreenState extends State<ProjectScreen> {
                 const SnackBar(content: Text("Checklist generation failed")),
               );
             }
-
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text("Error: ${request.status} - ${request.responseText}")),
@@ -292,65 +302,67 @@ class _ProjectScreenState extends State<ProjectScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+@override
+Widget build(BuildContext context) {
+  if (isLoading) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(isNewProject ? "New Project" : _project!.projectName),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+  return Scaffold(
+    appBar: AppBar(
+      title: Text(isNewProject ? "New Project" : _project!.projectName),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () => Navigator.pop(context),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!isNewProject && isOOG)
-            ProjectTabWidget(
-              selectedTabIndex: selectedTabIndex,
-              onTabSelected: onTabSelected,
-            ),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ProjectFormWidget(
-                            key: _formKey,
-                            project: _project,
+    ),
+    body: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!isNewProject && isOOG)
+          ProjectTabWidget(
+            selectedTabIndex: selectedTabIndex,
+            onTabSelected: onTabSelected,
+          ),
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 3,
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ProjectFormWidget(
+                          key: _formKey,
+                          project: _project,
+                          isNewProject: isNewProject,
+                        ),
+                        const SizedBox(height: 20),
+                        CargoDetailsTableWidget(
+                          key: _cargoKey,
+                          cargoList: _project!.cargo,
+                          isNewProject: isNewProject,
+                          isEditable: isNewProject,
+                          hasRun: hasRun,
+                          onRunPressed: _onRunPressed,
+                          resultList: resultsOOG,
+                        ),
+                        const SizedBox(height: 20),
+                        if (isOOG) ...[
+                          WorkScopeWidget(
+                            key: _workScopeKey,
                             isNewProject: isNewProject,
+                            workScopeList: isNewProject ? null : _project!.scope,
                           ),
                           const SizedBox(height: 20),
-                          CargoDetailsTableWidget(
-                            key: _cargoKey,
-                            cargoList: _project!.cargo,
-                            isNewProject: isNewProject,
-                            isEditable: isNewProject,
-                            hasRun: hasRun,
-                            onRunPressed: _onRunPressed,
-                            resultList: resultsOOG,
-                          ),
-                          const SizedBox(height: 20),
-                          if (isOOG) ...[
-                            WorkScopeWidget(
-                              key: _workScopeKey,
-                              isNewProject: isNewProject,
-                              workScopeList: isNewProject ? null : _project!.scope,
-                            ),
-                            const SizedBox(height: 20),
+                          // Conditionally render the file upload section and Save button
+                          if (isNewProject || (_project!.scope?.isEmpty ?? true)) ...[
                             Container(
                               width: 400,
                               child: FileUploadWidget(
@@ -366,8 +378,17 @@ class _ProjectScreenState extends State<ProjectScreen> {
                                   child: const Text("Save"),
                                 ),
                                 const SizedBox(width: 10),
+                              ],
+                            ),
+                          ],
+                          const SizedBox(height: 20),
+                          // Conditionally render the "Generate MS/RA" button
+                          if (isNewProject || _project?.msra != true) ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
                                 ElevatedButton(
-                                  onPressed: isGenerateMSRAEnabled
+                                  onPressed: (isNewProject && isGenerateMSRAEnabled) || (_project?.msra != true)
                                       ? () async {
                                           final prefs = await SharedPreferences.getInstance();
                                           final token = prefs.getString('auth_token');
@@ -431,43 +452,34 @@ class _ProjectScreenState extends State<ProjectScreen> {
                                             );
                                           }
                                         }
-                                      : null,
+                                      : null, // Disable the button if isGenerateMSRAEnabled is false or project.msra is true
                                   child: const Text("Generate MS/RA"),
                                 ),
-
                               ],
                             ),
                           ],
                           const SizedBox(height: 20),
                         ],
-                      ),
+                      ],
                     ),
                   ),
                 ),
-                if (isOOG && isSaved)
-                  Expanded(
-                    flex: 1,
-                    child: SingleChildScrollView(
-                      child: OffsiteChecklistWidget(
-                        projectId: int.tryParse(_project?.projectId.toString() ?? '0') ?? 0,
-                      ),
+              ),
+              if ((isOOG && isSaved && isNewProject) || (isOOG && !( _project!.scope?.isEmpty ?? true)))
+                Expanded(
+                  flex: 1,
+                  child: SingleChildScrollView(
+                    child: OffsiteChecklistWidget(
+                      projectId: int.tryParse(_project?.projectId.toString() ?? '0') ?? 0,
                     ),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
 }
 
-
-
-
-
-
-
-
-
-
+}
