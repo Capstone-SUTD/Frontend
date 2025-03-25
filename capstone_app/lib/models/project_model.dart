@@ -113,6 +113,7 @@ class Project {
         projectStatus: projectStatus ?? this.projectStatus,
         startDate: startDate ?? this.startDate,
         emailsubjectheader: emailsubjectheader ?? this.emailsubjectheader,
+        stage: stage ?? this.stage,
         stakeholders: stakeholders ?? this.stakeholders,
         cargo: cargo ?? this.cargo,
         scope: scope ?? this.scope,

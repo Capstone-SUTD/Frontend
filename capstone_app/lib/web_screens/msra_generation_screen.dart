@@ -6,7 +6,7 @@ import '../web_common/approval_list_widget.dart';
 import 'onsite_checklist_screen.dart';
 
 class MSRAGenerationScreen extends StatefulWidget {
-  final dynamic project;
+  final dynamic project; // ideally use a Project type if available
   const MSRAGenerationScreen({Key? key, required this.project}) : super(key: key);
 
   @override
@@ -15,19 +15,14 @@ class MSRAGenerationScreen extends StatefulWidget {
 
 class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
   int _selectedApprovalTab = 0;
-  int _currentStep = 0;
   late dynamic _project;
+  late String _currentStage; // Local variable to hold the current stage
 
   @override
   void initState() {
     super.initState();
     _project = widget.project;
-  }
-
-  void _onApprovalTabSelected(int index) {
-    setState(() {
-      _selectedApprovalTab = index;
-    });
+    _currentStage = _project.stage; // Initialize the stage from the project
   }
 
   void _onTabSelected(int index) {
@@ -48,27 +43,32 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // **Project Tab Widget (Switch Between Tabs)**
+            // Project Tab widget (for switching between screens)
             ProjectTabWidget(
               selectedTabIndex: 1,
               onTabSelected: _onTabSelected,
             ),
-
             const SizedBox(height: 20),
 
-            // **Stepper Widget**
+            // Project Stepper widget with local stage variable
             ProjectStepperWidget(
-              currentStage: _project.stage ?? 'Seller',
+              currentStage: _currentStage,
               projectId: _project.projectId,
               onStepTapped: (newIndex) {
-                
+                // Optional logic when a step is tapped
+              },
+              onStageUpdated: (newStage) {
+                setState(() {
+                  // Only update the local _currentStage variable
+                  _currentStage = newStage;
+                });
               },
             ),
 
             const SizedBox(height: 20),
             const Divider(),
 
-            // **Download MS/RA Section**
+            // Download MS/RA section
             DownloadMSRAWidget(
               projectId: _project?.projectId ?? "",
               createdDateTime: _project?.startDate ?? DateTime.now(),
@@ -77,7 +77,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
             const SizedBox(height: 20),
             const Divider(),
 
-            // **Approval Tabs**
+            // Approval Tabs section
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -86,10 +86,9 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
                 _buildApprovalTab("Denied (0)", 2),
               ],
             ),
-
             const SizedBox(height: 10),
 
-            // **Approval List Section**
+            // Approval List Section
             Expanded(
               child: ApprovalListWidget(selectedTab: _selectedApprovalTab),
             ),
@@ -102,7 +101,9 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
   Widget _buildApprovalTab(String label, int index) {
     bool isSelected = _selectedApprovalTab == index;
     return GestureDetector(
-      onTap: () => _onApprovalTabSelected(index),
+      onTap: () {
+        setState(() => _selectedApprovalTab = index);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         decoration: BoxDecoration(
@@ -124,6 +125,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
     );
   }
 }
+
 
 
 
