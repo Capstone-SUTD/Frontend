@@ -415,7 +415,7 @@ Widget build(BuildContext context) {
                           ],
                           const SizedBox(height: 20),
                 // Conditionally render the "Generate MS/RA" button
-                if ((isOOG && isSaved && isNewProject) || (isOOG && _project?.msra != true && !( _project!.scope?.isEmpty ?? true))) ...[
+                if ((isOOG && isSaved) || (isOOG && _project?.msra != true && !( _project!.scope?.isEmpty ?? true))) ...[
                   Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -496,7 +496,7 @@ Widget build(BuildContext context) {
                   ),
                 ),
               ),
-              if ((isOOG && isSaved && isNewProject) || (isOOG && !( _project!.scope?.isEmpty ?? true)))
+              if ((isOOG && isSaved) || (isOOG && !( _project!.scope?.isEmpty ?? true)))
                 Expanded(
                   flex: 1,
                   child: SingleChildScrollView(
