@@ -120,13 +120,6 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
         MaterialPageRoute(builder: (context) => OnsiteChecklistScreen(project: _project)),
       );
     }
-    if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => ProjectScreen(projectId: _project?.projectId))
-      );
-
-    }
   }
 
   void _showErrorSnackbar(String message) {
@@ -151,16 +144,10 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
 
             // **Stepper Widget**
             ProjectStepperWidget(
-              currentStage: _currentStage,
+              currentStage: _project.stage,
               projectId: _project.projectId,
               onStepTapped: (newIndex) {
-                // Optional logic when a step is tapped
-              },
-              onStageUpdated: (newStage) {
-                setState(() {
-                  // Only update the local _currentStage variable
-                  _currentStage = newStage;
-                });
+                // Optional logic when a step is tappedr
               },
             ),
             const SizedBox(height: 20),
