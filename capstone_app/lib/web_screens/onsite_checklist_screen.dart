@@ -10,6 +10,7 @@ import '../web_common/attachment_popup.dart';
 import '../web_common/comment_popup.dart';
 import 'msra_generation_screen.dart';
 import '../web_common/step_label.dart';
+import 'project_screen.dart';
 
 /// ---------------------------------------------------------------------------
 ///  A small data class to hold both the file bytes and the name
@@ -401,6 +402,12 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => MSRAGenerationScreen(project: _project)),
+      );
+    }
+    if (index == 0) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => ProjectScreen(projectId: _project?.projectId))
       );
     }
   }

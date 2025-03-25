@@ -7,12 +7,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class DownloadMSRAWidget extends StatefulWidget {
   final String projectId;
-  final DateTime createdDateTime;
+  final int msVersion;
+  final int raVersion;
 
   const DownloadMSRAWidget({
     Key? key,
     required this.projectId,
-    required this.createdDateTime,
+    required this.msVersion,
+    required this.raVersion,
   }) : super(key: key);
 
   @override
@@ -20,14 +22,10 @@ class DownloadMSRAWidget extends StatefulWidget {
 }
 
 class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
-  late String formattedDateTime;
 
   @override
   void initState() {
     super.initState();
-    final timeStr = DateFormat('HH:mm').format(widget.createdDateTime);
-    final dateStr = DateFormat('dd MMM yyyy').format(widget.createdDateTime);
-    formattedDateTime = 'Created on: $timeStr\n$dateStr';
   }
 
   Future<void> _downloadFile(String fileType) async {
@@ -47,7 +45,7 @@ class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
         body: jsonEncode({
           'projectid': int.tryParse(widget.projectId),
           'filetype': fileType,
-          'version': 1,
+          'version': fileType == "MS" ? widget.msVersion : widget.raVersion,
         }),
       );
 
@@ -104,7 +102,7 @@ class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
         ),
         const SizedBox(height: 5),
         Text(
-          formattedDateTime,
+          "Version :" + (fileType == "MS" ? widget.msVersion : widget.raVersion).toString(),
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
