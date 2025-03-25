@@ -11,6 +11,9 @@ import '../web_common/comment_popup.dart';
 import 'msra_generation_screen.dart';
 import '../web_common/step_label.dart';
 import 'project_screen.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 
 /// ---------------------------------------------------------------------------
 ///  A small data class to hold both the file bytes and the name
@@ -371,29 +374,78 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
   }
 
   /// 5) Get a signed URL for the attachment
-  Future<String?> fetchAttachmentUrl(int taskid) async {
+  Future<Uint8List?> fetchAttachmentImageBytes(int taskid) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
+      // First, fetch the signed URL.
       final response = await http.get(
         Uri.parse("http://localhost:5000/project/get-blob-url?taskid=$taskid"),
         headers: {'Authorization': 'Bearer $token'},
       );
+      
+      print("Request Headers: ${response.request?.headers}");
+      print("Status Code: ${response.statusCode}");
+      print("Headers: ${response.headers}");
+      print("Body: ${response.body}");
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        // e.g. { "signedUrl": "https://<azure-sas-link>" }
-        return data['signedUrl'] as String?;
+      final raw = jsonDecode(response.body);
+      String? signedUrl;
+
+      // Handle case A: plain string
+      if (raw is String) {
+        signedUrl = raw;
+      }
+      // Handle case B: JSON object with a key
+      else if (raw is Map && raw['signedUrl'] is String) {
+        signedUrl = raw['signedUrl'] as String;
       } else {
-        print("❌ Failed to get blob URL for task $taskid");
+        print("❌ Unexpected format for signed URL: $raw");
+        return null;
+      }
+
+      // Step 2: Fetch the actual image using the signed URL
+      final imageResponse = await http.get(Uri.parse(signedUrl));
+      if (imageResponse.statusCode == 200) {
+        return imageResponse.bodyBytes;
+      } else {
+        print("❌ Failed to load image from signed URL. Status: ${imageResponse.statusCode}");
+        print("Headers: ${imageResponse.headers}");
+        print("Body: ${imageResponse.body}");
+        return null;
+      }
+        
+        // Case A: If raw is a String, it's the URL.
+        if (raw is String) {
+          signedUrl = raw;
+        }
+        // Case B: If raw is a Map with key 'signedUrl', use it.
+        else if (raw is Map && raw['signedUrl'] is String) {
+          signedUrl = raw['signedUrl'] as String;
+        } else {
+          print("❌ Unexpected JSON format: $raw");
+          return null;
+        }
+        
+        // Now fetch the image bytes from the signed URL.
+        // final imageResponse = await http.get(Uri.parse(signedUrl));
+        // if (imageResponse.statusCode == 200) {
+        //   return imageResponse.bodyBytes;
+        // } else {
+        //   throw Exception('Failed to load image from signedUrl');
+        // }
+      } else {
+        print("❌ Failed to get blob URL for task $taskid. Status: ${response.statusCode}");
         return null;
       }
     } catch (e) {
-      print("❌ Exception fetching attachment URL: $e");
+      print("❌ Exception fetching attachment image bytes: $e");
       return null;
     }
-  }
+}
+
 
   // Example of switching tabs, if your app uses them
   void _onTabSelected(int index) {
@@ -591,8 +643,9 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
                   if (hasAttachment)
                     OutlinedButton(
                       onPressed: () async {
-                        final signedUrl = await fetchAttachmentUrl(data['taskid']);
-                        if (signedUrl == null) {
+                        final imageBytes = await fetchAttachmentImageBytes(data['taskid']);
+                        print("image $imageBytes");
+                        if (imageBytes == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text("No attachment found or error retrieving."),
@@ -607,7 +660,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
                             content: SizedBox(
                               width: 400,
                               height: 400,
-                              child: Image.network(signedUrl, fit: BoxFit.contain),
+                              child: Image.memory(imageBytes),
                             ),
                             actions: [
                               TextButton(
