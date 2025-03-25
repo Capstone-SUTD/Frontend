@@ -48,7 +48,7 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
 
     // Ensure at least one row exists
     if (selectedStakeholders.isEmpty) {
-      selectedStakeholders.add({"userId": "", "role": ""});
+      selectedStakeholders.add({"userId": "", "role": "", "name":""});
     }
   }
 
@@ -61,9 +61,8 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
     super.dispose();
   }
 
-  // Fetch Stakeholders from API
   Future<void> _fetchStakeholders() async {
-    try {
+  try {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
 
@@ -86,6 +85,11 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
           "userId": s["userid"].toString(),
           "name": s["username"].toString(),
         }).toList();
+        
+        // Ensure the list isn't empty before trying to populate it
+        if (selectedStakeholders.isEmpty) {
+          selectedStakeholders.add({"userId": "", "role": "", "name": ""});
+        }
       });
     } else {
       throw Exception("Failed to load stakeholders");
@@ -93,7 +97,42 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
   } catch (e) {
     print("Error fetching stakeholders: $e");
   }
-  }
+}
+
+
+  // // Fetch Stakeholders from API
+  // Future<void> _fetchStakeholders() async {
+  //   try {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   final token = prefs.getString('auth_token');
+
+  //   if (token == null) {
+  //     throw Exception("Token not found");
+  //   }
+
+  //   final response = await http.get(
+  //     Uri.parse('http://localhost:5000/project/stakeholders'),
+  //     headers: {
+  //       'Authorization': 'Bearer $token',
+  //       'Content-Type': 'application/json', // optional but recommended
+  //     },
+  //   );
+
+  //   if (response.statusCode == 200) {
+  //     List<dynamic> data = json.decode(response.body);
+  //     setState(() {
+  //       stakeholdersList = data.map((s) => {
+  //         "userId": s["userid"].toString(),
+  //         "name": s["username"].toString(),
+  //       }).toList();
+  //     });
+  //   } else {
+  //     throw Exception("Failed to load stakeholders");
+  //   }
+  // } catch (e) {
+  //   print("Error fetching stakeholders: $e");
+  // }
+  // }
 
   // Check if a Role is Already Assigned
   bool _isRoleSelectedElsewhere(String role, int currentIndex) {
@@ -104,7 +143,7 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
   // Add a New Stakeholder Row
   void _addStakeholder() {
     setState(() {
-      selectedStakeholders.add({"userId": "", "role": ""});
+      selectedStakeholders.add({"userId": "", "role": "", "name":""});
     });
   }
 
@@ -181,26 +220,52 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
                 child: Row(
                   children: [
                     // Stakeholder Dropdown (Searchable)
+                    // Expanded(
+                    //   flex: 4,
+                    //   child: DropdownButtonFormField<String>(
+                    //     decoration: const InputDecoration(
+                    //       labelText: "Select Stakeholder",
+                    //       border: OutlineInputBorder(),
+                    //     ),
+                    //     items: stakeholdersList.map((s) {
+                    //       return DropdownMenuItem(value: s["userId"], child: Text(s["name"]!));
+                    //     }).toList(),
+                    //     value: selectedStakeholders[index]["userId"]!.isNotEmpty
+                    //         ? selectedStakeholders[index]["userId"]
+                    //         : null,
+                    //     onChanged: (value) {
+                    //       setState(() {
+                    //         selectedStakeholders[index]["userId"] = value!;
+                    //       });
+                    //     },
+                    //   ),
+                    // ),
                     Expanded(
-                      flex: 4,
-                      child: DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: "Select Stakeholder",
-                          border: OutlineInputBorder(),
-                        ),
-                        items: stakeholdersList.map((s) {
-                          return DropdownMenuItem(value: s["userId"], child: Text(s["name"]!));
-                        }).toList(),
-                        value: selectedStakeholders[index]["userId"]!.isNotEmpty
-                            ? selectedStakeholders[index]["userId"]
-                            : null,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedStakeholders[index]["userId"] = value!;
-                          });
-                        },
-                      ),
-                    ),
+  flex: 4,
+  child: DropdownButtonFormField<String>(
+    decoration: const InputDecoration(
+      labelText: "Select Stakeholder",
+      border: OutlineInputBorder(),
+    ),
+    items: stakeholdersList.map((s) {
+      return DropdownMenuItem(
+        value: s["userId"], 
+        child: Text(s["name"]!),  // Ensure the name is used here
+      );
+    }).toList(),
+    value: selectedStakeholders[index]["userId"]!.isNotEmpty
+        ? selectedStakeholders[index]["userId"]
+        : null,
+    onChanged: (value) {
+      setState(() {
+        selectedStakeholders[index]["userId"] = value!;
+        // Ensure to set the correct name when a stakeholder is selected
+        final selectedStakeholder = stakeholdersList.firstWhere((s) => s["userId"] == value);
+        selectedStakeholders[index]["name"] = selectedStakeholder["name"]!;
+      });
+    },
+  ),
+),
                     const SizedBox(width: 10),
 
                     // Role Dropdown
@@ -304,21 +369,37 @@ Widget _buildHeaderCell(String title) {
     );
   }
 
-  // Expose values to parent using GlobalKey
-  // List<Map<String, String>> getSelectedStakeholders() => selectedStakeholders;
-  List<Map<String, dynamic>> getSelectedStakeholders() {
-    return selectedStakeholders.map((s) {
-      final rawUserId = s["userId"];
-      final parsedUserId = int.tryParse(rawUserId ?? '') ?? -1;
+  List<Stakeholder> getSelectedStakeholders() {
+  return selectedStakeholders.map((s) {
+    final rawUserId = s["userId"];
+    final parsedUserId = int.tryParse(rawUserId ?? '') ?? -1;
 
-      print("Final userId to send: $parsedUserId, type: ${parsedUserId.runtimeType}");
+    print("Final userId to send: $parsedUserId, type: ${parsedUserId.runtimeType}");
 
-      return {
-        "userId": parsedUserId,
-        "role": s["role"] ?? "",
-      };
-    }).toList();
-  }
+    return Stakeholder(
+      userId: parsedUserId,
+      role: s["role"] ?? "",
+      name: s["name"] ?? "",  // Ensure name is returned
+    );
+  }).toList();
+}
+
+
+//   // Expose values to parent using GlobalKey
+//   List<Stakeholder> getSelectedStakeholders() {
+//   return selectedStakeholders.map((s) {
+//     final rawUserId = s["userId"];
+//     final parsedUserId = int.tryParse(rawUserId?.toString() ?? '') ?? -1;
+
+//     print("Final userId to send: $parsedUserId, type: ${parsedUserId.runtimeType}");
+
+//     return Stakeholder(
+//       userId: parsedUserId,
+//       role: s["role"] ?? "",
+//     );
+//   }).toList();
+// }
+
   String getProjectName() => _nameController.text;
   String getClient() => _clientController.text;
   String getEmailSubjectHeader() => _emailController.text;

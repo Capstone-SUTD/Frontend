@@ -74,7 +74,6 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
 
       if (response.statusCode == 200) {
         setState(() {
-          _pendingApprovals[0]["approved"] = true;
           widget.approvalStage += 1;
         });
       } else {

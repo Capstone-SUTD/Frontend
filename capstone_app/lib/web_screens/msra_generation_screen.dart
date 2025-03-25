@@ -155,7 +155,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
             ),
             const SizedBox(height: 20),
             const Divider(),
-            if (_project?.msra == true) ...[
+            if (_msVersions > 0 || _raVersions > 0) ...[
               DownloadMSRAWidget(
                 projectId: _project?.projectId ?? "",
                 msVersion: _msVersions,
