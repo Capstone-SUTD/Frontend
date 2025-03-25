@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'msra_generation_screen.dart';
 import '../web_common/project_tab_widget.dart';
 import '../web_common/project_stepper_widget.dart';
 import '../web_common/attachment_popup.dart';
 import '../web_common/comment_popup.dart';
+import 'msra_generation_screen.dart';
 import '../web_common/step_label.dart';
 
 /// ---------------------------------------------------------------------------
@@ -154,11 +154,7 @@ class _CommentPopupState extends State<CommentPopup> {
 /// ---------------------------------------------------------------------------
 class OnsiteChecklistScreen extends StatefulWidget {
   final dynamic project;
-
-  const OnsiteChecklistScreen({
-    Key? key,
-    required this.project,
-  }) : super(key: key);
+  const OnsiteChecklistScreen({Key? key, required this.project}) : super(key: key);
 
   @override
   _OnsiteChecklistScreenState createState() => _OnsiteChecklistScreenState();
@@ -166,15 +162,31 @@ class OnsiteChecklistScreen extends StatefulWidget {
 
 class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
   late dynamic _project;
+  late int _currentStep;
 
   Map<String, bool> expandedSections = {};
   Map<String, dynamic> checklistData = {};
   bool isLoading = true;
 
+  // Adapt to your actual step labels, or remove if not used
+  final List<String> stepLabels = [
+    'seller', 'customs', 'loading', 'carrier',
+    'cargo terminal', 'port', 'transport',
+    'port2', 'cargo terminal2', 'carrier2',
+    'customs2', 'unloading', 'buyer'
+  ];
+
   @override
   void initState() {
     super.initState();
     _project = widget.project;
+
+    final stage = _project?.stage?.toString().toLowerCase();
+    _currentStep = stage != null && stepLabels.contains(stage)
+        ? stepLabels.indexOf(stage)
+        : 0;
+
+    fetchChecklistData();
   }
 
   /// 1) Fetch your entire onsite checklist
@@ -369,15 +381,9 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
       );
 
       if (response.statusCode == 200) {
-        // If response.body is a plain string, just return it directly:
-        final url = jsonDecode(response.body);
-        // If url is a String, return it; otherwise, if it's wrapped in an object, extract it:
-        if (url is String) {
-          return url;
-        } else if (url is Map && url.containsKey('signedUrl')) {
-          return url['signedUrl'] as String?;
-        }
-        return null;
+        final data = jsonDecode(response.body);
+        // e.g. { "signedUrl": "https://<azure-sas-link>" }
+        return data['signedUrl'] as String?;
       } else {
         print("❌ Failed to get blob URL for task $taskid");
         return null;
@@ -390,6 +396,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
 
   // Example of switching tabs, if your app uses them
   void _onTabSelected(int index) {
+    // example only; do what your real app needs
     if (index == 1) {
       Navigator.pushReplacement(
         context,
@@ -410,22 +417,15 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
           children: [
             ProjectTabWidget(
               selectedTabIndex: 2,
-              onTabSelected: _onTabSelected
+              onTabSelected: _onTabSelected,
             ),
             const SizedBox(height: 20),
             ProjectStepperWidget(
               currentStage: _project.stage,
               projectId: _project.projectId,
-              onStepTapped: (newIndex) {
-                // optional
-              },
-              onStageUpdated: (newStage) {
-                setState(() {
-                  _project.stage = newStage; // direct local update
-                });
-              },
+              onStepTapped: (_) {},
             ),
-            const SizedBox(height: 20),
+            
             const Divider(),
             const Align(
               alignment: Alignment.centerLeft,
@@ -624,10 +624,3 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
     );
   }
 }
-
-
-
-
-
-
-
