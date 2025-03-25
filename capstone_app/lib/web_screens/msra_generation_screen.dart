@@ -10,7 +10,7 @@ import 'onsite_checklist_screen.dart';
 import 'project_screen.dart';
 
 class MSRAGenerationScreen extends StatefulWidget {
-  final dynamic project;
+  final dynamic project; // ideally use a Project type if available
   const MSRAGenerationScreen({Key? key, required this.project}) : super(key: key);
 
   @override
@@ -22,6 +22,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
   int _currentStep = 0;
   int _approvalStage = 0;
   late dynamic _project;
+  late String _currentStage; // Local variable to hold the current stage
   List<Map<String, dynamic>> _rejectionList = []; // To store rejection details
   int _msVersions = 0; // To store MSVersions
   int _raVersions = 0; // To store RAVersions
@@ -119,13 +120,6 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
         MaterialPageRoute(builder: (context) => OnsiteChecklistScreen(project: _project)),
       );
     }
-    if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => ProjectScreen(projectId: _project?.projectId))
-      );
-
-    }
   }
 
   void _showErrorSnackbar(String message) {
@@ -141,16 +135,19 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // **Project Tab Widget (Switch Between Tabs)**
             ProjectTabWidget(
               selectedTabIndex: 1,
               onTabSelected: _onTabSelected,
             ),
             const SizedBox(height: 20),
+
+            // **Stepper Widget**
             ProjectStepperWidget(
-              currentStage: _project.stage ?? 'Seller',
+              currentStage: _project.stage,
               projectId: _project.projectId,
               onStepTapped: (newIndex) {
-                
+                // Optional logic when a step is tappedr
               },
             ),
             const SizedBox(height: 20),
@@ -196,7 +193,9 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
   Widget _buildApprovalTab(String label, int index) {
     bool isSelected = _selectedApprovalTab == index;
     return GestureDetector(
-      onTap: () => _onApprovalTabSelected(index),
+      onTap: () {
+        setState(() => _selectedApprovalTab = index);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         decoration: BoxDecoration(
@@ -218,3 +217,9 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
     );
   }
 }
+
+
+
+
+
+

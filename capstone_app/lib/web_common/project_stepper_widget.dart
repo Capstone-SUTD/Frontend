@@ -5,15 +5,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'step_label.dart';
 
 class ProjectStepperWidget extends StatefulWidget {
-  final String currentStage;
   final Function(int) onStepTapped;
   final dynamic projectId;
+  final String? currentStage;
+
+  // 1) New callback to notify parent about updated stage
+  final Function(String newStage)? onStageUpdated;
 
   const ProjectStepperWidget({
     Key? key,
+    required this.projectId,
     required this.currentStage,
     required this.onStepTapped,
-    required this.projectId,
+    this.onStageUpdated, // <-- optional
   }) : super(key: key);
 
   @override
@@ -22,17 +26,19 @@ class ProjectStepperWidget extends StatefulWidget {
 
 class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
   late int _selectedStep;
-
   final List<String> _stepLabels = kStepLabels;
 
   @override
   void initState() {
     super.initState();
-    final stage = widget.currentStage.toLowerCase();
-    _selectedStep = kStepLabels.indexWhere(
-      (label) => label.toLowerCase() == stage,
-    );
-    if (_selectedStep == -1) _selectedStep = 0;
+    _selectedStep = _getStepIndex(widget.currentStage);
+  }
+
+  int _getStepIndex(String? stage) {
+    if (stage == null) return 0;
+    final index = _stepLabels.indexWhere(
+        (label) => label.toLowerCase() == stage.toLowerCase());
+    return index >= 0 ? index : 0;
   }
 
   void _onStepTapped(int index) async {
@@ -40,7 +46,6 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
       _selectedStep = index;
     });
 
-    // Get the step label as stage (e.g., "Seller", "Customs", etc.)
     final String stage = _stepLabels[index];
 
     try {
@@ -63,6 +68,11 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
 
       if (response.statusCode == 200) {
         print("Stage updated to: $stage");
+
+        // 2) Call parent callback to update the parent's _project.stage
+        if (widget.onStageUpdated != null) {
+          widget.onStageUpdated!(stage);
+        }
       } else {
         print("Failed to update stage: ${response.body}");
         ScaffoldMessenger.of(context).showSnackBar(
@@ -72,13 +82,13 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
     } catch (e) {
       print("Error updating stage: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error updating stage")),
+        const SnackBar(content: Text("Error updating stage")),
       );
     }
 
-    widget.onStepTapped(index); // Notify parent
+    // Notify parent if they need to do something else
+    widget.onStepTapped(index);
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -92,11 +102,10 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Step Circles & Connector Line
             Stack(
               alignment: Alignment.center,
               children: [
-                // Connector Line
+                // The horizontal line behind the step circles
                 Positioned(
                   top: 15,
                   left: 0,
@@ -113,8 +122,7 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
                     }),
                   ),
                 ),
-
-                // Step Circles
+                // The actual step circles and labels
                 Row(
                   children: List.generate(_stepLabels.length, (index) {
                     bool isCompleted = index <= _selectedStep;
@@ -158,6 +166,8 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
     );
   }
 }
+
+
 
 
 

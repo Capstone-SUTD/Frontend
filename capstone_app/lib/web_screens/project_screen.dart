@@ -14,6 +14,7 @@ import 'dart:html' as html;
 import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../web_common/step_label.dart';
 
 class ProjectScreen extends StatefulWidget {
   final String? projectId;
@@ -33,6 +34,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
   bool showChecklist = false;
   bool isGenerateMSRAEnabled = false;
   int selectedTabIndex = 0;
+  int currentStep = 0;
   List<String> resultsOOG = [];
 
   final GlobalKey<ProjectFormWidgetState> _formKey = GlobalKey<ProjectFormWidgetState>();
@@ -71,6 +73,12 @@ class _ProjectScreenState extends State<ProjectScreen> {
       if (foundProject.projectId.isNotEmpty) {
         setState(() {
           _project = foundProject;
+          if (_project!.stage != null && _project!.stage!.isNotEmpty) {
+            final stageLabel = _project!.stage!.toLowerCase();
+            final index = kStepLabels.indexWhere((label) => label.toLowerCase() == stageLabel);
+            currentStep = index >= 0 ? index : 0;
+          }
+
           isNewProject = false;
           isOOG = true;
           hasRun = isOOG;
@@ -279,6 +287,27 @@ class _ProjectScreenState extends State<ProjectScreen> {
       );
     }
   }
+
+  Future<Project?> fetchProjectById(String projectId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    final response = await http.get(
+      Uri.parse('http://localhost:5000/project/list'),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      final projectJson = data.firstWhere((p) => p['projectid'].toString() == projectId, orElse: () => null);
+      return projectJson != null ? Project.fromJson(projectJson) : null;
+    }
+
+    return null;
+  }
+
 
   void onTabSelected(int index) {
     setState(() {
