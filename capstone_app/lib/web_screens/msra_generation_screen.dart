@@ -113,6 +113,17 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
     });
   }
 
+    void _handleVersionIncrease(String fileType) {
+    setState(() {
+      if (fileType == "MS") {
+        _msVersions++;
+      } else if (fileType == "RA") {
+        _raVersions++;
+      }
+    });
+  }
+
+
   void _onTabSelected(int index) {
     if (index == 2) {
       Navigator.pushReplacement(
@@ -124,6 +135,12 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
 
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _updateApprovalStage(int newStage) {
+    setState(() {
+      _approvalStage = newStage;
+    });
   }
 
   @override
@@ -177,6 +194,8 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
                   stakeholders: _project.stakeholders,
                   projectid: int.parse(_project.projectId.toString()),
                   rejectionList: _rejectionList,
+                  onApprovalStageChange: _updateApprovalStage,
+                  onVersionIncrease: _handleVersionIncrease,
                 ),
               ),
             ] else ...[
