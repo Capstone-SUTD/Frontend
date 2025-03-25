@@ -11,7 +11,9 @@ class ApprovalListWidget extends StatefulWidget {
   int approvalStage;
   final List<Stakeholder> stakeholders;
   final int projectid;
-  final List<Map<String, dynamic>> rejectionList; // Rejection list prop
+  final List<Map<String, dynamic>> rejectionList;
+  final Function(int) onApprovalStageChange;
+  final Function(String) onVersionIncrease;
 
   ApprovalListWidget({
     super.key,
@@ -20,6 +22,8 @@ class ApprovalListWidget extends StatefulWidget {
     required this.stakeholders,
     required this.projectid,
     required this.rejectionList, // Initialize rejectionList prop
+    required this.onApprovalStageChange,
+    required this.onVersionIncrease,
   });
 
   @override
@@ -73,9 +77,7 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
       );
 
       if (response.statusCode == 200) {
-        setState(() {
-          widget.approvalStage += 1;
-        });
+        widget.onApprovalStageChange(widget.approvalStage + 1);
       } else {
         var responseData = jsonDecode(response.body);
         String errorMessage = responseData['error'] ?? 'Unknown error';
@@ -282,6 +284,9 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("File uploaded successfully.")),
             );
+            if (filetype.isNotEmpty) {
+              widget.onVersionIncrease(filetype);
+            }
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text("Error: ${request.status} - ${request.responseText}")),
