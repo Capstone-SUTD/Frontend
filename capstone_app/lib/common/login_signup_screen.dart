@@ -3,6 +3,7 @@ import 'package:capstone_app/mobile_screens/dashboard_screen.dart';
 import 'package:capstone_app/web_screens/all_project_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:capstone_app/common/sign_up.dart'; // Or wherever your SignUpScreen is located
 
 class LoginSignUpScreen extends StatefulWidget {
@@ -61,7 +62,7 @@ class _LoginSignUpScreenState extends State<LoginSignUpScreen> {
       await prefs.setInt(
           'token_expiry', DateTime.now().millisecondsSinceEpoch + (24 * 60 * 60 * 1000)); // 1 day
 
-      if (!mounted) return;
+      // if (!mounted) return;
 
       _showSuccessBanner();
 
@@ -69,7 +70,7 @@ class _LoginSignUpScreenState extends State<LoginSignUpScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const AllProjectsScreen()),
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
         );
       });
     } else {
