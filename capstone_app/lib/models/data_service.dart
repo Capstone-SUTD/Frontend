@@ -1,28 +1,34 @@
 import 'dart:convert';
-import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'project_model.dart';
 
 class DataService {
   static Future<List<Project>> getProjects() async {
-    final String response = await rootBundle.loadString('assets/data.json');
-    final List<dynamic> jsonData = json.decode(response);
-    return jsonData.map((item) => Project.fromJson(item)).toList();
-  }
-}
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token'); 
 
-/* When linking to Azure SQL
-
-class DataService {
-  static Future<List<Project>> getProjects() async {
-    final response = await http.get(Uri.parse('https://your-api-endpoint/projects'));
+    final response = await http.get(
+      Uri.parse('http://localhost:5000/project/list'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
 
     if (response.statusCode == 200) {
-      List<dynamic> jsonData = json.decode(response.body);
-      return jsonData.map((item) => Project.fromJson(item)).toList();
+      final decoded = jsonDecode(response.body);
+      print("API raw response: ${response.body}");
+
+      if (decoded is List) {
+        return decoded.map((item) => Project.fromJson(item)).toList();
+      } else {
+        print("Expected List but got: $decoded");
+        return [];
+      }
     } else {
-      throw Exception('Failed to load projects');
+      throw Exception('Failed to load projects: ${response.statusCode}');
     }
   }
 }
 
-*/

@@ -1,28 +1,36 @@
 import 'package:flutter/material.dart';
-import 'package:capstone_app/web_screens/msra_generation_screen.dart';
+import '../models/project_model.dart';
 
 class WorkScopeWidget extends StatefulWidget {
   final bool isNewProject;
+  final List<Scope>? workScopeList;
 
-  const WorkScopeWidget({
-    Key? key,
-    required this.isNewProject,
-  }) : super(key: key);
+  const WorkScopeWidget({Key? key, required this.isNewProject, this.workScopeList}) : super(key: key);
 
   @override
-  _WorkScopeWidgetState createState() => _WorkScopeWidgetState();
+  WorkScopeWidgetState createState() => WorkScopeWidgetState();
 }
 
-class _WorkScopeWidgetState extends State<WorkScopeWidget> {
+class WorkScopeWidgetState extends State<WorkScopeWidget> {
   List<Map<String, String>> _workScopeList = [];
+  final List<String> _scopeOptions = ["Lifting", "Transportation"];
+  bool get isReadOnly => widget.workScopeList != null && widget.workScopeList!.isNotEmpty;
 
-  final List<String> _scopeOptions = ["Lifting", "Lashing", "Transportation"];
+  List<Map<String, String>> getWorkScopeData() => _workScopeList;
 
   @override
   void initState() {
     super.initState();
-    // Default to one row if it's a new project
-    if (widget.isNewProject) {
+    if (widget.workScopeList != null && widget.workScopeList!.isNotEmpty) {
+      _workScopeList = widget.workScopeList!
+          .map((scope) => {
+                "startDestination": scope.startdestination,
+                "endDestination": scope.enddestination,
+                "scope": scope.scope,
+                "equipmentList": scope.equipmentList
+              })
+          .toList();
+    } else if (widget.isNewProject) {
       _workScopeList = [
         {"startDestination": "", "endDestination": "", "scope": "", "equipmentList": ""}
       ];
@@ -52,7 +60,7 @@ class _WorkScopeWidgetState extends State<WorkScopeWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // **Work Scope Details Header with Add Row Button**
+        // Work Scope Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -60,24 +68,32 @@ class _WorkScopeWidgetState extends State<WorkScopeWidget> {
               "Work Scope Details",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            ElevatedButton.icon(
-              onPressed: _addRow,
-              icon: const Icon(Icons.add),
-              label: const Text("Add Row"),
-            ),
+            if (!isReadOnly)
+              ElevatedButton.icon(
+                onPressed: _addRow,
+                icon: const Icon(Icons.add),
+                label: const Text("Add Row"),
+              ),
           ],
         ),
         const SizedBox(height: 8),
 
         Table(
           border: TableBorder.all(color: Colors.grey),
-          columnWidths: const {
-            0: FlexColumnWidth(3),
-            1: FlexColumnWidth(3),
-            2: FlexColumnWidth(2),
-            3: FlexColumnWidth(3),
-            4: FlexColumnWidth(1), // Action column
-          },
+          columnWidths: isReadOnly
+              ? {
+                  0: FlexColumnWidth(3),
+                  1: FlexColumnWidth(3),
+                  2: FlexColumnWidth(2),
+                  3: FlexColumnWidth(3),
+                }
+              : {
+                  0: FlexColumnWidth(3),
+                  1: FlexColumnWidth(3),
+                  2: FlexColumnWidth(2),
+                  3: FlexColumnWidth(3),
+                  4: FlexColumnWidth(1),
+                },
           children: [
             // Table Header
             TableRow(
@@ -86,8 +102,8 @@ class _WorkScopeWidgetState extends State<WorkScopeWidget> {
                 _buildHeaderCell("Start Destination"),
                 _buildHeaderCell("End Destination"),
                 _buildHeaderCell("Scope"),
-                _buildHeaderCell("Equipment List"),
-                _buildHeaderCell("Action"),
+                _buildHeaderCell("Equipment"),
+                if (!isReadOnly) _buildHeaderCell("Action"),
               ],
             ),
 
@@ -98,8 +114,8 @@ class _WorkScopeWidgetState extends State<WorkScopeWidget> {
                   _buildTableCell(i, "startDestination"),
                   _buildTableCell(i, "endDestination"),
                   _buildDropdownCell(i),
-                  _buildTableCell(i, "equipmentList"),
-                  i == 0 ? _buildEmptyActionCell() : _buildActionCell(i), // Empty action for first row
+                  _buildEquipmentCell(i),
+                  if (!isReadOnly) (i == 0 ? _buildEmptyActionCell() : _buildActionCell(i)),
                 ],
               ),
           ],
@@ -109,7 +125,6 @@ class _WorkScopeWidgetState extends State<WorkScopeWidget> {
     );
   }
 
-  // ✅ **Header Cell Builder**
   Widget _buildHeaderCell(String title) {
     return TableCell(
       child: Padding(
@@ -123,39 +138,85 @@ class _WorkScopeWidgetState extends State<WorkScopeWidget> {
     );
   }
 
-  // ✅ **Table Cell Builder for Editable Text Fields**
   Widget _buildTableCell(int index, String key) {
     return TableCell(
       child: Padding(
         padding: const EdgeInsets.all(8),
-        child: TextFormField(
-          initialValue: _workScopeList[index][key],
-          textAlign: TextAlign.center,
-          onChanged: (value) => _updateWorkScope(index, key, value),
-          decoration: const InputDecoration(border: InputBorder.none),
-        ),
+        child: isReadOnly
+            ? Text(_workScopeList[index][key] ?? "", textAlign: TextAlign.center)
+            : TextFormField(
+                initialValue: _workScopeList[index][key],
+                textAlign: TextAlign.center,
+                onChanged: (value) => _updateWorkScope(index, key, value),
+                decoration: const InputDecoration(border: InputBorder.none),
+              ),
       ),
     );
   }
 
-  // ✅ **Dropdown Cell for Scope**
   Widget _buildDropdownCell(int index) {
     return TableCell(
       child: Padding(
         padding: const EdgeInsets.all(8),
-        child: DropdownButtonFormField<String>(
-          value: _workScopeList[index]["scope"]!.isNotEmpty ? _workScopeList[index]["scope"] : null,
-          items: _scopeOptions.map((option) {
-            return DropdownMenuItem(value: option, child: Text(option));
-          }).toList(),
-          onChanged: (value) => _updateWorkScope(index, "scope", value!),
-          decoration: const InputDecoration(border: InputBorder.none),
-        ),
+        child: isReadOnly
+            ? Text(_workScopeList[index]["scope"] ?? "", textAlign: TextAlign.center)
+            : DropdownButtonFormField<String>(
+                value: _workScopeList[index]["scope"]!.isNotEmpty ? _workScopeList[index]["scope"] : null,
+                items: _scopeOptions.map((option) {
+                  return DropdownMenuItem(value: option, child: Text(option));
+                }).toList(),
+                onChanged: (value) => _updateWorkScope(index, "scope", value!),
+                decoration: const InputDecoration(border: InputBorder.none),
+              ),
       ),
     );
   }
 
-  // ✅ **Action Cell with Remove Button**
+  Widget _buildEquipmentCell(int index) {
+    String equipmentValue = _workScopeList[index]["equipmentList"] ?? "";
+
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: isReadOnly
+            ? Text(equipmentValue, textAlign: TextAlign.center)
+            : _workScopeList[index]["scope"] == "Lifting"
+                ? TextFormField(
+                    textAlign: TextAlign.center,
+                    onChanged: (value) {
+                      _updateWorkScope(index, "equipmentList", "$value ton crane");
+                    },
+                    decoration: const InputDecoration(
+                      labelText: "Enter Crane Threshold (Tons)",
+                      border: InputBorder.none,
+                    ),
+                  )
+                : _workScopeList[index]["scope"] == "Transportation"
+                    ? TextFormField(
+                        textAlign: TextAlign.center,
+                        onChanged: (value) {
+                          _updateWorkScope(index, "equipmentList", "$value trailer");
+                        },
+                        decoration: const InputDecoration(
+                          labelText: "Enter Trailer",
+                          border: InputBorder.none,
+                        ),
+                      )
+                    : TextFormField(
+                        initialValue: equipmentValue,
+                        textAlign: TextAlign.center,
+                        onChanged: (value) {
+                          _updateWorkScope(index, "equipmentList", value);
+                        },
+                        decoration: const InputDecoration(
+                          labelText: "",
+                          border: InputBorder.none,
+                        ),
+                      ),
+      ),
+    );
+  }
+
   Widget _buildActionCell(int index) {
     return TableCell(
       verticalAlignment: TableCellVerticalAlignment.middle,
@@ -168,7 +229,6 @@ class _WorkScopeWidgetState extends State<WorkScopeWidget> {
     );
   }
 
-  // ✅ **Empty Action Cell for First Row**
   Widget _buildEmptyActionCell() {
     return const TableCell(
       verticalAlignment: TableCellVerticalAlignment.middle,
@@ -176,5 +236,3 @@ class _WorkScopeWidgetState extends State<WorkScopeWidget> {
     );
   }
 }
-
-

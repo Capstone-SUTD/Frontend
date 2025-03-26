@@ -1,6 +1,8 @@
 import 'package:capstone_app/mobile_screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'login_signup_screen.dart';
+import 'package:dio/dio.dart';
 
 class SignUpScreen extends StatefulWidget {
   @override
@@ -12,75 +14,95 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _roleController = TextEditingController();
 
-Future<void> _register(BuildContext context) async {
-    if (_usernameController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
+  Future<void> _register(BuildContext context) async {
+  
+    final username = _usernameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-      // Store token for 1 day
-      await prefs.setString('auth_token', 'dummy_token');
-      await prefs.setInt(
-          'token_expiry', DateTime.now().millisecondsSinceEpoch + (24 * 60 * 60 * 1000));
-
-      // Show success banner
-      ScaffoldMessenger.of(context).showMaterialBanner(
-        MaterialBanner(
-          content: Text(
-            'Successful!',
-            style: TextStyle(fontSize: 18, color: Colors.white),
-          ),
-          backgroundColor: Colors.green,
-          leading: Icon(Icons.check_circle, color: Colors.white),
-          margin: EdgeInsets.all(10),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.close, color: Colors.white),
-              onPressed: () {
-          ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-              },
-            ),
-          ],
-        ),
+    if (email.isEmpty || password.isEmpty) {
+      _showErrorBanner("Email and password cannot be empty.");
+      return;
+    }
+    try {
+      Dio dio = Dio();
+      final response = await dio.post(
+        'http://localhost:5000/auth/register',
+        data: {
+          'username' : username,
+          'email': email,
+          'password': password,
+        },
       );
 
-      // Auto-dismiss the banner and navigate to the dashboard
-      Future.delayed(Duration(seconds: 2), () {
-        ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+      if (response.statusCode == 201) {
 
-        if (mounted) { // Ensure the widget is still mounted before navigating
+        _showSuccessBanner();
+
+        Future.delayed(const Duration(seconds: 2), () {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => DashboardScreen()),
+            MaterialPageRoute(builder: (context) => const LoginSignUpScreen()),
           );
-        }
-      });
-    } else {
-      // Show login failed banner
-      ScaffoldMessenger.of(context).showMaterialBanner(
-        MaterialBanner(
-          content: Text(
-            'Login Failed!',
-            style: TextStyle(fontSize: 18, color: Colors.white),
-          ),
-          backgroundColor: Colors.red,
-          margin: EdgeInsets.all(10),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.close, color: Colors.white),
-              onPressed: () {
-          ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-              },
-            ),
-          ],
-        ),
-      );
-
-      // Auto-dismiss the failure banner
-      Future.delayed(Duration(seconds: 2), () {
-        ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-      });
+        });
+      } else {
+        _showErrorBanner("Login failed. Please check your credentials.");
+      }
+    } catch (e) {
+      print("Login error: $e");
+      _showErrorBanner("An error occurred. Please try again.");
     }
   }
+
+  void _showSuccessBanner() {
+  ScaffoldMessenger.of(context).showMaterialBanner(
+    MaterialBanner(
+      content: const Text(
+        'Signup Successful!',
+        style: TextStyle(fontSize: 18, color: Colors.white),
+      ),
+      backgroundColor: Colors.green,
+      leading: const Icon(Icons.check_circle, color: Colors.white),
+      margin: const EdgeInsets.all(10),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+void _showErrorBanner(String message) {
+  ScaffoldMessenger.of(context).showMaterialBanner(
+    MaterialBanner(
+      content: Text(
+        message,
+        style: const TextStyle(fontSize: 18, color: Colors.white),
+      ),
+      backgroundColor: Colors.red,
+      margin: const EdgeInsets.all(10),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+          },
+        ),
+      ],
+    ),
+  );
+
+  Future.delayed(const Duration(seconds: 2), () {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+  });
+}  
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +117,7 @@ Future<void> _register(BuildContext context) async {
           child: Column(
             children: <Widget>[
               TextField(
-                //controller: _usernameController,
+                controller: _usernameController,
                 decoration: InputDecoration(
                   hintText: 'Username',
                   border: OutlineInputBorder(),
@@ -103,7 +125,7 @@ Future<void> _register(BuildContext context) async {
               ),
               SizedBox(height: 20),
               TextField(
-                //controller: _emailController,
+                controller: _emailController,
                 decoration: InputDecoration(
                   hintText: 'Email',
                   border: OutlineInputBorder(),
@@ -111,21 +133,21 @@ Future<void> _register(BuildContext context) async {
               ),
               SizedBox(height: 20),
               TextField(
-                //controller: _passwordController,
+                controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
                   hintText: 'Password',
                   border: OutlineInputBorder(),
                 ),
               ),
-              SizedBox(height: 20),
-              TextField(
-                //controller: _roleController,
-                decoration: InputDecoration(
-                  hintText: 'Role',
-                  border: OutlineInputBorder(),
-                ),
-              ),
+              // SizedBox(height: 20),
+              // TextField(
+              //   controller: _roleController,
+              //   decoration: InputDecoration(
+              //     hintText: 'Role',
+              //     border: OutlineInputBorder(),
+              //   ),
+              // ),
               SizedBox(height: 40),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(

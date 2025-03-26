@@ -1,32 +1,39 @@
 import 'package:flutter/material.dart';
 
 class AttachmentPopup extends StatelessWidget {
-  const AttachmentPopup({super.key});
+  /// A callback that provides the selected file path back to the caller.
+  final ValueChanged<String> onAttach;
+
+  const AttachmentPopup({
+    Key? key,
+    required this.onAttach,  // Mark it required so it must be provided
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Attachments"),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.cloud_upload, size: 40, color: Colors.grey),
-          const SizedBox(height: 10),
-          ElevatedButton(
-            onPressed: () {},
-            child: const Text("Add Attachment"),
-          ),
-          const SizedBox(height: 10),
-          LinearProgressIndicator(value: 0.4),
-          const Text("Attachment 1.jpg - 5.7MB"),
-          LinearProgressIndicator(value: 0.4),
-          const Text("Attachment 2.jpg - 4.2MB"),
-        ],
-      ),
+      title: const Text('Attach a File'),
+      content: const Text('File selection UI goes here.'),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Discard")),
-        ElevatedButton(onPressed: () {}, child: const Text("Add")),
+        TextButton(
+          onPressed: () {
+            // Suppose you have logic to pick a file & get a path:
+            const dummyFilePath = '/path/to/chosen/file.png';
+
+            // Call the callback with the path
+            onAttach(dummyFilePath);
+
+            // This will close the dialog from the parent side, if you prefer
+            // Navigator.pop(context);
+          },
+          child: const Text('Attach'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context), 
+          child: const Text('Cancel'),
+        ),
       ],
     );
   }
 }
+
