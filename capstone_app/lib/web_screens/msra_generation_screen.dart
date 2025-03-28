@@ -6,6 +6,8 @@ import '../web_common/project_tab_widget.dart';
 import '../web_common/project_stepper_widget.dart';
 import '../web_common/download_msra_widget.dart';
 import '../web_common/approval_list_widget.dart';
+import '../web_common/feedback_close_widget.dart';
+import '../models/project_model.dart';
 import 'onsite_checklist_screen.dart';
 import 'project_screen.dart';
 
@@ -143,6 +145,46 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
     });
   }
 
+  void _closeProject(){
+
+  }
+
+Future<List<Stakeholder>> _fetchUpdatedStakeholders() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    if (token == null) {
+      throw Exception("Token not found");
+    }
+
+    final response = await http.post(
+      Uri.parse('http://localhost:5000/project/stakeholder-comments'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json', // optional but recommended
+      },
+      body: jsonEncode({
+        'projectid': int.tryParse(_project?.projectId?.toString() ?? "0") ?? 0, 
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      print(data);
+
+      _project.stakeholders = data.map((s) => Stakeholder.fromJson(s)).toList();
+
+      return _project.stakeholders;
+    } else {
+      throw Exception("Failed to load stakeholders");
+    }
+  } catch (e) {
+    print("Error API Call: $e");
+    return [];
+  }
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -177,18 +219,25 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
               ),
               const SizedBox(height: 20),
               const Divider(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildApprovalTab("Pending", 0),
-                  _buildApprovalTab("Approved", 1),
-                  _buildApprovalTab("Denied", 2),
-                  _buildApprovalTab("Reupload", 3)
-                ],
-              ),
+              if (_approvalStage != 3) // Only render the Row if approvalStage is not 3
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildApprovalTab("Pending", 0),
+                    _buildApprovalTab("Approved", 1),
+                    _buildApprovalTab("Denied", 2),
+                    _buildApprovalTab("Reupload", 3),
+                  ],
+                ),
               const SizedBox(height: 10),
               Expanded(
-                child: ApprovalListWidget(
+                child: _approvalStage == 3
+                ? FeedbackAndClose(
+                  stakeholders: _project.stakeholders,
+                  onClose: _closeProject,
+                  fetchUpdatedStakeholders: _fetchUpdatedStakeholders,
+                  projectId: _project?.projectId ?? "",)
+                : ApprovalListWidget(
                   selectedTab: _selectedApprovalTab,
                   approvalStage: _approvalStage,
                   stakeholders: _project.stakeholders,

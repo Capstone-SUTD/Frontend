@@ -78,6 +78,8 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
 
       if (response.statusCode == 200) {
         widget.onApprovalStageChange(widget.approvalStage + 1);
+        ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Approved succesfully')),);
       } else {
         var responseData = jsonDecode(response.body);
         String errorMessage = responseData['error'] ?? 'Unknown error';
@@ -239,6 +241,9 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
           };
           widget.rejectionList.add(newRejection);
           widget.selectedTab = 2;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Approved succesfully')),
+          );
         }});
       } else {
         var responseData = jsonDecode(response.body);

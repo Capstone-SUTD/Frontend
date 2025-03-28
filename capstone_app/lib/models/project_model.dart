@@ -14,7 +14,7 @@ class Project {
   final String emailsubjectheader;
   final String? stage;
   final bool? msra;
-  final List<Stakeholder> stakeholders;
+  List<Stakeholder> stakeholders;
   final List<Cargo> cargo;
   final List<Scope> scope;
 
@@ -126,12 +126,14 @@ class Stakeholder {
   final String role;
   String? name;
   String? email;
+  String? comments;
 
   Stakeholder({
     required this.userId,
     required this.role,
     this.name,
     this.email,
+    this.comments,
   });
 
   factory Stakeholder.fromJson(Map<String, dynamic> json) {
@@ -140,6 +142,7 @@ class Stakeholder {
       role: json['role'],
       name: json['name'],
       email: json['email'],
+      comments: json['comments'],
     );
   }
 
@@ -149,6 +152,7 @@ class Stakeholder {
       'role': role,
       'name' : name,
       'email' : email,
+      'comments' : comments,
     };
   }
 }
