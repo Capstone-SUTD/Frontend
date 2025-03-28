@@ -138,7 +138,7 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTextField("Project Name", _nameController),
+          _buildTextField("Project Project Name", _nameController),
           const SizedBox(height: 16),
           _buildTextField("Client", _clientController),
           const SizedBox(height: 16),
@@ -148,6 +148,203 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
           const SizedBox(height: 16),
           _buildTextField("Start Date", _startDateController, readOnly: true),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStakeholderSection() {
+    if (!widget.isNewProject && widget.project != null && widget.project!.stakeholders.isNotEmpty) {
+      return _buildStakeholderTable();
+    }
+
+    if (widget.isNewProject) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Stakeholders",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          if (_isLoadingStakeholders)
+            const Center(child: CircularProgressIndicator()),
+          if (_stakeholderError != null)
+            Text(
+              _stakeholderError!,
+              style: const TextStyle(color: Colors.red),
+            ),
+          if (!_isLoadingStakeholders && _stakeholderError == null)
+            ..._buildStakeholderInputs(),
+        ],
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildStakeholderTable() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Stakeholders",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              columns: const [
+                DataColumn(label: Text("Name")),
+                DataColumn(label: Text("Email")),
+                DataColumn(label: Text("Role")),
+              ],
+              rows: widget.project!.stakeholders.map((stakeholder) {
+                return DataRow(cells: [
+                  DataCell(Text(stakeholder.name ?? "N/A")),
+                  DataCell(Text(stakeholder.email ?? "N/A")),
+                  DataCell(Text(stakeholder.role)),
+                ]);
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildStakeholderInputs() {
+    return List.generate(selectedStakeholders.length, (index) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 4,
+              child: DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: "Select Stakeholder",
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                ),
+                items: stakeholdersList.map((s) {
+                  return DropdownMenuItem<String>(
+                    value: s["userId"],
+                    child: Text(s["name"]),
+                  );
+                }).toList(),
+                value: selectedStakeholders[index]["userId"]!.isNotEmpty
+                    ? selectedStakeholders[index]["userId"]
+                    : null,
+                onChanged: (value) {
+                  if (value != null) {
+                    final selected = stakeholdersList.firstWhere(
+                      (s) => s["userId"] == value,
+                      orElse: () => {"name": "", "email": ""},
+                    );
+                    setState(() {
+                      selectedStakeholders[index] = {
+                        "userId": value,
+                        "role": selectedStakeholders[index]["role"] ?? "",
+                        "name": selected["name"] ?? "",
+                      };
+                    });
+                  }
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select a stakeholder';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 3,
+              child: DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: "Role",
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                ),
+                items: _roleOptions.map((role) {
+                  final isDisabled = _isRoleSelectedElsewhere(role, index);
+                  return DropdownMenuItem(
+                    value: role,
+                    child: Text(
+                      role,
+                      style: TextStyle(
+                        color: isDisabled ? Colors.grey : null,
+                      ),
+                    ),
+                    enabled: !isDisabled || role == "Additional",
+                  );
+                }).toList(),
+                value: selectedStakeholders[index]["role"]!.isNotEmpty
+                    ? selectedStakeholders[index]["role"]
+                    : null,
+                onChanged: (value) {
+                  if (value != null && (!_isRoleSelectedElsewhere(value, index) || value == "Additional")) {
+                    setState(() {
+                      selectedStakeholders[index]["role"] = value;
+                    });
+                  }
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select a role';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            if (index > 0)
+              IconButton(
+                icon: const Icon(Icons.remove_circle, color: Colors.red),
+                onPressed: () => _removeStakeholder(index),
+                tooltip: 'Remove stakeholder',
+              ),
+            if (index == 0)
+              IconButton(
+                icon: const Icon(Icons.add_circle, color: Colors.blue),
+                onPressed: _addStakeholder,
+                tooltip: 'Add stakeholder',
+              ),
+          ],
+        ),
+      );
+    });
+  }
+
+/// **Reusable TextField Builder**
+Widget _buildTextField(String label, TextEditingController controller, {bool readOnly = false}) {
+  return TextField(
+    controller: controller,
+    readOnly: readOnly,
+    decoration: InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(),
+    ),
+  );
+}
+
+Widget _buildHeaderCell(String title) {
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }

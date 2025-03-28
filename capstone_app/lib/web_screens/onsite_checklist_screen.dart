@@ -4,134 +4,460 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../web_common/project_tab_widget.dart';
+import '../web_common/project_stepper_widget.dart';
+import 'msra_generation_screen.dart';
+import '../web_common/step_label.dart';
+import 'project_screen.dart';
 
-class OnsiteChecklistScreen extends StatefulWidget {
-  final dynamic project;
-  const OnsiteChecklistScreen({Key? key, required this.project}) : super(key: key);
-
-  @override
-  _OnsiteChecklistScreenState createState() => _OnsiteChecklistScreenState();
+/// File data holder for cross-platform file operations
+class PickedFileData {
+  final Uint8List bytes;
+  final String fileName;
+  PickedFileData(this.bytes, this.fileName);
 }
 
-class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
-  late dynamic _project;
-  Map<String, bool> expandedSections = {};
-  Map<String, dynamic> checklistData = {};
-  bool isLoading = true;
-  bool isUploading = false;
+/// Simplified Attachment Popup for cross-platform use
+class AttachmentPopup extends StatelessWidget {
+  final ValueChanged<PickedFileData> onAttach;
+
+  const AttachmentPopup({Key? key, required this.onAttach}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Attach File"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ElevatedButton(
+            onPressed: () async {
+              final result = await FilePicker.platform.pickFiles(
+                type: FileType.custom,
+                allowedExtensions: ['jpg', 'png', 'pdf'],
+                allowMultiple: false,
+              );
+              if (result != null && result.files.isNotEmpty) {
+                final file = result.files.first;
+                if (file.bytes != null) {
+                  onAttach(PickedFileData(file.bytes!, file.name));
+                  Navigator.pop(context);
+                }
+              }
+            },
+            child: const Text("Select File"),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
+      ],
+    );
+  }
+}
+
+/// Comment Popup - Cross Platform
+class CommentPopup extends StatefulWidget {
+  final String initialComment;
+  final ValueChanged<String> onCommentAdded;
+
+  const CommentPopup({
+    Key? key,
+    required this.initialComment,
+    required this.onCommentAdded,
+  }) : super(key: key);
+
+  @override
+  State<CommentPopup> createState() => _CommentPopupState();
+}
+
+class _CommentPopupState extends State<CommentPopup> {
+  late final TextEditingController _controller;
 
   @override
   void initState() {
     super.initState();
-    _project = widget.project;
-    fetchChecklistData();
+    _controller = TextEditingController(text: widget.initialComment);
   }
 
-  Future<void> fetchChecklistData() async {
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Add Comment"),
+      content: TextField(
+        controller: _controller,
+        maxLines: 5,
+        decoration: const InputDecoration(
+          hintText: "Enter your comment...",
+          border: OutlineInputBorder(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            widget.onCommentAdded(_controller.text);
+            Navigator.pop(context);
+          },
+          child: const Text("Save"),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+}
+
+/// Comments Conversation - Cross Platform
+class CommentsConversationPopup extends StatefulWidget {
+  final int taskId;
+  final String taskName;
+  final int projectId;
+
+  const CommentsConversationPopup({
+    Key? key,
+    required this.taskId,
+    required this.taskName,
+    required this.projectId,
+  }) : super(key: key);
+
+  @override
+  State<CommentsConversationPopup> createState() => _CommentsConversationPopupState();
+}
+
+class _CommentsConversationPopupState extends State<CommentsConversationPopup> {
+  List<Map<String, dynamic>> _comments = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadComments();
+  }
+
+  Future<void> _loadComments() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
       final response = await http.get(
-        Uri.parse(
-          "http://10.0.2.2:3000/project/get-project-checklist?projectid=${_project.projectId}"
-        ),
+        Uri.parse("http://10.0.2.2:3000/project/get-task-comments?taskid=${widget.taskId}"),
         headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = json.decode(response.body);
+        final data = jsonDecode(response.body) as List;
+        setState(() {
+          _comments = data.map((e) => e as Map<String, dynamic>).toList();
+          _isLoading = false;
+        });
+      } else {
+        throw Exception("Failed to load comments");
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error loading comments: $e")),
+      );
+      setState(() => _isLoading = false);
+    }
+  }
 
-        if (jsonData.containsKey("OnSiteFixed")) {
-          final general = jsonData["OnSiteFixed"] as Map<String, dynamic>;
-          checklistData["General"] = _parseChecklistGroup(general);
-        }
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text("Comments for ${widget.taskName}"),
+      content: SizedBox(
+        width: 600,
+        height: 400,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView.builder(
+                itemCount: _comments.length,
+                itemBuilder: (context, index) {
+                  final comment = _comments[index];
+                  return ListTile(
+                    title: Text(comment['username'] ?? 'Unknown'),
+                    subtitle: Text(comment['comments'] ?? ''),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () => _deleteComment(comment['commentid']),
+                    ),
+                  );
+                },
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Close"),
+        ),
+      ],
+    );
+  }
 
-        for (String section in ["Lifting", "Forklift", "Transportation"]) {
-          if (jsonData.containsKey(section)) {
-            final data = jsonData[section] as Map<String, dynamic>;
-            checklistData[section] = _parseChecklistGroup(data);
+  Future<void> _deleteComment(int commentId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      final response = await http.delete(
+        Uri.parse("http://10.0.2.2:3000/project/delete-task-comment?commentid=$commentId"),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        await _loadComments();
+      } else {
+        throw Exception("Failed to delete comment");
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error deleting comment: $e")),
+      );
+    }
+  }
+}
+
+/// Main Onsite Checklist Screen - Cross Platform
+class OnsiteChecklistScreen extends StatefulWidget {
+  final dynamic project;
+  const OnsiteChecklistScreen({Key? key, required this.project}) : super(key: key);
+
+  @override
+  State<OnsiteChecklistScreen> createState() => _OnsiteChecklistScreenState();
+}
+
+class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
+  late dynamic _project;
+  bool _isLoading = true;
+  final Map<String, bool> _sectionExpansionStates = {};
+  final Map<String, Map<String, dynamic>> _checklistData = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _project = widget.project;
+    _loadChecklistData();
+  }
+
+  Future<void> _loadChecklistData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      final response = await http.get(
+        Uri.parse("http://10.0.2.2:3000/project/get-project-checklist?projectid=${_project.projectId}"),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        data.forEach((section, items) {
+          _checklistData[section] = {};
+          _sectionExpansionStates[section] = false;
+          
+          if (items is Map) {
+            items.forEach((subtype, details) {
+              _checklistData[section]![subtype] = {
+                'taskid': details['taskid'],
+                'completed': details['completed'] ?? false,
+                'has_comments': details['has_comments'] ?? false,
+                'has_attachment': details['has_attachment'] ?? false,
+                'descriptions': details['descriptions'] ?? [],
+              };
+            });
           }
-        }
+        });
 
-        for (var key in checklistData.keys) {
-          expandedSections[key] = false;
-        }
-
-        setState(() => isLoading = false);
+        setState(() => _isLoading = false);
+      } else {
+        throw Exception("Failed to load checklist data");
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error loading checklist: $e")),
       );
+      setState(() => _isLoading = false);
     }
   }
 
-  Map<String, Map<String, dynamic>> _parseChecklistGroup(Map<String, dynamic> group) {
-    final result = <String, Map<String, dynamic>>{};
-    group.forEach((subtype, content) {
-      if (content is Map<String, dynamic>) {
-        result[subtype] = {
-          'taskid': content['taskid'],
-          'completed': content['completed'] ?? false,
-          'comments': content['comments'] ?? '',
-          'hasAttachment': content['attachments']?.toString().isNotEmpty ?? false,
-          'descriptions': _extractDescriptions(content),
-          'expanded': false,
-        };
-      }
-    });
-    return result;
-  }
-
-  List<String> _extractDescriptions(Map<String, dynamic> content) {
-    final descriptions = <String>[];
-    content.forEach((key, value) {
-      if (!['taskid', 'completed', 'comments', 'attachments'].contains(key)) {
-        if (value is String) descriptions.add(value);
-        else if (value is List) descriptions.addAll(value.map((v) => v.toString()));
-        else if (value is Map) descriptions.addAll(value.values.map((v) => v.toString()));
-      }
-    });
-    return descriptions;
-  }
-
-  Future<void> _updateChecklistStatus(int taskid, bool completed) async {
+  Future<void> _updateTaskStatus(int taskId, bool completed) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
-      await http.post(
+      final response = await http.post(
         Uri.parse("http://10.0.2.2:3000/project/update-checklist-completion"),
-        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-        body: jsonEncode({'taskid': taskid, 'completed': completed}),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'taskid': taskId, 'completed': completed}),
       );
+
+      if (response.statusCode != 200) {
+        throw Exception("Failed to update task status");
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to update status: $e")),
+        SnackBar(content: Text("Error updating task: $e")),
       );
     }
   }
 
-  Future<void> _updateTaskComments(int taskid, String comments) async {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Onsite Checklist"),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  ProjectTabWidget(
+                    selectedTabIndex: 2,
+                    onTabSelected: (index) {
+                      if (index == 1) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MSRAGenerationScreen(project: _project),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  ProjectStepperWidget(
+                    currentStage: _project.stage,
+                    projectId: _project.projectId,
+                    onStepTapped: (_) {},
+                  ),
+                  const SizedBox(height: 20),
+                  ..._checklistData.entries.map((entry) {
+                    final section = entry.key;
+                    final items = entry.value;
+                    return _buildChecklistSection(section, items);
+                  }).toList(),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildChecklistSection(String section, Map<String, dynamic> items) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ExpansionTile(
+        title: Text(section, style: const TextStyle(fontWeight: FontWeight.bold)),
+        initiallyExpanded: _sectionExpansionStates[section] ?? false,
+        onExpansionChanged: (expanded) {
+          setState(() {
+            _sectionExpansionStates[section] = expanded;
+          });
+        },
+        children: items.entries.map((item) {
+          final task = item.value;
+          return CheckboxListTile(
+            title: Text(item.key),
+            value: task['completed'],
+            onChanged: (value) {
+              setState(() {
+                task['completed'] = value;
+              });
+              _updateTaskStatus(task['taskid'], value!);
+            },
+            secondary: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.comment),
+                  onPressed: () => _showCommentDialog(task['taskid']),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.attach_file),
+                  onPressed: () => _showAttachmentDialog(task['taskid']),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Future<void> _showCommentDialog(int taskId) async {
+    final comment = await showDialog<String>(
+      context: context,
+      builder: (context) => CommentPopup(
+        initialComment: "",
+        onCommentAdded: (text) => Navigator.pop(context, text),
+      ),
+    );
+
+    if (comment != null && comment.isNotEmpty) {
+      await _addComment(taskId, comment);
+      await _loadChecklistData();
+    }
+  }
+
+  Future<void> _showAttachmentDialog(int taskId) async {
+    final fileData = await showDialog<PickedFileData>(
+      context: context,
+      builder: (context) => AttachmentPopup(
+        onAttach: (data) => Navigator.pop(context, data),
+      ),
+    );
+
+    if (fileData != null) {
+      await _uploadAttachment(taskId, fileData);
+      await _loadChecklistData();
+    }
+  }
+
+  Future<void> _addComment(int taskId, String comment) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
-      await http.post(
-        Uri.parse("http://10.0.2.2:3000/project/update-task-comments"),
-        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
-        body: jsonEncode({'taskid': taskid, 'comments': comments}),
+      final response = await http.post(
+        Uri.parse("http://localhost:3000/project/add-task-comments"),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'taskid': taskId,
+          'comments': comment,
+          'projectid': _project.projectId,
+        }),
       );
+
+      if (response.statusCode != 200) {
+        throw Exception("Failed to add comment");
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to update comments: $e")),
+        SnackBar(content: Text("Error adding comment: $e")),
       );
     }
   }
 
-  Future<bool> _uploadAttachment(int taskid, Uint8List fileBytes, String fileName) async {
-    setState(() => isUploading = true);
+  Future<void> _uploadAttachment(int taskId, PickedFileData fileData) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
@@ -141,248 +467,21 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
         Uri.parse("http://10.0.2.2:3000/project/upload-blob-azure"),
       );
       request.headers['Authorization'] = 'Bearer $token';
-      request.fields['taskid'] = taskid.toString();
+      request.fields['taskid'] = taskId.toString();
       request.files.add(http.MultipartFile.fromBytes(
-        'image', fileBytes, filename: fileName));
+        'file',
+        fileData.bytes,
+        filename: fileData.fileName,
+      ));
 
       final response = await request.send();
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    } finally {
-      setState(() => isUploading = false);
-    }
-  }
-
-  Future<Uint8List?> _fetchAttachment(int taskid) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
-
-      final response = await http.get(
-        Uri.parse("http://10.0.2.2:3000/project/get-blob-url?taskid=$taskid"),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-
-      if (response.statusCode == 200) {
-        final raw = jsonDecode(response.body);
-        final String? signedUrl = raw is String ? raw : raw['signedUrl'];
-        if (signedUrl == null) return null;
-
-        final imageResponse = await http.get(Uri.parse(signedUrl));
-        return imageResponse.statusCode == 200 ? imageResponse.bodyBytes : null;
+      if (response.statusCode != 200) {
+        throw Exception("Failed to upload attachment");
       }
-      return null;
     } catch (e) {
-      return null;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Onsite Checklist"),
-        elevation: 0,
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  ...checklistData.entries.map((entry) => _buildSection(entry.key, entry.value)),
-                  if (isUploading)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 20),
-                      child: LinearProgressIndicator(),
-                    ),
-                ],
-              ),
-            ),
-    );
-  }
-
-  Widget _buildSection(String section, Map<String, dynamic> subtypes) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: ExpansionTile(
-        title: Text(section, style: const TextStyle(fontWeight: FontWeight.bold)),
-        initiallyExpanded: expandedSections[section] ?? false,
-        onExpansionChanged: (expanded) => setState(() => expandedSections[section] = expanded),
-        children: subtypes.entries.map((entry) => _buildSubtype(entry.key, entry.value)).toList(),
-      ),
-    );
-  }
-
-  Widget _buildSubtype(String subtype, Map<String, dynamic> data) {
-    final hasComment = data['comments']?.trim().isNotEmpty ?? false;
-    final hasAttachment = data['hasAttachment'] == true;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Column(
-        children: [
-          CheckboxListTile(
-            title: Text(subtype),
-            value: data['completed'],
-            onChanged: (value) {
-              setState(() => data['completed'] = value);
-              _updateChecklistStatus(data['taskid'], value!);
-            },
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: EdgeInsets.zero,
-          ),
-          
-          if (data['expanded'] || true)
-            Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ...(data['descriptions'] as List<String>).map((desc) => 
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text("• $desc", style: const TextStyle(fontSize: 14)),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildActionButton(
-                        icon: Icons.comment,
-                        label: hasComment ? "Edit Comment" : "Add Comment",
-                        onPressed: () => _handleCommentAction(data),
-                      ),
-                      if (hasComment)
-                        _buildActionButton(
-                          icon: Icons.visibility,
-                          label: "View Comment",
-                          onPressed: () => _showCommentDialog(subtype, data['comments']),
-                        ),
-                      _buildActionButton(
-                        icon: Icons.attach_file,
-                        label: hasAttachment ? "Change Photo" : "Add Photo",
-                        onPressed: () => _handleAttachmentAction(data),
-                      ),
-                      if (hasAttachment)
-                        _buildActionButton(
-                          icon: Icons.photo,
-                          label: "View Photo",
-                          onPressed: () => _showAttachmentDialog(data['taskid']),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          const Divider(height: 1),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton({required IconData icon, required String label, required VoidCallback onPressed}) {
-    return ElevatedButton.icon(
-      icon: Icon(icon, size: 18),
-      label: Text(label),
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        textStyle: const TextStyle(fontSize: 14),
-      ),
-    );
-  }
-
-  Future<void> _handleCommentAction(Map<String, dynamic> data) async {
-    final comment = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Add/Edit Comment"),
-        content: TextField(
-          controller: TextEditingController(text: data['comments']),
-          maxLines: 5,
-          decoration: const InputDecoration(
-            hintText: "Enter your comment...",
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, data['comments']),
-            child: const Text("Save"),
-          ),
-        ],
-      ),
-    );
-
-    if (comment != null) {
-      setState(() => data['comments'] = comment);
-      await _updateTaskComments(data['taskid'], comment);
-    }
-  }
-
-  Future<void> _showCommentDialog(String title, String comment) async {
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Comment for $title"),
-        content: SingleChildScrollView(child: Text(comment)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _handleAttachmentAction(Map<String, dynamic> data) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: false,
-    );
-
-    if (result != null && result.files.isNotEmpty) {
-      final file = result.files.first;
-      if (file.bytes != null) {
-        final success = await _uploadAttachment(data['taskid'], file.bytes!, file.name);
-        if (success) {
-          setState(() => data['hasAttachment'] = true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Attachment uploaded successfully")),
-          );
-        }
-      }
-    }
-  }
-
-  Future<void> _showAttachmentDialog(int taskid) async {
-    final imageBytes = await _fetchAttachment(taskid);
-    if (imageBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Could not load attachment")),
+        SnackBar(content: Text("Error uploading attachment: $e")),
       );
-      return;
     }
-
-    await showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: InteractiveViewer(
-          panEnabled: true,
-          minScale: 0.5,
-          maxScale: 3.0,
-          child: Image.memory(imageBytes),
-        ),
-      ),
-    );
   }
 }

@@ -46,6 +46,17 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = json.decode(response.body);
+        final offsite = jsonData['OffSiteFixed'] as Map<String, dynamic>;
+
+        // Process each section (e.g., Administrative, Safety Precautions)
+        offsite.forEach((section, content) {
+          List<String> descriptions = [];
+
+          int? taskId = content['taskid'];
+          bool completed = content['completed'] ?? false;
+          bool has_comments = content['has_comments'] ?? false;
+          bool has_attachment = content['has_attachment'] ?? false;
+          // String comments = content['comments'] ?? "";
         _processChecklistData(jsonData['OffSiteFixed'] as Map<String, dynamic>);
       } else {
         throw Exception('Failed to load checklist: ${response.statusCode}');
@@ -73,6 +84,18 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
       final bool completed = content['completed'] ?? false;
       final String comments = content['comments'] ?? "";
 
+          // Extract all other keys as descriptions
+          content.forEach((key, value) {
+            if (key != 'taskid' && key != 'completed' && key != 'has_comments' && key != 'has_attachment') {
+              if (value is String) {
+                descriptions.add(value);
+              } else if (value is List) {
+                descriptions.addAll(value.map((v) => v.toString()));
+              } else if (value is Map) {
+                descriptions.addAll(value.values.map((v) => v.toString()));
+              }
+            }
+          });
       content.forEach((key, value) {
         if (!['taskid', 'completed', 'comments'].contains(key)) {
           if (value is String) {
@@ -85,6 +108,14 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
         }
       });
 
+          checklistData[section] = {
+            'taskid': taskId,
+            'completed': completed,
+            'has_comments': has_comments,
+            'has_attachment': has_attachment,
+            //'comments': comments,
+            'descriptions': descriptions
+          };
       processedData[section] = {
         'taskid': taskId,
         'completed': completed,

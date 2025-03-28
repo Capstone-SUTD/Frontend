@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:capstone_app/web_screens/all_project_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
-import 'package:dio/dio.dart';
 import 'package:capstone_app/common/sign_up.dart'; // Or wherever your SignUpScreen is located
 
 class LoginSignUpScreen extends StatefulWidget {
@@ -18,6 +17,7 @@ class _LoginSignUpScreenState extends State<LoginSignUpScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _userIdFocus = FocusNode();
   final FocusNode _passwordFocus = FocusNode();
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -158,7 +158,7 @@ void _showErrorBanner(String message) {
                     FocusScope.of(context).requestFocus(_passwordFocus);
                   },
                   decoration: const InputDecoration(
-                    hintText: 'User ID',
+                    hintText: 'Email ID',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.person),
                   ),
@@ -167,13 +167,23 @@ void _showErrorBanner(String message) {
                 TextField(
                   controller: _passwordController,
                   focusNode: _passwordFocus,
-                  obscureText: true,
+                  obscureText: _obscurePassword,
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _login(context),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Password',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(height: 40),
