@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:capstone_app/mobile_screens/new_project_form.dart';
+//import 'package:capstone_app/mobile_screens/new_project_form.dart';
 
 class Project {
   final String client;
@@ -39,8 +39,9 @@ class Project {
   factory Project.fromJson(Map<String, dynamic> json) {
     return Project(
       client: json['client']?.toString() ?? "",
-      projectId: json['projectid'].toString(), // match API key
-      projectName: json['projectname'] ?? "",
+      projectId: json['projectid']?.toString() ?? '',
+      projectName: json['projectname'] ?? 'Unnamed',
+      // status: json['status'] ?? 'Unknown',
       projectType: json['projecttype'] ?? "",
       startDestination: json['startdestination'] ?? "",
       endDestination: json['enddestination'] ?? "",
@@ -205,12 +206,14 @@ class Scope {
   final String enddestination;
   final String scope;
   final String equipmentList;
+  final String? id;
 
   Scope({
     required this.startdestination,
     required this.enddestination,
     required this.scope,
     required this.equipmentList,
+    this.id,
   });
 
   factory Scope.fromJson(Map<String, dynamic> json) {
@@ -219,6 +222,7 @@ class Scope {
       enddestination: json['end'],
       scope: json['work'],
       equipmentList: json['equipment'],
+      id: json['id'],
     );
   }
 

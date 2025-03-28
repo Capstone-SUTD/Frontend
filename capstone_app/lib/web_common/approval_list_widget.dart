@@ -4,11 +4,12 @@ import '../models/project_model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:html' as html;
+import 'package:file_picker/file_picker.dart';
+import 'dart:io' as io;
 
 class ApprovalListWidget extends StatefulWidget {
-  int selectedTab;
-  int approvalStage;
+  final int selectedTab;
+  final int approvalStage;
   final List<Stakeholder> stakeholders;
   final int projectid;
   final List<Map<String, dynamic>> rejectionList;
@@ -21,7 +22,7 @@ class ApprovalListWidget extends StatefulWidget {
     required this.approvalStage,
     required this.stakeholders,
     required this.projectid,
-    required this.rejectionList, // Initialize rejectionList prop
+    required this.rejectionList,
     required this.onApprovalStageChange,
     required this.onVersionIncrease,
   });
@@ -33,6 +34,7 @@ class ApprovalListWidget extends StatefulWidget {
 class _ApprovalListWidgetState extends State<ApprovalListWidget> {
   late List<Map<String, dynamic>> _pendingApprovals;
   final GlobalKey<FileUploadWidgetState> _fileUploadKey = GlobalKey<FileUploadWidgetState>();
+  List<io.File> _uploadedFiles = [];
 
   @override
   void initState() {
@@ -55,7 +57,7 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
   }
 
   Future<void> _approveProject(int projectId) async {
-    final url = Uri.parse('http://localhost:5000/app/approve');
+    final url = Uri.parse('http://10.0.2.2:3000/app/approve');
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -92,21 +94,17 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
     bool isEnabled = false;
     bool isApprovedOrRejected = approval["approved"] || approval["rejected"];
 
-    // If selectedTab is 0, show approvals starting from approvalStage
-    // If selectedTab is 1, show approvals before approvalStage
     if (widget.selectedTab == 0) {
       if (index < widget.approvalStage) {
-        return SizedBox(); // Skip the item if it's before approvalStage
+        return SizedBox();
       }
     } else if (widget.selectedTab == 1) {
       if (index >= widget.approvalStage) {
-        return SizedBox(); // Skip the item if it's after approvalStage
+        return SizedBox();
       }
     }
 
-    // Determine which button to show based on the approvalStage
     if (widget.selectedTab == 0) {
-      // Enable the button only if the stage matches the approval stage
       if (widget.approvalStage == 0 && approval["role"] == "HSEOfficer") {
         isEnabled = true;
       } else if (widget.approvalStage == 1 && approval["role"] == "Operations") {
@@ -116,7 +114,6 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
       }
     }
 
-    // For selectedTab == 1, display a disabled "Approved" button
     return Card(
       child: ListTile(
         title: Text("MSRA Approval by ${approval["role"]}"),
@@ -124,7 +121,6 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // For selectedTab == 0, show approve and reject buttons
             if (widget.selectedTab == 0) ...[
               ElevatedButton(
                 onPressed: isEnabled && !isApprovedOrRejected
@@ -142,12 +138,11 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
                 child: const Text("Reject"),
               ),
             ],
-            // For selectedTab == 1, show the "Approved" button that does nothing when clicked
             if (widget.selectedTab == 1) ...[
               ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              child: const Text("Approved"),
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                child: const Text("Approved"),
               )
             ],
           ],
@@ -184,10 +179,7 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
             TextButton(
               onPressed: () {
                 String comments = _reasonController.text;
-
-                // Call API to reject the project
                 _rejectProject(approval, comments);
-
                 Navigator.of(context).pop();
               },
               child: const Text("Reject"),
@@ -199,7 +191,7 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
   }
 
   Future<void> _rejectProject(Map<String, dynamic> approval, String comments) async {
-    final url = Uri.parse('http://localhost:5000/app/reject');
+    final url = Uri.parse('http://10.0.2.2:3000/app/reject');
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -224,15 +216,16 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
       if (response.statusCode == 200) {
         setState(() {
           if (_pendingApprovals.isNotEmpty) {
-          var firstPendingApproval = _pendingApprovals[widget.approvalStage];
-          var newRejection = {
-            "role": firstPendingApproval["role"],
-            "name": firstPendingApproval["name"],
-            "comments": comments,
-          };
-          widget.rejectionList.add(newRejection);
-          widget.selectedTab = 2;
-        }});
+            var firstPendingApproval = _pendingApprovals[widget.approvalStage];
+            var newRejection = {
+              "role": firstPendingApproval["role"],
+              "name": firstPendingApproval["name"],
+              "comments": comments,
+            };
+            widget.rejectionList.add(newRejection);
+            widget.selectedTab = 2;
+          }
+        });
       } else {
         var responseData = jsonDecode(response.body);
         String errorMessage = responseData['error'] ?? 'Unknown error';
@@ -243,97 +236,99 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
     }
   }
 
-  void uploadFile() async {
-    final projectId = widget.projectid;
-    String filetype = "";
-    final uploadedFiles = _fileUploadKey.currentState?.getUploadedFiles() ?? [];
-
-    html.File? file;
-    for (final uploadedFile in uploadedFiles) {
-      final name = uploadedFile.name.toLowerCase();
-      if (name.contains('ms')) {
-        filetype = "MS";
-        file = uploadedFile;  
-      } else if (name.contains('ra')) {
-        filetype = "RA";
-        file = uploadedFile; 
-      }
-    }
-
+  Future<void> uploadFile() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
-      if (token == null) throw Exception("Missing token");
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx'],
+      );
 
-      final formData = html.FormData();
-      
-      // Append the files only if they exist
-      if (file != null) {
-        formData.appendBlob('file', file, file.name);
-      } 
-
-      formData.append('projectid', projectId.toString());
-      formData.append('filetype', filetype);
-
-      final request = html.HttpRequest();
-      request
-        ..open('POST', 'http://localhost:5000/app/reupload')
-        ..setRequestHeader('Authorization', 'Bearer $token')
-        ..onLoadEnd.listen((event) async {
-          if (request.status == 200) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("File uploaded successfully.")),
-            );
-            if (filetype.isNotEmpty) {
-              widget.onVersionIncrease(filetype);
-            }
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Error: ${request.status} - ${request.responseText}")),
-            );
-          }
-        })
-        ..onError.listen((e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Error upload file: $e")),
-          );
-        })
-        ..send(formData);
+      if (result != null) {
+        _uploadedFiles = result.paths.map((path) => io.File(path!)).toList();
+        await _uploadFilesToServer();
+      }
     } catch (e) {
-      print("Error saving project: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error saving project: $e")),
+        SnackBar(content: Text("Error selecting files: $e")),
       );
     }
   }
 
+  Future<void> _uploadFilesToServer() async {
+    final projectId = widget.projectid;
+    String filetype = "";
+
+    for (final file in _uploadedFiles) {
+      final name = file.path.toLowerCase();
+      if (name.contains('ms')) {
+        filetype = "MS";
+      } else if (name.contains('ra')) {
+        filetype = "RA";
+      }
+
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final token = prefs.getString('auth_token');
+        if (token == null) throw Exception("Missing token");
+
+        var request = http.MultipartRequest(
+          'POST',
+          Uri.parse('http://10.0.2.2:3000/app/reupload'),
+        )
+          ..headers['Authorization'] = 'Bearer $token'
+          ..fields['projectid'] = projectId.toString()
+          ..fields['filetype'] = filetype
+          ..files.add(await http.MultipartFile.fromPath('file', file.path));
+
+        var response = await request.send();
+
+        if (response.statusCode == 200) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("File uploaded successfully.")),
+          );
+          if (filetype.isNotEmpty) {
+            widget.onVersionIncrease(filetype);
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error: ${response.statusCode}")),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error uploading file: $e")),
+        );
+      }
+    }
+  }
+
   Widget _buildRejectedCard(int index, Map<String, dynamic> approval) {
-  return Card(
-    child: ListTile(
-      title: Text("MSRA Rejection by ${approval["role"]}"),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Action by ${approval["name"]}"),
-          const SizedBox(height: 8),
-          Text("Comments: ${approval["comments"]}"),
-        ],
+    return Card(
+      child: ListTile(
+        title: Text("MSRA Rejection by ${approval["role"]}"),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Action by ${approval["name"]}"),
+            const SizedBox(height: 8),
+            Text("Comments: ${approval["comments"]}"),
+          ],
+        ),
+        trailing: widget.selectedTab == 2
+            ? ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text("Rejected"),
+              )
+            : null,
       ),
-      trailing: widget.selectedTab == 2
-          ? ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text("Rejected"),
-            )
-          : null,
-    ),
-  );
-}
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     if (widget.selectedTab == 0) {
-      // Pending Approvals
       return ListView.builder(
         itemCount: _pendingApprovals.length,
         itemBuilder: (context, index) {
@@ -344,16 +339,14 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
     }
 
     if (widget.selectedTab == 1) {
-      // Show Pending Approvals up to approvalStage
       return ListView.builder(
         itemCount: _pendingApprovals.length,
         itemBuilder: (context, index) {
           var approval = _pendingApprovals[index];
-          // Show the approval only if the index is before or at the approvalStage
           if (index < widget.approvalStage) {
             return _buildApprovalCard(index, approval);
           }
-          return SizedBox(); // Skip approvals after the approvalStage
+          return SizedBox();
         },
       );
     }

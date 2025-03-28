@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:capstone_app/mobile_screens/dashboard_screen.dart';
+// import 'package:capstone_app/mobile_screens/dashboard_screen.dart';
 import 'package:capstone_app/web_screens/all_project_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
@@ -47,7 +47,7 @@ class _LoginSignUpScreenState extends State<LoginSignUpScreen> {
   try {
     Dio dio = Dio();
     final response = await dio.post(
-      'http://localhost:5000/auth/login', // 🔁 Replace with your actual login API
+      'http://10.0.2.2:3000/auth/login', // 🔁 Replace with your actual login API
       data: {
         'email': email,
         'password': password,
@@ -70,7 +70,7 @@ class _LoginSignUpScreenState extends State<LoginSignUpScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          MaterialPageRoute(builder: (context) => const AllProjectsScreen()),
         );
       });
     } else {

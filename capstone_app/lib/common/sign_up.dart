@@ -28,7 +28,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     try {
       Dio dio = Dio();
       final response = await dio.post(
-        'http://localhost:5000/auth/register',
+        'http://10.0.2.2:3000/auth/register',
         data: {
           'username' : username,
           'email': email,

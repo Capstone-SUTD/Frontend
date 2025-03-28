@@ -1,170 +1,222 @@
-import 'package:flutter/material.dart';
-// import 'dashboard_screen.dart';
-// import 'package:capstone_app/common/settings.dart';
-// import 'my_projects_list.dart';
-//import 'package:capstone_app/common/nav_bar.dart';
+// import 'package:flutter/material.dart';
+// import 'package:flutter/services.dart';
+// import 'package:http/http.dart' as http;
+// import 'package:shared_preferences/shared_preferences.dart';
+// import 'dart:convert';
 
-void main() {
-  runApp(const MyApp());
-}
+// class EquipmentRecommendationDialog extends StatefulWidget {
+//   const EquipmentRecommendationDialog({super.key});
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+//   @override
+//   _EquipmentRecommendationDialogState createState() =>
+//       _EquipmentRecommendationDialogState();
+// }
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.grey,
-        scaffoldBackgroundColor: Colors.white,
-      ),
-    );
-  }
-}
+// class _EquipmentRecommendationDialogState
+//     extends State<EquipmentRecommendationDialog> {
+//   final TextEditingController _lengthController = TextEditingController();
+//   final TextEditingController _widthController = TextEditingController();
+//   final TextEditingController _heightController = TextEditingController();
+//   final TextEditingController _weightController = TextEditingController();
 
-class EqRecoList extends StatelessWidget {
-  const EqRecoList({Key? key}) : super(key: key);
+//   String crane = "";
+//   String threshold = "";
+//   String vehicle = "";
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.indigo[900],
-        elevation: 0,
-        leading: const BackButton(color: Colors.white),
-        title: const Text(
-          'Equipment Recommendation',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      // Add the NavBar here
-    //   bottomNavigationBar: NavBar(
-    //     currentIndex: 1, 
-    //     onTap: (index) {
-    // // Handle navigation here
-    //     }
-    //   ),
- // Using 1 since this is accessed from dashboard
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildEquipmentGroup(
-              'Crane',
-              [
-                EquipmentItem('X Crane', 'Max capacity: x ton'),
-                EquipmentItem('Y Crane', 'Max capacity: x ton'),
-                EquipmentItem('Z Crane', 'Max capacity: x ton'),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildEquipmentGroup(
-              'Trailer Bed',
-              [
-                EquipmentItem('X Bed', 'Length: x metres'),
-                EquipmentItem('Y Bed', 'Length: x metres'),
-                EquipmentItem('Z Bed', 'Length: x metres'),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildEquipmentGroup(
-              'Flatbed Trailer',
-              [
-                EquipmentItem('A Flatbed', 'Length: x metres'),
-                EquipmentItem('B Flatbed', 'Length: x metres'),
-                EquipmentItem('C Flatbed', 'Length: x metres'),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      'Confirm',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+//   bool _isLoading = false;
 
-  Widget _buildEquipmentGroup(String title, List<EquipmentItem> items) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          ...items.map((item) => Column(
-                children: [
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          item.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          item.specification,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ))
-        ],
-      ),
-    );
-  }
-}
+//   Future<void> _callBackendApi(BuildContext context) async {
+//     final url = Uri.parse('http://127.0.0.1:3000/equipment');
+//     setState(() {
+//       _isLoading = true;
+//     });
 
-class EquipmentItem {
-  final String name;
-  final String specification;
+//     try {
+//       final prefs = await SharedPreferences.getInstance();
+//       final token = prefs.getString('auth_token');
 
-  EquipmentItem(this.name, this.specification);
-}
+//       if (token == null) {
+//         throw Exception("Token not found");
+//       }
+
+//       final response = await http.post(
+//         url,
+//         headers: {
+//           'Authorization': 'Bearer $token',
+//           'Content-Type': 'application/json',
+//         },
+//         body: jsonEncode({
+//           "weight": double.parse(_weightController.text),
+//           "length": double.parse(_lengthController.text),
+//           "width": double.parse(_widthController.text),
+//           "height": double.parse(_heightController.text),
+//         }),
+//       );
+
+//       if (response.statusCode == 200) {
+//         final data = jsonDecode(response.body);
+//         setState(() {
+//           crane = data['crane'] ?? "N/A";
+//           threshold = data['threshold']?.toString() ?? "N/A";
+//           vehicle = data['vehicle'] ?? "N/A";
+//         });
+
+//         if (mounted) {
+//           Navigator.pop(context); // Close the input dialog
+//           _showResultsDialog(context); // Show results
+//         }
+//       } else {
+//         _showErrorSnackbar("Failed to get recommendation. (${response.statusCode})");
+//       }
+//     } catch (e) {
+//       _showErrorSnackbar("Error: ${e.toString()}");
+//     } finally {
+//       setState(() {
+//         _isLoading = false;
+//       });
+//     }
+//   }
+
+
+//   void _showErrorSnackbar(String message) {
+//     if (context.mounted) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text(message)),
+//       );
+//     }
+//   }
+
+//   void _showResultsDialog(BuildContext context) {
+//     showDialog(
+//       context: context,
+//       builder: (BuildContext context) {
+//         return Dialog(
+//           shape:
+//               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+//           child: SizedBox(
+//             width: 400,
+//             height: 320,
+//             child: Padding(
+//               padding: const EdgeInsets.all(16.0),
+//               child: Column(
+//                 mainAxisSize: MainAxisSize.min,
+//                 children: [
+//                   const Text(
+//                     "Recommended Equipment",
+//                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+//                   ),
+//                   const SizedBox(height: 10),
+//                   TextField(
+//                     controller: TextEditingController(text: crane),
+//                     decoration: const InputDecoration(labelText: "Crane"),
+//                     readOnly: true,
+//                   ),
+//                   TextField(
+//                     controller: TextEditingController(text: threshold),
+//                     decoration: const InputDecoration(labelText: "Threshold"),
+//                     readOnly: true,
+//                   ),
+//                   TextField(
+//                     controller: TextEditingController(text: trailer),
+//                     decoration: const InputDecoration(labelText: "Trailer"),
+//                     readOnly: true,
+//                   ),
+//                   const SizedBox(height: 20),
+//                   Row(
+//                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                     children: [
+//                       TextButton(
+//                         onPressed: () {
+//                           String copyText =
+//                               "Crane: $crane\nThreshold: $threshold\nTrailer: $trailer";
+//                           Clipboard.setData(ClipboardData(text: copyText));
+//                           ScaffoldMessenger.of(context).showSnackBar(
+//                             const SnackBar(content: Text("Copied to clipboard")),
+//                           );
+//                         },
+//                         child: const Text("Copy"),
+//                       ),
+//                       ElevatedButton(
+//                         onPressed: () => Navigator.pop(context),
+//                         child: const Text("Close"),
+//                       ),
+//                     ],
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//         );
+//       },
+//     );
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Dialog(
+//       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+//       child: SizedBox(
+//         width: 400,
+//         height: 320,
+//         child: Padding(
+//           padding: const EdgeInsets.all(16.0),
+//           child: SingleChildScrollView(
+//             child: Column(
+//               mainAxisSize: MainAxisSize.min,
+//               children: [
+//                 const Text(
+//                   "Cargo Details",
+//                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+//                 ),
+//                 const SizedBox(height: 10),
+//                 TextField(
+//                   controller: _lengthController,
+//                   decoration: const InputDecoration(labelText: "Length (m)"),
+//                   keyboardType: TextInputType.number,
+//                 ),
+//                 TextField(
+//                   controller: _widthController,
+//                   decoration: const InputDecoration(labelText: "Width (m)"),
+//                   keyboardType: TextInputType.number,
+//                 ),
+//                 TextField(
+//                   controller: _heightController,
+//                   decoration: const InputDecoration(labelText: "Height (m)"),
+//                   keyboardType: TextInputType.number,
+//                 ),
+//                 TextField(
+//                   controller: _weightController,
+//                   decoration: const InputDecoration(labelText: "Weight (kg)"),
+//                   keyboardType: TextInputType.number,
+//                 ),
+//                 const SizedBox(height: 20),
+//                 Row(
+//                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                   children: [
+//                     TextButton(
+//                       onPressed: () => Navigator.pop(context),
+//                       child: const Text("Cancel"),
+//                     ),
+//                     ElevatedButton(
+//                       onPressed: _isLoading
+//                           ? null
+//                           : () => _callBackendApi(context),
+//                       child: _isLoading
+//                           ? const SizedBox(
+//                               width: 20,
+//                               height: 20,
+//                               child: CircularProgressIndicator(strokeWidth: 2),
+//                             )
+//                           : const Text("Run"),
+//                     ),
+//                   ],
+//                 ),
+//               ],
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -8,8 +10,6 @@ class ProjectStepperWidget extends StatefulWidget {
   final Function(int) onStepTapped;
   final dynamic projectId;
   final String? currentStage;
-
-  // 1) New callback to notify parent about updated stage
   final Function(String newStage)? onStageUpdated;
 
   const ProjectStepperWidget({
@@ -17,7 +17,7 @@ class ProjectStepperWidget extends StatefulWidget {
     required this.projectId,
     required this.currentStage,
     required this.onStepTapped,
-    this.onStageUpdated, // <-- optional
+    this.onStageUpdated,
   }) : super(key: key);
 
   @override
@@ -27,11 +27,20 @@ class ProjectStepperWidget extends StatefulWidget {
 class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
   late int _selectedStep;
   final List<String> _stepLabels = kStepLabels;
+  bool _isUpdatingStage = false;
 
   @override
   void initState() {
     super.initState();
     _selectedStep = _getStepIndex(widget.currentStage);
+  }
+
+  @override
+  void didUpdateWidget(ProjectStepperWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.currentStage != oldWidget.currentStage) {
+      _selectedStep = _getStepIndex(widget.currentStage);
+    }
   }
 
   int _getStepIndex(String? stage) {
@@ -41,8 +50,11 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
     return index >= 0 ? index : 0;
   }
 
-  void _onStepTapped(int index) async {
+  Future<void> _onStepTapped(int index) async {
+    if (_isUpdatingStage) return;
+
     setState(() {
+      _isUpdatingStage = true;
       _selectedStep = index;
     });
 
@@ -52,10 +64,12 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
-      if (token == null) throw Exception("Token not found");
+      if (token == null) {
+        throw Exception("Authentication token not found");
+      }
 
       final response = await http.post(
-        Uri.parse('http://localhost:5000/project/update-stage'),
+        Uri.parse('http://10.0.2.2:3000/project/update-stage'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -64,110 +78,146 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
           'projectid': widget.projectId,
           'stage': stage,
         }),
-      );
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
-        print("Stage updated to: $stage");
-
-        // 2) Call parent callback to update the parent's _project.stage
         if (widget.onStageUpdated != null) {
           widget.onStageUpdated!(stage);
         }
-      } else {
-        print("Failed to update stage: ${response.body}");
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to update stage: ${response.body}")),
+          SnackBar(content: Text("Stage updated to: $stage")),
         );
+      } else {
+        throw Exception("Server responded with ${response.statusCode}");
       }
-    } catch (e) {
-      print("Error updating stage: $e");
+    } on http.ClientException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error updating stage")),
+        SnackBar(content: Text("Network error: ${e.message}")),
       );
+    } on TimeoutException {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Request timed out")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error updating stage: ${e.toString()}")),
+      );
+      // Revert to previous step if update fails
+      if (mounted) {
+        setState(() => _selectedStep = _getStepIndex(widget.currentStage));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUpdatingStage = false);
+      }
+      widget.onStepTapped(index);
     }
-
-    // Notify parent if they need to do something else
-    widget.onStepTapped(index);
   }
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmallScreen = constraints.maxWidth < 600;
+        final circleSize = isSmallScreen ? 24.0 : 30.0;
+        final fontSize = isSmallScreen ? 10.0 : 12.0;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        width: screenWidth,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Stack(
-              alignment: Alignment.center,
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            width: constraints.maxWidth,
+            child: Column(
               children: [
-                // The horizontal line behind the step circles
-                Positioned(
-                  top: 15,
-                  left: 0,
-                  right: 0,
-                  child: Row(
-                    children: List.generate(_stepLabels.length - 1, (index) {
-                      bool isCompleted = index < _selectedStep;
-                      return Expanded(
-                        child: Container(
-                          height: 4,
-                          color: isCompleted ? Colors.green : Colors.grey,
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-                // The actual step circles and labels
-                Row(
-                  children: List.generate(_stepLabels.length, (index) {
-                    bool isCompleted = index <= _selectedStep;
-                    return Expanded(
-                      child: GestureDetector(
-                        onTap: () => _onStepTapped(index),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isCompleted ? Colors.green : Colors.grey,
-                                border: Border.all(color: Colors.black, width: 1),
-                              ),
-                              child: isCompleted
-                                  ? const Icon(Icons.check, color: Colors.white, size: 16)
-                                  : null,
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Progress line
+                    Positioned(
+                      top: circleSize / 2,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        children: List.generate(_stepLabels.length - 1, (index) {
+                          final isCompleted = index < _selectedStep;
+                          return Expanded(
+                            child: Container(
+                              height: 4,
+                              color: isCompleted ? Colors.green : Colors.grey[300],
                             ),
-                            const SizedBox(height: 5),
-                            Text(
-                              _stepLabels[index],
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
+                          );
+                        }),
                       ),
-                    );
-                  }),
+                    ),
+                    // Steps
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: List.generate(_stepLabels.length, (index) {
+                        final isCompleted = index <= _selectedStep;
+                        final isActive = index == _selectedStep;
+
+                        return GestureDetector(
+                          onTap: _isUpdatingStage ? null : () => _onStepTapped(index),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: circleSize,
+                                  height: circleSize,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isCompleted ? Colors.green : Colors.grey[300],
+                                    border: Border.all(
+                                      color: isActive ? Colors.blue : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: isCompleted
+                                      ? Icon(
+                                          Icons.check,
+                                          color: Colors.white,
+                                          size: circleSize * 0.5,
+                                        )
+                                      : null,
+                                ),
+                                const SizedBox(height: 4),
+                                SizedBox(
+                                  width: circleSize * 3,
+                                  child: Text(
+                                    _stepLabels[index],
+                                    style: TextStyle(
+                                      fontSize: fontSize,
+                                      fontWeight: FontWeight.bold,
+                                      color: isActive ? Colors.blue : Colors.black,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
                 ),
+                if (_isUpdatingStage)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: SizedBox(
+                      height: 2,
+                      child: LinearProgressIndicator(),
+                    ),
+                  ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
-
-
-
-
-

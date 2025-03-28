@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:html' as html;
 import 'dart:convert';
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
+import 'dart:io';
 
 class DownloadMSRAWidget extends StatefulWidget {
   final String projectId;
@@ -22,20 +23,20 @@ class DownloadMSRAWidget extends StatefulWidget {
 }
 
 class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
-
-  @override
-  void initState() {
-    super.initState();
-  }
+  bool _isDownloading = false;
 
   Future<void> _downloadFile(String fileType) async {
+    setState(() {
+      _isDownloading = true;
+    });
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
       if (token == null) throw Exception("Token not found");
 
-      final uri = Uri.parse('http://localhost:5000/app/download');
+      final uri = Uri.parse('http://10.0.2.2:3000/app/download');
       final response = await http.post(
         uri,
         headers: {
@@ -49,27 +50,49 @@ class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
         }),
       );
 
-     if (response.statusCode == 200) {
-      final blob = html.Blob([response.bodyBytes]);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-
-      // Map fileType to actual extensions (modify based on your server response)
-      String extension = fileType == "MS" ? "docx" : "xlsx"; // Example mapping
-      String fileName = "downloaded_file_$fileType.$extension"; 
-
-      final anchor = html.AnchorElement(href: url)
-      
-        ..setAttribute("download", fileName) // Set proper filename with extension
-        ..click();
-
-      html.Url.revokeObjectUrl(url);
-    } else {
+      if (response.statusCode == 200) {
+        await _saveAndOpenFile(response.bodyBytes, fileType);
+      } else {
         throw Exception("Download failed: ${response.body}");
       }
     } catch (e) {
       print("Download error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to download $fileType")),
+        SnackBar(content: Text("Failed to download $fileType: ${e.toString()}")),
+      );
+    } finally {
+      setState(() {
+        _isDownloading = false;
+      });
+    }
+  }
+
+  Future<void> _saveAndOpenFile(List<int> bytes, String fileType) async {
+    try {
+      // Get the directory for saving the file
+      final directory = await getDownloadsDirectory();
+      if (directory == null) {
+        throw Exception("Could not access downloads directory");
+      }
+
+      // Create file name with appropriate extension
+      final extension = fileType == "MS" ? ".docx" : ".xlsx";
+      final fileName = "${fileType}_v${fileType == "MS" ? widget.msVersion : widget.raVersion}$extension";
+      final file = File('${directory.path}/$fileName');
+
+      // Write the file
+      await file.writeAsBytes(bytes, flush: true);
+
+      // Open the file
+      await OpenFile.open(file.path);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("$fileType downloaded successfully")),
+      );
+    } catch (e) {
+      print("File save error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to save $fileType: ${e.toString()}")),
       );
     }
   }
@@ -89,9 +112,18 @@ class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
     return Column(
       children: [
         ElevatedButton.icon(
-          onPressed: () => _downloadFile(fileType),
-          icon: const Icon(Icons.download, color: Colors.deepPurple),
-          label: Text(label, style: const TextStyle(color: Colors.deepPurple)),
+          onPressed: _isDownloading ? null : () => _downloadFile(fileType),
+          icon: _isDownloading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.download, color: Colors.deepPurple),
+          label: Text(
+            _isDownloading ? "Downloading..." : label,
+            style: const TextStyle(color: Colors.deepPurple),
+          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,
             shape: RoundedRectangleBorder(
@@ -102,7 +134,7 @@ class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
         ),
         const SizedBox(height: 5),
         Text(
-          "Version :" + (fileType == "MS" ? widget.msVersion : widget.raVersion).toString(),
+          "Version: ${fileType == "MS" ? widget.msVersion : widget.raVersion}",
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
@@ -110,5 +142,3 @@ class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
     );
   }
 }
-
-

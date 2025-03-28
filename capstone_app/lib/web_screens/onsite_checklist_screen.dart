@@ -4,158 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../web_common/project_tab_widget.dart';
-import '../web_common/project_stepper_widget.dart';
-import '../web_common/attachment_popup.dart';
-import '../web_common/comment_popup.dart';
-import 'msra_generation_screen.dart';
-import '../web_common/step_label.dart';
-import 'project_screen.dart';
-import 'dart:convert';
-import 'dart:typed_data';
-import 'package:http/http.dart' as http;
 
-/// ---------------------------------------------------------------------------
-///  A small data class to hold both the file bytes and the name
-/// ---------------------------------------------------------------------------
-class PickedFileData {
-  final Uint8List bytes;
-  final String fileName;
-  PickedFileData(this.bytes, this.fileName);
-}
-
-/// ---------------------------------------------------------------------------
-///  AttachmentPopup: lets user pick a file (mainly a picture) and confirm
-/// ---------------------------------------------------------------------------
-class AttachmentPopup extends StatefulWidget {
-  /// This callback returns the chosen file data (bytes, name) to the caller
-  final ValueChanged<PickedFileData> onAttach;
-
-  const AttachmentPopup({Key? key, required this.onAttach}) : super(key: key);
-
-  @override
-  State<AttachmentPopup> createState() => _AttachmentPopupState();
-}
-
-class _AttachmentPopupState extends State<AttachmentPopup> {
-  Uint8List? _pickedBytes;
-  String _pickedFileName = '';
-
-  Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image, // restrict to images if needed
-      allowMultiple: false,
-    );
-    if (result != null && result.files.isNotEmpty) {
-      setState(() {
-        // For web or desktop, we’ll get bytes:
-        _pickedBytes = result.files.single.bytes;
-        // For mobile, we also typically get a path: result.files.single.path
-        // but we can stick to bytes for cross-platform usage
-        _pickedFileName = result.files.single.name;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("Attach a File"),
-      content: SizedBox(
-        width: 300,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ElevatedButton(
-              onPressed: _pickFile,
-              child: const Text("Pick an Image"),
-            ),
-            const SizedBox(height: 8),
-            if (_pickedFileName.isNotEmpty)
-              Text("Picked File: $_pickedFileName", style: const TextStyle(fontSize: 13)),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          child: const Text("Cancel"),
-          onPressed: () => Navigator.pop(context),
-        ),
-        ElevatedButton(
-          child: const Text("Attach"),
-          onPressed: () {
-            if (_pickedBytes != null && _pickedFileName.isNotEmpty) {
-              // Send the file info back to the parent
-              widget.onAttach(PickedFileData(_pickedBytes!, _pickedFileName));
-              // The parent can pop this dialog
-            } else {
-              // If user hasn't picked anything, just close
-              Navigator.pop(context);
-            }
-          },
-        ),
-      ],
-    );
-  }
-}
-
-/// ---------------------------------------------------------------------------
-///  CommentPopup: add or edit a comment
-/// ---------------------------------------------------------------------------
-class CommentPopup extends StatefulWidget {
-  final String initialComment;
-  final ValueChanged<String> onCommentAdded;
-
-  const CommentPopup({
-    Key? key,
-    required this.initialComment,
-    required this.onCommentAdded,
-  }) : super(key: key);
-
-  @override
-  State<CommentPopup> createState() => _CommentPopupState();
-}
-
-class _CommentPopupState extends State<CommentPopup> {
-  late TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialComment);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("Add/Edit Comment"),
-      content: TextField(
-        controller: _controller,
-        maxLines: 5,
-        decoration: const InputDecoration(
-          hintText: "Type your comment here...",
-          border: OutlineInputBorder(),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            widget.onCommentAdded(_controller.text.trim());
-          },
-          child: const Text("Save"),
-        ),
-      ],
-    );
-  }
-}
-
-/// ---------------------------------------------------------------------------
-///  OnsiteChecklistScreen - the main screen
-/// ---------------------------------------------------------------------------
 class OnsiteChecklistScreen extends StatefulWidget {
   final dynamic project;
   const OnsiteChecklistScreen({Key? key, required this.project}) : super(key: key);
@@ -166,34 +15,18 @@ class OnsiteChecklistScreen extends StatefulWidget {
 
 class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
   late dynamic _project;
-  late int _currentStep;
-
   Map<String, bool> expandedSections = {};
   Map<String, dynamic> checklistData = {};
   bool isLoading = true;
-
-  // Adapt to your actual step labels, or remove if not used
-  final List<String> stepLabels = [
-    'seller', 'customs', 'loading', 'carrier',
-    'cargo terminal', 'port', 'transport',
-    'port2', 'cargo terminal2', 'carrier2',
-    'customs2', 'unloading', 'buyer'
-  ];
+  bool isUploading = false;
 
   @override
   void initState() {
     super.initState();
     _project = widget.project;
-
-    final stage = _project?.stage?.toString().toLowerCase();
-    _currentStep = stage != null && stepLabels.contains(stage)
-        ? stepLabels.indexOf(stage)
-        : 0;
-
     fetchChecklistData();
   }
 
-  /// 1) Fetch your entire onsite checklist
   Future<void> fetchChecklistData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -201,7 +34,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
 
       final response = await http.get(
         Uri.parse(
-          "http://localhost:5000/project/get-project-checklist?projectid=${_project.projectId}"
+          "http://10.0.2.2:3000/project/get-project-checklist?projectid=${_project.projectId}"
         ),
         headers: {'Authorization': 'Bearer $token'},
       );
@@ -209,13 +42,11 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonData = json.decode(response.body);
 
-        // Example: Process "OnSiteFixed" for "General" section
         if (jsonData.containsKey("OnSiteFixed")) {
           final general = jsonData["OnSiteFixed"] as Map<String, dynamic>;
           checklistData["General"] = _parseChecklistGroup(general);
         }
 
-        // Example: other sections
         for (String section in ["Lifting", "Forklift", "Transportation"]) {
           if (jsonData.containsKey(section)) {
             final data = jsonData[section] as Map<String, dynamic>;
@@ -223,63 +54,29 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
           }
         }
 
-        // Start each section collapsed
         for (var key in checklistData.keys) {
           expandedSections[key] = false;
         }
 
-        setState(() {
-          isLoading = false;
-        });
-      } else {
-        print("❌ Failed to load onsite checklist");
+        setState(() => isLoading = false);
       }
     } catch (e) {
-      print("❌ Exception in fetching onsite checklist: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error loading checklist: $e")),
+      );
     }
   }
 
-  /// Converts the server JSON into a local map
   Map<String, Map<String, dynamic>> _parseChecklistGroup(Map<String, dynamic> group) {
     final result = <String, Map<String, dynamic>>{};
     group.forEach((subtype, content) {
       if (content is Map<String, dynamic>) {
-        int? taskId = content['taskid'];
-        bool completed = content['completed'] ?? false;
-        String comments = content['comments'] ?? '';
-
-        bool hasAttachment = false;
-        // If the server includes an 'attachments' field:
-        if (content.containsKey('attachments')) {
-          final attachVal = content['attachments'];
-          if (attachVal != null && attachVal.toString().isNotEmpty) {
-            hasAttachment = true;
-          }
-        }
-
-        // Parse out any descriptions that are leftover
-        List<String> descriptions = [];
-        content.forEach((key, value) {
-          if (key != 'taskid' && 
-              key != 'completed' && 
-              key != 'comments' && 
-              key != 'attachments') {
-            if (value is String) {
-              descriptions.add(value);
-            } else if (value is List) {
-              descriptions.addAll(value.map((v) => v.toString()));
-            } else if (value is Map) {
-              descriptions.addAll(value.values.map((v) => v.toString()));
-            }
-          }
-        });
-
         result[subtype] = {
-          'taskid': taskId,
-          'completed': completed,
-          'comments': comments,
-          'hasAttachment': hasAttachment,
-          'descriptions': descriptions,
+          'taskid': content['taskid'],
+          'completed': content['completed'] ?? false,
+          'comments': content['comments'] ?? '',
+          'hasAttachment': content['attachments']?.toString().isNotEmpty ?? false,
+          'descriptions': _extractDescriptions(content),
           'expanded': false,
         };
       }
@@ -287,180 +84,97 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
     return result;
   }
 
-  /// 2) Update the "completed" status of a subtask
-  Future<void> updateChecklistStatus(int taskid, bool completed) async {
+  List<String> _extractDescriptions(Map<String, dynamic> content) {
+    final descriptions = <String>[];
+    content.forEach((key, value) {
+      if (!['taskid', 'completed', 'comments', 'attachments'].contains(key)) {
+        if (value is String) descriptions.add(value);
+        else if (value is List) descriptions.addAll(value.map((v) => v.toString()));
+        else if (value is Map) descriptions.addAll(value.values.map((v) => v.toString()));
+      }
+    });
+    return descriptions;
+  }
+
+  Future<void> _updateChecklistStatus(int taskid, bool completed) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
-      final response = await http.post(
-        Uri.parse("http://localhost:5000/project/update-checklist-completion"),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+      await http.post(
+        Uri.parse("http://10.0.2.2:3000/project/update-checklist-completion"),
+        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
         body: jsonEncode({'taskid': taskid, 'completed': completed}),
       );
-
-      if (response.statusCode == 200) {
-        print("✅ Updated task $taskid => $completed");
-      } else {
-        print("❌ Failed to update task $taskid");
-      }
     } catch (e) {
-      print("❌ Error updating checklist task: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to update status: $e")),
+      );
     }
   }
 
-  /// 3) Update/Add comments to a subtask
-  Future<void> updateTaskComments(int taskid, String comments) async {
+  Future<void> _updateTaskComments(int taskid, String comments) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
-      final response = await http.post(
-        Uri.parse("http://localhost:5000/project/update-task-comments"),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json'
-        },
+      await http.post(
+        Uri.parse("http://10.0.2.2:3000/project/update-task-comments"),
+        headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
         body: jsonEncode({'taskid': taskid, 'comments': comments}),
       );
-
-      if (response.statusCode == 200) {
-        print("✅ Successfully updated comments for task $taskid");
-      } else {
-        print("❌ Failed to update comments for task $taskid");
-      }
     } catch (e) {
-      print("❌ Error updating task comments: $e");
-    }
-  }
-
-  /// 4) Upload an attachment from bytes
-  Future<bool> uploadAttachment(int taskid, Uint8List fileBytes, String fileName) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
-
-      final uri = Uri.parse("http://localhost:5000/project/upload-blob-azure");
-      final request = http.MultipartRequest('POST', uri);
-      request.headers['Authorization'] = 'Bearer $token';
-
-      // Add fields
-      request.fields['taskid'] = taskid.toString();
-
-      // Attach the file as bytes
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'image',        // the field name expected by your API
-          fileBytes,
-          filename: fileName,
-        ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to update comments: $e")),
       );
-
-      final streamedResponse = await request.send();
-      if (streamedResponse.statusCode == 200) {
-        print("✅ Uploaded attachment for task $taskid");
-        return true;
-      } else {
-        print("❌ Failed to upload attachment for task $taskid");
-        return false;
-      }
-    } catch (e) {
-      print("❌ Error uploading attachment: $e");
-      return false;
     }
   }
 
-  /// 5) Get a signed URL for the attachment
-  Future<Uint8List?> fetchAttachmentImageBytes(int taskid) async {
+  Future<bool> _uploadAttachment(int taskid, Uint8List fileBytes, String fileName) async {
+    setState(() => isUploading = true);
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
-      // First, fetch the signed URL.
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse("http://10.0.2.2:3000/project/upload-blob-azure"),
+      );
+      request.headers['Authorization'] = 'Bearer $token';
+      request.fields['taskid'] = taskid.toString();
+      request.files.add(http.MultipartFile.fromBytes(
+        'image', fileBytes, filename: fileName));
+
+      final response = await request.send();
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    } finally {
+      setState(() => isUploading = false);
+    }
+  }
+
+  Future<Uint8List?> _fetchAttachment(int taskid) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
       final response = await http.get(
-        Uri.parse("http://localhost:5000/project/get-blob-url?taskid=$taskid"),
+        Uri.parse("http://10.0.2.2:3000/project/get-blob-url?taskid=$taskid"),
         headers: {'Authorization': 'Bearer $token'},
       );
-      
-      print("Request Headers: ${response.request?.headers}");
-      print("Status Code: ${response.statusCode}");
-      print("Headers: ${response.headers}");
-      print("Body: ${response.body}");
 
       if (response.statusCode == 200) {
-      final raw = jsonDecode(response.body);
-      String? signedUrl;
+        final raw = jsonDecode(response.body);
+        final String? signedUrl = raw is String ? raw : raw['signedUrl'];
+        if (signedUrl == null) return null;
 
-      // Handle case A: plain string
-      if (raw is String) {
-        signedUrl = raw;
+        final imageResponse = await http.get(Uri.parse(signedUrl));
+        return imageResponse.statusCode == 200 ? imageResponse.bodyBytes : null;
       }
-      // Handle case B: JSON object with a key
-      else if (raw is Map && raw['signedUrl'] is String) {
-        signedUrl = raw['signedUrl'] as String;
-      } else {
-        print("❌ Unexpected format for signed URL: $raw");
-        return null;
-      }
-
-      // Step 2: Fetch the actual image using the signed URL
-      final imageResponse = await http.get(Uri.parse(signedUrl));
-      if (imageResponse.statusCode == 200) {
-        return imageResponse.bodyBytes;
-      } else {
-        print("❌ Failed to load image from signed URL. Status: ${imageResponse.statusCode}");
-        print("Headers: ${imageResponse.headers}");
-        print("Body: ${imageResponse.body}");
-        return null;
-      }
-        
-        // Case A: If raw is a String, it's the URL.
-        if (raw is String) {
-          signedUrl = raw;
-        }
-        // Case B: If raw is a Map with key 'signedUrl', use it.
-        else if (raw is Map && raw['signedUrl'] is String) {
-          signedUrl = raw['signedUrl'] as String;
-        } else {
-          print("❌ Unexpected JSON format: $raw");
-          return null;
-        }
-        
-        // Now fetch the image bytes from the signed URL.
-        // final imageResponse = await http.get(Uri.parse(signedUrl));
-        // if (imageResponse.statusCode == 200) {
-        //   return imageResponse.bodyBytes;
-        // } else {
-        //   throw Exception('Failed to load image from signedUrl');
-        // }
-      } else {
-        print("❌ Failed to get blob URL for task $taskid. Status: ${response.statusCode}");
-        return null;
-      }
-    } catch (e) {
-      print("❌ Exception fetching attachment image bytes: $e");
       return null;
-    }
-}
-
-
-  // Example of switching tabs, if your app uses them
-  void _onTabSelected(int index) {
-    // example only; do what your real app needs
-    if (index == 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => MSRAGenerationScreen(project: _project)),
-      );
-    }
-    if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => ProjectScreen(projectId: _project?.projectId))
-      );
+    } catch (e) {
+      return null;
     }
   }
 
@@ -469,218 +183,206 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Onsite Checklist"),
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            ProjectTabWidget(
-              selectedTabIndex: 2,
-              onTabSelected: _onTabSelected,
-            ),
-            const SizedBox(height: 20),
-            ProjectStepperWidget(
-              currentStage: _project.stage,
-              projectId: _project.projectId,
-              onStepTapped: (_) {},
-            ),
-            
-            const Divider(),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Onsite Checklist",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 10),
-            isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : Expanded(
-                    child: ListView(
-                      children: checklistData.entries.map((entry) {
-                        final sectionTitle = entry.key;
-                        final subtypes = entry.value as Map<String, Map<String, dynamic>>;
-                        return _buildChecklistSection(sectionTitle, subtypes);
-                      }).toList(),
-                    ),
-                  ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChecklistSection(
-    String section,
-    Map<String, Map<String, dynamic>> subtypes,
-  ) {
-    return ExpansionTile(
-      title: Text(section, style: const TextStyle(fontWeight: FontWeight.bold)),
-      initiallyExpanded: expandedSections[section] ?? false,
-      onExpansionChanged: (value) {
-        setState(() {
-          expandedSections[section] = value;
-        });
-      },
-      children: subtypes.entries.map((subEntry) {
-        final subtype = subEntry.key;
-        final data = subEntry.value;
-
-        final bool hasComment =
-            data['comments'] != null && data['comments'].trim().isNotEmpty;
-        final bool hasAttachment = data['hasAttachment'] == true;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1) "completed" checkbox
-            CheckboxListTile(
-              title: Text(subtype),
-              value: data['completed'],
-              onChanged: (checked) {
-                setState(() {
-                  data['completed'] = checked!;
-                });
-                updateChecklistStatus(data['taskid'], checked!);
-              },
-              controlAffinity: ListTileControlAffinity.leading,
-            ),
-
-            // 2) Subtype descriptions
-            if (data['expanded'] == true || true)
-              Padding(
-                padding: const EdgeInsets.only(left: 16.0, bottom: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: (data['descriptions'] as List<String>).map((desc) {
-                    return Text("• $desc", style: const TextStyle(fontSize: 13));
-                  }).toList(),
-                ),
-              ),
-
-            // 3) Row of comment + attachment buttons
-            Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 8),
-              child: Wrap(
-                spacing: 8.0,
-                runSpacing: 4.0,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 children: [
-                  // A) Add/Edit Comment
-                  ElevatedButton(
-                    onPressed: () async {
-                      final initialComment = data['comments'] ?? '';
-                      final newComment = await showDialog<String>(
-                        context: context,
-                        builder: (context) => CommentPopup(
-                          initialComment: initialComment,
-                          onCommentAdded: (text) => Navigator.pop(context, text),
-                        ),
-                      );
-                      if (newComment != null) {
-                        // Update server
-                        await updateTaskComments(data['taskid'], newComment);
-                        // Update local
-                        setState(() {
-                          data['comments'] = newComment;
-                        });
-                      }
-                    },
-                    child: Text(hasComment ? "Edit Comment" : "Add Comment"),
-                  ),
-
-                  // B) View Comment (only if we have one)
-                  if (hasComment)
-                    OutlinedButton(
-                      onPressed: () {
-                        final latest = data['comments'];
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: Text("Comment for $subtype"),
-                            content: SingleChildScrollView(
-                              child: Text(latest),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text("Close"),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      child: const Text("View Comment"),
-                    ),
-
-                  // C) Add/Edit Attachment
-                  ElevatedButton(
-                    onPressed: () async {
-                      final pickedData = await showDialog<PickedFileData>(
-                        context: context,
-                        builder: (context) => AttachmentPopup(
-                          onAttach: (fileData) => Navigator.pop(context, fileData),
-                        ),
-                      );
-                      // If user actually picked a file
-                      if (pickedData != null) {
-                        final success = await uploadAttachment(
-                          data['taskid'],
-                          pickedData.bytes,
-                          pickedData.fileName,
-                        );
-                        if (success) {
-                          setState(() {
-                            data['hasAttachment'] = true;
-                          });
-                        }
-                      }
-                    },
-                    child: Text(hasAttachment ? "Edit Attachment" : "Add Attachment"),
-                  ),
-
-                  // D) View Attachment (only if hasAttachment)
-                  if (hasAttachment)
-                    OutlinedButton(
-                      onPressed: () async {
-                        final imageBytes = await fetchAttachmentImageBytes(data['taskid']);
-                        print("image $imageBytes");
-                        if (imageBytes == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("No attachment found or error retrieving."),
-                            ),
-                          );
-                          return;
-                        }
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: Text("Attachment for $subtype"),
-                            content: SizedBox(
-                              width: 400,
-                              height: 400,
-                              child: Image.memory(imageBytes),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text("Close"),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      child: const Text("View Attachment"),
+                  ...checklistData.entries.map((entry) => _buildSection(entry.key, entry.value)),
+                  if (isUploading)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 20),
+                      child: LinearProgressIndicator(),
                     ),
                 ],
               ),
             ),
+    );
+  }
 
-            const Divider(),
-          ],
-        );
-      }).toList(),
+  Widget _buildSection(String section, Map<String, dynamic> subtypes) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ExpansionTile(
+        title: Text(section, style: const TextStyle(fontWeight: FontWeight.bold)),
+        initiallyExpanded: expandedSections[section] ?? false,
+        onExpansionChanged: (expanded) => setState(() => expandedSections[section] = expanded),
+        children: subtypes.entries.map((entry) => _buildSubtype(entry.key, entry.value)).toList(),
+      ),
+    );
+  }
+
+  Widget _buildSubtype(String subtype, Map<String, dynamic> data) {
+    final hasComment = data['comments']?.trim().isNotEmpty ?? false;
+    final hasAttachment = data['hasAttachment'] == true;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        children: [
+          CheckboxListTile(
+            title: Text(subtype),
+            value: data['completed'],
+            onChanged: (value) {
+              setState(() => data['completed'] = value);
+              _updateChecklistStatus(data['taskid'], value!);
+            },
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+          ),
+          
+          if (data['expanded'] || true)
+            Padding(
+              padding: const EdgeInsets.only(left: 16, bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...(data['descriptions'] as List<String>).map((desc) => 
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text("• $desc", style: const TextStyle(fontSize: 14)),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildActionButton(
+                        icon: Icons.comment,
+                        label: hasComment ? "Edit Comment" : "Add Comment",
+                        onPressed: () => _handleCommentAction(data),
+                      ),
+                      if (hasComment)
+                        _buildActionButton(
+                          icon: Icons.visibility,
+                          label: "View Comment",
+                          onPressed: () => _showCommentDialog(subtype, data['comments']),
+                        ),
+                      _buildActionButton(
+                        icon: Icons.attach_file,
+                        label: hasAttachment ? "Change Photo" : "Add Photo",
+                        onPressed: () => _handleAttachmentAction(data),
+                      ),
+                      if (hasAttachment)
+                        _buildActionButton(
+                          icon: Icons.photo,
+                          label: "View Photo",
+                          onPressed: () => _showAttachmentDialog(data['taskid']),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          const Divider(height: 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({required IconData icon, required String label, required VoidCallback onPressed}) {
+    return ElevatedButton.icon(
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        textStyle: const TextStyle(fontSize: 14),
+      ),
+    );
+  }
+
+  Future<void> _handleCommentAction(Map<String, dynamic> data) async {
+    final comment = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Add/Edit Comment"),
+        content: TextField(
+          controller: TextEditingController(text: data['comments']),
+          maxLines: 5,
+          decoration: const InputDecoration(
+            hintText: "Enter your comment...",
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, data['comments']),
+            child: const Text("Save"),
+          ),
+        ],
+      ),
+    );
+
+    if (comment != null) {
+      setState(() => data['comments'] = comment);
+      await _updateTaskComments(data['taskid'], comment);
+    }
+  }
+
+  Future<void> _showCommentDialog(String title, String comment) async {
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Comment for $title"),
+        content: SingleChildScrollView(child: Text(comment)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleAttachmentAction(Map<String, dynamic> data) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+    );
+
+    if (result != null && result.files.isNotEmpty) {
+      final file = result.files.first;
+      if (file.bytes != null) {
+        final success = await _uploadAttachment(data['taskid'], file.bytes!, file.name);
+        if (success) {
+          setState(() => data['hasAttachment'] = true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Attachment uploaded successfully")),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showAttachmentDialog(int taskid) async {
+    final imageBytes = await _fetchAttachment(taskid);
+    if (imageBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Could not load attachment")),
+      );
+      return;
+    }
+
+    await showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: InteractiveViewer(
+          panEnabled: true,
+          minScale: 0.5,
+          maxScale: 3.0,
+          child: Image.memory(imageBytes),
+        ),
+      ),
     );
   }
 }

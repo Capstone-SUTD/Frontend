@@ -21,11 +21,11 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: kIsWeb ? WebSplashScreen() : SplashScreen(), // ✅ Different splash screen for web
+      home: WebSplashScreen(), // ✅ Different splash screen for web
       debugShowCheckedModeBanner: false,  // Remove debug banner
       routes: {
-        '/dashboard': (context) => kIsWeb ? DashboardScreen() : SplashScreen(), 
-        '/projects': (context) => kIsWeb ? AllProjectsScreen() : SplashScreen(),
+        '/dashboard': (context) =>  DashboardScreen(), 
+        '/projects': (context) => AllProjectsScreen(),
       },
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -24,23 +26,19 @@ class _EquipmentRecommendationDialogState
   String trailer = "";
 
   bool _isLoading = false;
+  final _formKey = GlobalKey<FormState>();
 
   Future<void> _callBackendApi(BuildContext context) async {
-    final url = Uri.parse('http://localhost:5000/project/equipment');
-    setState(() {
-      _isLoading = true;
-    });
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
-
-      if (token == null) {
-        throw Exception("Token not found");
-      }
+      final token = prefs.getString('auth_token') ?? "";
 
       final response = await http.post(
-        url,
+        Uri.parse('http://10.0.2.2:3000/project/equipment-reach'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -51,37 +49,40 @@ class _EquipmentRecommendationDialogState
           "width": double.parse(_widthController.text),
           "height": double.parse(_heightController.text),
         }),
-      );
+      ).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-          crane = data['crane'] ?? "N/A";
-          threshold = data['threshold']?.toString() ?? "N/A";
-          trailer = data['trailer'] ?? "N/A";
+          crane = data['crane']?.toString() ?? "Not available";
+          threshold = data['threshold']?.toString() ?? "Not available";
+          trailer = data['trailer']?.toString() ?? "Not available";
         });
-
-        if (mounted) {
-          Navigator.pop(context); // Close the input dialog
-          _showResultsDialog(context); // Show results
-        }
+        _showResultsDialog(context);
       } else {
-        _showErrorSnackbar("Failed to get recommendation. (${response.statusCode})");
+        throw Exception("Server responded with ${response.statusCode}");
       }
+    } on http.ClientException catch (e) {
+      _showError("Network error: ${e.message}");
+    } on TimeoutException {
+      _showError("Request timed out");
+    } on FormatException {
+      _showError("Invalid server response");
     } catch (e) {
-      _showErrorSnackbar("Error: ${e.toString()}");
+      _showError("An error occurred: ${e.toString()}");
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-
-  void _showErrorSnackbar(String message) {
-    if (context.mounted) {
+  void _showError(String message) {
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
       );
     }
   }
@@ -89,134 +90,144 @@ class _EquipmentRecommendationDialogState
   void _showResultsDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          child: SizedBox(
-            width: 400,
-            height: 320,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    "Recommended Equipment",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: TextEditingController(text: crane),
-                    decoration: const InputDecoration(labelText: "Crane"),
-                    readOnly: true,
-                  ),
-                  TextField(
-                    controller: TextEditingController(text: threshold),
-                    decoration: const InputDecoration(labelText: "Threshold"),
-                    readOnly: true,
-                  ),
-                  TextField(
-                    controller: TextEditingController(text: trailer),
-                    decoration: const InputDecoration(labelText: "Trailer"),
-                    readOnly: true,
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          String copyText =
-                              "Crane: $crane\nThreshold: $threshold\nTrailer: $trailer";
-                          Clipboard.setData(ClipboardData(text: copyText));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Copied to clipboard")),
-                          );
-                        },
-                        child: const Text("Copy"),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("Close"),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+      builder: (context) => AlertDialog(
+        title: const Text("Recommended Equipment"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildResultTile("Crane", crane),
+              _buildResultTile("Threshold", threshold),
+              _buildResultTile("Trailer", trailer),
+            ],
           ),
-        );
-      },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(
+                text: "Crane: $crane\nThreshold: $threshold\nTrailer: $trailer",
+              ));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Copied to clipboard")),
+              );
+            },
+            child: const Text("COPY"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("CLOSE"),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildResultTile(String label, String value) {
+    return ListTile(
+      title: Text(label),
+      subtitle: Text(value.isNotEmpty ? value : "Not available"),
+    );
+  }
+
+  String? _validateNumberInput(String? value) {
+    if (value == null || value.isEmpty) return "Required field";
+    final numValue = double.tryParse(value);
+    if (numValue == null) return "Enter a valid number";
+    if (numValue <= 0) return "Must be greater than 0";
+    return null;
+  }
+
+  @override
+  void dispose() {
+    _lengthController.dispose();
+    _widthController.dispose();
+    _heightController.dispose();
+    _weightController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: SizedBox(
-        width: 400,
-        height: 320,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "Cargo Details",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return AlertDialog(
+      title: const Text("Cargo Details"),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _lengthController,
+                decoration: const InputDecoration(
+                  labelText: "Length (m)",
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _lengthController,
-                  decoration: const InputDecoration(labelText: "Length (m)"),
-                  keyboardType: TextInputType.number,
+                keyboardType: TextInputType.number,
+                validator: _validateNumberInput,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _widthController,
+                decoration: const InputDecoration(
+                  labelText: "Width (m)",
+                  border: OutlineInputBorder(),
                 ),
-                TextField(
-                  controller: _widthController,
-                  decoration: const InputDecoration(labelText: "Width (m)"),
-                  keyboardType: TextInputType.number,
+                keyboardType: TextInputType.number,
+                validator: _validateNumberInput,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _heightController,
+                decoration: const InputDecoration(
+                  labelText: "Height (m)",
+                  border: OutlineInputBorder(),
                 ),
-                TextField(
-                  controller: _heightController,
-                  decoration: const InputDecoration(labelText: "Height (m)"),
-                  keyboardType: TextInputType.number,
+                keyboardType: TextInputType.number,
+                validator: _validateNumberInput,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _weightController,
+                decoration: const InputDecoration(
+                  labelText: "Weight (kg)",
+                  border: OutlineInputBorder(),
                 ),
-                TextField(
-                  controller: _weightController,
-                  decoration: const InputDecoration(labelText: "Weight (kg)"),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text("Cancel"),
-                    ),
-                    ElevatedButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => _callBackendApi(context),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text("Run"),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                keyboardType: TextInputType.number,
+                validator: _validateNumberInput,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                ],
+              ),
+            ],
           ),
         ),
       ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text("CANCEL"),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : () => _callBackendApi(context),
+          child: _isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text("RUN"),
+        ),
+      ],
     );
   }
 }
-

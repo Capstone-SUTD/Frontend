@@ -4,235 +4,377 @@ import '../models/project_model.dart';
 class WorkScopeWidget extends StatefulWidget {
   final bool isNewProject;
   final List<Scope>? workScopeList;
+  final Function(List<Map<String, String>>)? onWorkScopeUpdated;
 
-  const WorkScopeWidget({Key? key, required this.isNewProject, this.workScopeList}) : super(key: key);
+  const WorkScopeWidget({
+    Key? key,
+    required this.isNewProject,
+    this.workScopeList,
+    this.onWorkScopeUpdated,
+  }) : super(key: key);
 
   @override
   WorkScopeWidgetState createState() => WorkScopeWidgetState();
 }
 
 class WorkScopeWidgetState extends State<WorkScopeWidget> {
-  List<Map<String, String>> _workScopeList = [];
-  final List<String> _scopeOptions = ["Lifting", "Transportation"];
-  bool get isReadOnly => widget.workScopeList != null && widget.workScopeList!.isNotEmpty;
+  late List<Map<String, String>> _workScopeList;
+  final List<String> _scopeOptions = ["Lifting", "Transportation", "Other"];
+  bool _isReadOnly = false;
+  final _formKey = GlobalKey<FormState>();
 
-  List<Map<String, String>> getWorkScopeData() => _workScopeList;
+  List<Map<String, String>> get workScopeData => _workScopeList;
 
   @override
   void initState() {
     super.initState();
-    if (widget.workScopeList != null && widget.workScopeList!.isNotEmpty) {
-      _workScopeList = widget.workScopeList!
-          .map((scope) => {
-                "startDestination": scope.startdestination,
-                "endDestination": scope.enddestination,
-                "scope": scope.scope,
-                "equipmentList": scope.equipmentList
-              })
-          .toList();
+    _isReadOnly = widget.workScopeList != null && widget.workScopeList!.isNotEmpty;
+    _initializeWorkScopeList();
+  }
+
+  void _initializeWorkScopeList() {
+    if (_isReadOnly) {
+      _workScopeList = widget.workScopeList!.map((scope) {
+        return {
+          "startDestination": scope.startdestination,
+          "endDestination": scope.enddestination,
+          "scope": scope.scope,
+          "equipmentList": scope.equipmentList,
+          "id": scope.id?.toString() ?? "",
+        };
+      }).toList();
     } else if (widget.isNewProject) {
       _workScopeList = [
-        {"startDestination": "", "endDestination": "", "scope": "", "equipmentList": ""}
+        {
+          "startDestination": "",
+          "endDestination": "",
+          "scope": "",
+          "equipmentList": "",
+          "id": DateTime.now().millisecondsSinceEpoch.toString(),
+        }
       ];
+    } else {
+      _workScopeList = [];
     }
   }
 
   void _addRow() {
     setState(() {
-      _workScopeList.add({"startDestination": "", "endDestination": "", "scope": "", "equipmentList": ""});
+      _workScopeList.add({
+        "startDestination": "",
+        "endDestination": "",
+        "scope": "",
+        "equipmentList": "",
+        "id": DateTime.now().millisecondsSinceEpoch.toString(),
+      });
     });
+    _notifyParent();
   }
 
   void _updateWorkScope(int index, String key, String value) {
     setState(() {
       _workScopeList[index][key] = value;
     });
+    _notifyParent();
   }
 
   void _removeRow(int index) {
     setState(() {
       _workScopeList.removeAt(index);
     });
+    _notifyParent();
+  }
+
+  void _notifyParent() {
+    if (widget.onWorkScopeUpdated != null) {
+      widget.onWorkScopeUpdated!(_workScopeList);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Work Scope Header
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              "Work Scope Details",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            if (!isReadOnly)
-              ElevatedButton.icon(
-                onPressed: _addRow,
-                icon: const Icon(Icons.add),
-                label: const Text("Add Row"),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
+    final theme = Theme.of(context);
+    final isSmallScreen = MediaQuery.of(context).size.width < 600;
 
-        Table(
-          border: TableBorder.all(color: Colors.grey),
-          columnWidths: isReadOnly
-              ? {
-                  0: FlexColumnWidth(3),
-                  1: FlexColumnWidth(3),
-                  2: FlexColumnWidth(2),
-                  3: FlexColumnWidth(3),
-                }
-              : {
-                  0: FlexColumnWidth(3),
-                  1: FlexColumnWidth(3),
-                  2: FlexColumnWidth(2),
-                  3: FlexColumnWidth(3),
-                  4: FlexColumnWidth(1),
-                },
-          children: [
-            // Table Header
-            TableRow(
-              decoration: BoxDecoration(color: Colors.grey[300]),
-              children: [
-                _buildHeaderCell("Start Destination"),
-                _buildHeaderCell("End Destination"),
-                _buildHeaderCell("Scope"),
-                _buildHeaderCell("Equipment"),
-                if (!isReadOnly) _buildHeaderCell("Action"),
-              ],
-            ),
-
-            // Table Data Rows
-            for (int i = 0; i < _workScopeList.length; i++)
-              TableRow(
-                children: [
-                  _buildTableCell(i, "startDestination"),
-                  _buildTableCell(i, "endDestination"),
-                  _buildDropdownCell(i),
-                  _buildEquipmentCell(i),
-                  if (!isReadOnly) (i == 0 ? _buildEmptyActionCell() : _buildActionCell(i)),
-                ],
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Work Scope Details",
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-          ],
-        ),
-        const SizedBox(height: 15),
-      ],
+              if (!_isReadOnly)
+                ElevatedButton.icon(
+                  onPressed: _addRow,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text("Add Scope"),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          if (_workScopeList.isEmpty)
+            const Center(child: Text("No work scopes added")),
+          
+          if (_workScopeList.isNotEmpty)
+            SingleChildScrollView(
+              scrollDirection: isSmallScreen ? Axis.horizontal : Axis.vertical,
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: theme.dividerColor),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Table(
+                  border: TableBorder.symmetric(
+                    inside: BorderSide(color: theme.dividerColor),
+                  ),
+                  columnWidths: {
+                    0: const FlexColumnWidth(3),
+                    1: const FlexColumnWidth(3),
+                    2: const FlexColumnWidth(2),
+                    3: const FlexColumnWidth(3),
+                    if (!_isReadOnly) 4: const FixedColumnWidth(60),
+                  },
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  children: [
+                    // Table Header
+                    TableRow(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceVariant,
+                      ),
+                      children: [
+                        _buildHeaderCell("Start Destination", theme),
+                        _buildHeaderCell("End Destination", theme),
+                        _buildHeaderCell("Scope", theme),
+                        _buildHeaderCell("Equipment", theme),
+                        if (!_isReadOnly) _buildHeaderCell("", theme),
+                      ],
+                    ),
+
+                    // Table Data Rows
+                    for (int i = 0; i < _workScopeList.length; i++)
+                      TableRow(
+                        decoration: BoxDecoration(
+                          color: i.isEven
+                              ? theme.colorScheme.surface
+                              : theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                        ),
+                        children: [
+                          _buildTableCell(i, "startDestination", theme),
+                          _buildTableCell(i, "endDestination", theme),
+                          _buildDropdownCell(i, theme),
+                          _buildEquipmentCell(i, theme),
+                          if (!_isReadOnly) _buildActionCell(i, theme),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
-  Widget _buildHeaderCell(String title) {
+  Widget _buildHeaderCell(String title, ThemeData theme) {
     return TableCell(
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         child: Text(
           title,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTableCell(int index, String key) {
+  Widget _buildTableCell(int index, String key, ThemeData theme) {
     return TableCell(
       child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: isReadOnly
-            ? Text(_workScopeList[index][key] ?? "", textAlign: TextAlign.center)
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        child: _isReadOnly
+            ? Text(
+                _workScopeList[index][key] ?? "",
+                style: theme.textTheme.bodyMedium,
+              )
             : TextFormField(
                 initialValue: _workScopeList[index][key],
-                textAlign: TextAlign.center,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                style: theme.textTheme.bodyMedium,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Required';
+                  }
+                  return null;
+                },
                 onChanged: (value) => _updateWorkScope(index, key, value),
-                decoration: const InputDecoration(border: InputBorder.none),
               ),
       ),
     );
   }
 
-  Widget _buildDropdownCell(int index) {
+  Widget _buildDropdownCell(int index, ThemeData theme) {
     return TableCell(
       child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: isReadOnly
-            ? Text(_workScopeList[index]["scope"] ?? "", textAlign: TextAlign.center)
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        child: _isReadOnly
+            ? Text(
+                _workScopeList[index]["scope"] ?? "",
+                style: theme.textTheme.bodyMedium,
+              )
             : DropdownButtonFormField<String>(
-                value: _workScopeList[index]["scope"]!.isNotEmpty ? _workScopeList[index]["scope"] : null,
+                value: _workScopeList[index]["scope"]!.isNotEmpty
+                    ? _workScopeList[index]["scope"]
+                    : null,
                 items: _scopeOptions.map((option) {
-                  return DropdownMenuItem(value: option, child: Text(option));
+                  return DropdownMenuItem(
+                    value: option,
+                    child: Text(option),
+                  );
                 }).toList(),
-                onChanged: (value) => _updateWorkScope(index, "scope", value!),
-                decoration: const InputDecoration(border: InputBorder.none),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                style: theme.textTheme.bodyMedium,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Select scope';
+                  }
+                  return null;
+                },
+                onChanged: (value) {
+                  if (value != null) {
+                    _updateWorkScope(index, "scope", value);
+                    // Clear equipment when scope changes
+                    _updateWorkScope(index, "equipmentList", "");
+                  }
+                },
               ),
       ),
     );
   }
 
-  Widget _buildEquipmentCell(int index) {
-    String equipmentValue = _workScopeList[index]["equipmentList"] ?? "";
+  Widget _buildEquipmentCell(int index, ThemeData theme) {
+    final scope = _workScopeList[index]["scope"] ?? "";
+    final equipmentValue = _workScopeList[index]["equipmentList"] ?? "";
 
     return TableCell(
       child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: isReadOnly
-            ? Text(equipmentValue, textAlign: TextAlign.center)
-            : _workScopeList[index]["scope"] == "Lifting"
-                ? TextFormField(
-                    textAlign: TextAlign.center,
-                    onChanged: (value) {
-                      _updateWorkScope(index, "equipmentList", "$value ton crane");
-                    },
-                    decoration: const InputDecoration(
-                      labelText: "Enter Crane Threshold (Tons)",
-                      border: InputBorder.none,
-                    ),
-                  )
-                : _workScopeList[index]["scope"] == "Transportation"
-                    ? TextFormField(
-                        textAlign: TextAlign.center,
-                        onChanged: (value) {
-                          _updateWorkScope(index, "equipmentList", "$value trailer");
-                        },
-                        decoration: const InputDecoration(
-                          labelText: "Enter Trailer",
-                          border: InputBorder.none,
-                        ),
-                      )
-                    : TextFormField(
-                        initialValue: equipmentValue,
-                        textAlign: TextAlign.center,
-                        onChanged: (value) {
-                          _updateWorkScope(index, "equipmentList", value);
-                        },
-                        decoration: const InputDecoration(
-                          labelText: "",
-                          border: InputBorder.none,
-                        ),
-                      ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        child: _isReadOnly
+            ? Text(equipmentValue, style: theme.textTheme.bodyMedium)
+            : _buildEquipmentInput(index, scope, theme),
       ),
     );
   }
 
-  Widget _buildActionCell(int index) {
+  Widget _buildEquipmentInput(int index, String scope, ThemeData theme) {
+    switch (scope) {
+      case "Lifting":
+        return TextFormField(
+          initialValue: _workScopeList[index]["equipmentList"]
+              ?.replaceAll(" ton crane", ""),
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            isDense: true,
+            contentPadding: EdgeInsets.zero,
+            hintText: "Enter tons",
+          ),
+          style: theme.textTheme.bodyMedium,
+          keyboardType: TextInputType.number,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Enter tons';
+            }
+            if (double.tryParse(value) == null) {
+              return 'Enter valid number';
+            }
+            return null;
+          },
+          onChanged: (value) {
+            if (value.isNotEmpty) {
+              _updateWorkScope(index, "equipmentList", "$value ton crane");
+            }
+          },
+        );
+      case "Transportation":
+        return TextFormField(
+          initialValue: _workScopeList[index]["equipmentList"]
+              ?.replaceAll(" trailer", ""),
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            isDense: true,
+            contentPadding: EdgeInsets.zero,
+            hintText: "Enter trailer type",
+          ),
+          style: theme.textTheme.bodyMedium,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Enter trailer';
+            }
+            return null;
+          },
+          onChanged: (value) {
+            if (value.isNotEmpty) {
+              _updateWorkScope(index, "equipmentList", "$value trailer");
+            }
+          },
+        );
+      default:
+        return TextFormField(
+          initialValue: _workScopeList[index]["equipmentList"],
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            isDense: true,
+            contentPadding: EdgeInsets.zero,
+            hintText: "Enter equipment",
+          ),
+          style: theme.textTheme.bodyMedium,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Enter equipment';
+            }
+            return null;
+          },
+          onChanged: (value) => _updateWorkScope(index, "equipmentList", value),
+        );
+    }
+  }
+
+  Widget _buildActionCell(int index, ThemeData theme) {
     return TableCell(
-      verticalAlignment: TableCellVerticalAlignment.middle,
       child: Center(
         child: IconButton(
-          icon: const Icon(Icons.delete, color: Colors.red),
+          icon: Icon(Icons.delete, color: theme.colorScheme.error),
           onPressed: () => _removeRow(index),
+          tooltip: 'Remove scope',
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
         ),
       ),
     );
   }
 
-  Widget _buildEmptyActionCell() {
-    return const TableCell(
-      verticalAlignment: TableCellVerticalAlignment.middle,
-      child: Center(child: SizedBox()), // Empty placeholder
-    );
+  bool validate() {
+    if (_formKey.currentState == null) return false;
+    return _formKey.currentState!.validate();
   }
 }

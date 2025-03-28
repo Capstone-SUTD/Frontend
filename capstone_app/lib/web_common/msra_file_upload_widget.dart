@@ -1,77 +1,51 @@
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class FileUploadWidget extends StatefulWidget {
-  const FileUploadWidget({Key? key}) : super(key: key);
-
   @override
-  FileUploadWidgetState createState() => FileUploadWidgetState();
+  _FileUploadWidgetState createState() => _FileUploadWidgetState();
 }
 
-class FileUploadWidgetState extends State<FileUploadWidget> {
-  List<html.File> _uploadedFiles = [];
+class _FileUploadWidgetState extends State<FileUploadWidget> {
+  String? _fileName;
   bool _isDragging = false;
+  PlatformFile? _pickedFile;
 
-  List<html.File> getUploadedFiles() {
-    return _uploadedFiles;
-  }
+  Future<void> _pickFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx'],
+      );
 
-  void _pickFiles() {
-    final uploadInput = html.FileUploadInputElement();
-    uploadInput.accept = '.pdf,.doc,.docx,.csv,.xlsx';
-    uploadInput.multiple = true; 
-    uploadInput.click();
-
-    uploadInput.onChange.listen((event) {
-      final files = uploadInput.files;
-      if (files != null && files.isNotEmpty) {
+      if (result != null) {
         setState(() {
-          _uploadedFiles.addAll(files);
+          _pickedFile = result.files.first;
+          _fileName = _pickedFile?.name;
         });
       }
-    });
-  }
-
-  void _handleDrop(html.Event event) {
-    event.preventDefault();
-    final dragEvent = event as dynamic;
-    final html.DataTransfer? dataTransfer = dragEvent.dataTransfer;
-
-    if (dataTransfer != null && dataTransfer.files!.isNotEmpty) {
-      setState(() {
-        _uploadedFiles.addAll(dataTransfer.files!);
-      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking file: $e')),
+      );
     }
   }
 
-  void _handleDragOver(html.Event event) {
-    event.preventDefault();
-    setState(() {
-      _isDragging = true;
-    });
+  void _handleDragEnter(DragTargetDetails details) {
+    setState(() => _isDragging = true);
   }
 
-  void _handleDragLeave(html.Event event) {
-    event.preventDefault();
+  void _handleDragExit() {
+    setState(() => _isDragging = false);
+  }
+
+  void _handleDrop(DragTargetDetails<PlatformFile> details) {
     setState(() {
       _isDragging = false;
+      _pickedFile = details.data;
+      _fileName = _pickedFile?.name;
     });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    html.document.body?.addEventListener('dragover', _handleDragOver);
-    html.document.body?.addEventListener('drop', _handleDrop);
-    html.document.body?.addEventListener('dragleave', _handleDragLeave);
-  }
-
-  @override
-  void dispose() {
-    html.document.body?.removeEventListener('dragover', _handleDragOver);
-    html.document.body?.removeEventListener('drop', _handleDrop);
-    html.document.body?.removeEventListener('dragleave', _handleDragLeave);
-    super.dispose();
   }
 
   @override
@@ -80,49 +54,82 @@ class FileUploadWidgetState extends State<FileUploadWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Upload MSRA files",
+          "Upload Vendor MSRA here",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
         GestureDetector(
-          onTap: _pickFiles,
-          child: Container(
-            width: double.infinity,
-            height: 180,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(8),
-              color: _isDragging ? Colors.blue.withOpacity(0.1) : Colors.white,
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.cloud_upload, size: 50, color: Colors.grey),
-                  const SizedBox(height: 8),
-                  const Text("Choose or drag & drop multiple files"),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _pickFiles,
-                    child: const Text("Browse Files"),
-                  ),
-                  const SizedBox(height: 10),
-                  if (_uploadedFiles.isNotEmpty)
-                    Column(
-                      children: _uploadedFiles
-                          .map((file) => Text("• ${file.name}"))
-                          .toList(),
+          onTap: _pickFile,
+          child: MouseRegion(
+            onEnter: (_) => setState(() => _isDragging = true),
+            onExit: (_) => setState(() => _isDragging = false),
+            child: DragTarget<PlatformFile>(
+              onWillAcceptWithDetails: (_) => true,
+              onAcceptWithDetails: _handleDrop,
+              onLeave: (_) => _handleDragExit(),
+              builder: (context, candidateData, rejectedData) {
+                return Container(
+                  width: double.infinity,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: _isDragging ? Colors.blue : Colors.grey,
+                      width: _isDragging ? 2 : 1,
                     ),
-                ],
-              ),
+                    borderRadius: BorderRadius.circular(8),
+                    color: _isDragging 
+                        ? Colors.blue.withOpacity(0.1) 
+                        : Colors.grey.withOpacity(0.05),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _isDragging ? Icons.file_upload : Icons.cloud_upload,
+                        size: 50,
+                        color: _isDragging ? Colors.blue : Colors.grey,
+                      ),
+                      const SizedBox(height: 8),
+                      if (_fileName == null)
+                        Text(
+                          _isDragging 
+                              ? "Drop your file here"
+                              : "Choose a file or drag & drop it here",
+                          style: TextStyle(
+                            color: _isDragging ? Colors.blue : Colors.grey,
+                          ),
+                        ),
+                      if (_fileName != null)
+                        Text(
+                          "Uploaded: $_fileName",
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      const SizedBox(height: 10),
+                      ElevatedButton(
+                        onPressed: _pickFile,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _isDragging ? Colors.blue : null,
+                        ),
+                        child: Text(
+                          _isDragging ? "Release to upload" : "Browse File",
+                          style: TextStyle(
+                            color: _isDragging ? Colors.white : null,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ),
       ],
     );
   }
+
+  // Add this method to get the picked file data
+  PlatformFile? getPickedFile() {
+    return _pickedFile;
+  }
 }
-
-
-
-

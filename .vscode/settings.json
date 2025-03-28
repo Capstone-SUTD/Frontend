@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "/Users/kripashree/Documents/GitHub/Frontend/capstone_app/linux"
+    "cmake.sourceDirectory": "/Users/kripashree/Documents/GitHub/Frontend/capstone_app/linux",
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

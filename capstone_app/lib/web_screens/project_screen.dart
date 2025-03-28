@@ -10,8 +10,7 @@ import '../web_common/msra_file_upload_widget.dart';
 import 'msra_generation_screen.dart';
 import 'onsite_checklist_screen.dart';
 import 'package:http/http.dart' as http;
-import 'dart:html' as html;
-import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../web_common/step_label.dart';
@@ -36,11 +35,11 @@ class _ProjectScreenState extends State<ProjectScreen> {
   int selectedTabIndex = 0;
   int currentStep = 0;
   List<String> resultsOOG = [];
+  List<PlatformFile> uploadedFiles = [];
 
   final GlobalKey<ProjectFormWidgetState> _formKey = GlobalKey<ProjectFormWidgetState>();
   final GlobalKey<CargoDetailsTableWidgetState> _cargoKey = GlobalKey<CargoDetailsTableWidgetState>();
   final GlobalKey<WorkScopeWidgetState> _workScopeKey = GlobalKey<WorkScopeWidgetState>();
-  final GlobalKey<FileUploadWidgetState> _fileUploadKey = GlobalKey<FileUploadWidgetState>();
 
   @override
   void initState() {
@@ -116,25 +115,29 @@ class _ProjectScreenState extends State<ProjectScreen> {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
 
-    final body = jsonEncode({
+    final response = await http.post(
+      Uri.parse('http://10.0.2.2:3000/project/new'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+
+    
+    body: jsonEncode({
       "projectname": _formKey.currentState?.getProjectName(),
       "client": _formKey.currentState?.getClient(),
       "emailsubjectheader": _formKey.currentState?.getEmailSubjectHeader(),
       "stakeholders": stakeholders,
       "cargo": cargo,
-    });
-
-    final response = await http.post(
-      Uri.parse('http://localhost:5000/project/new'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: body,
+    }),
     );
-
+    
     if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
+    return json.decode(response.body);
+  } else {
+    throw Exception('Failed to create project');
+  }
+}
 
       bool setOOG = false;
       List<String> resultList = [];
@@ -142,8 +145,6 @@ class _ProjectScreenState extends State<ProjectScreen> {
         for (int i = 0; i < responseData['cargo'].length; i++) {
           String? oogResult = responseData['cargo'][i]['oog'];
           String result = oogResult == "Yes" ? "OOG" : "Normal";
-          
-          // Create a new Cargo object and add it to the updatedCargo list
           resultList.add(result);
 
           if (oogResult == "Yes") {
@@ -173,20 +174,36 @@ class _ProjectScreenState extends State<ProjectScreen> {
           cargo: [], 
           scope: [],
         );
-
       });
     } else {
       print("Failed to classify OOG. Status: ${response.statusCode}");
     }
   }
 
-  void onSavePressed() async {
-    final projectId = _project?.projectId ?? "";
-    final rawScopeList = _workScopeKey.currentState?.getWorkScopeData() ?? [];
-    final uploadedFiles = _fileUploadKey.currentState?.getUploadedFiles() ?? [];
+  Future<void> pickFiles() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx'],
+      );
 
-    html.File? vendorMS;
-    html.File? vendorRA;
+      if (result != null) {
+        setState(() {
+          uploadedFiles = result.files;
+        });
+      }
+    } catch (e) {
+      print("Error picking files: $e");
+    }
+  }
+
+  Future<void> onSavePressed() async {
+    final projectId = _project?.projectId ?? "";
+    final rawScopeList = _workScopeKey.currentState?.workScopeData ?? [];
+
+    PlatformFile? vendorMS;
+    PlatformFile? vendorRA;
 
     for (final file in uploadedFiles) {
       final name = file.name.toLowerCase();
@@ -196,10 +213,6 @@ class _ProjectScreenState extends State<ProjectScreen> {
         vendorRA = file;
       }
     }
-
-    // If neither file is uploaded, set them to null so nothing is appended
-    vendorMS ??= null;
-    vendorRA ??= null;
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -215,71 +228,66 @@ class _ProjectScreenState extends State<ProjectScreen> {
         };
       }).toList();
 
-      final formData = html.FormData();
-      
-      // Append the files only if they exist
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('http://10.0.2.2:3000/project/save'),
+      );
+
+      request.headers['Authorization'] = 'Bearer $token';
+      request.fields['projectid'] = projectId;
+      request.fields['scope'] = jsonEncode(scopeList);
+
       if (vendorMS != null) {
-        formData.appendBlob('VendorMS', vendorMS, vendorMS.name);
-      } else {
-        // If no MS file, append an empty field or pass null
-        formData.append('VendorMS', '');
+        request.files.add(await http.MultipartFile.fromPath(
+          'VendorMS',
+          vendorMS.path!,
+          filename: vendorMS.name,
+        ));
       }
-      
+
       if (vendorRA != null) {
-        formData.appendBlob('VendorRA', vendorRA, vendorRA.name);
-      } else {
-        // If no RA file, append an empty field or pass null
-        formData.append('VendorRA', '');
+        request.files.add(await http.MultipartFile.fromPath(
+          'VendorRA',
+          vendorRA.path!,
+          filename: vendorRA.name,
+        ));
       }
 
-      formData.append('projectid', projectId);
-      formData.append('scope', jsonEncode(scopeList));
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
 
-      final request = html.HttpRequest();
-      request
-        ..open('POST', 'http://localhost:5000/project/save')
-        ..setRequestHeader('Authorization', 'Bearer $token')
-        ..onLoadEnd.listen((event) async {
-          if (request.status == 200) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Project saved successfully.")),
-            );
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Project saved successfully.")),
+        );
 
-            // ✅ Generate Checklist (AFTER project is saved)
-            final generateChecklistResponse = await http.post(
-              Uri.parse('http://localhost:5000/project/generate-checklist'),
-              headers: {
-                'Authorization': 'Bearer $token',
-                'Content-Type': 'application/json',
-              },
-              body: jsonEncode({'projectid': int.tryParse(projectId)}),
-            );
+        final generateChecklistResponse = await http.post(
+          Uri.parse('http://10.0.2.2:3000/project/generate-checklist'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({'projectid': int.tryParse(projectId)}),
+        );
 
-            if (generateChecklistResponse.statusCode == 200) {
-              print("✅ Checklist generated successfully.");
-              setState(() {
-                isSaved = true;
-                showChecklist = true;
-                isGenerateMSRAEnabled = true;
-              });
-            } else {
-              print("❌ Checklist generation failed: ${generateChecklistResponse.body}");
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Checklist generation failed")),
-              );
-            }
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Error: ${request.status} - ${request.responseText}")),
-            );
-          }
-        })
-        ..onError.listen((e) {
+        if (generateChecklistResponse.statusCode == 200) {
+          print("✅ Checklist generated successfully.");
+          setState(() {
+            isSaved = true;
+            showChecklist = true;
+            isGenerateMSRAEnabled = true;
+          });
+        } else {
+          print("❌ Checklist generation failed: ${generateChecklistResponse.body}");
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Error saving project: $e")),
+            const SnackBar(content: Text("Checklist generation failed")),
           );
-        })
-        ..send(formData);
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: ${response.statusCode} - $responseBody")),
+        );
+      }
     } catch (e) {
       print("Error saving project: $e");
       ScaffoldMessenger.of(context).showSnackBar(
@@ -287,27 +295,40 @@ class _ProjectScreenState extends State<ProjectScreen> {
       );
     }
   }
-
-  Future<Project?> fetchProjectById(String projectId) async {
+Future<Project?> fetchProjectById(String projectId) async {
+  try {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
+    if (token == null) throw Exception("Authentication token missing");
 
     final response = await http.get(
-      Uri.parse('http://localhost:5000/project/list'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
+      Uri.parse('http://10.0.2.2:3000/project/list'),
+      headers: {'Authorization': 'Bearer $token'},
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      final projectJson = data.firstWhere((p) => p['projectid'].toString() == projectId, orElse: () => null);
-      return projectJson != null ? Project.fromJson(projectJson) : null;
-    }
+      final dynamic responseData = json.decode(response.body);
+      
+      // Ensure response is a list
+      if (responseData is! List) {
+        throw FormatException("Expected list but got ${responseData.runtimeType}");
+      }
 
+      // Find matching project with proper type conversion
+      final projectJson = responseData.cast<Map<String, dynamic>>().firstWhere(
+        (p) => p['projectid']?.toString() == projectId,
+        orElse: () => null,
+      );
+
+      return projectJson != null ? Project.fromJson(projectJson) : null;
+    } else {
+      throw Exception("Failed to load projects: ${response.statusCode}");
+    }
+  } catch (e) {
+    print("Error fetching project: $e");
     return null;
   }
-
+}
 
   void onTabSelected(int index) {
     setState(() {
@@ -334,183 +355,160 @@ class _ProjectScreenState extends State<ProjectScreen> {
     }
   }
 
-@override
-Widget build(BuildContext context) {
-  if (isLoading) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(isNewProject ? "New Project" : _project!.projectName),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          if (!isNewProject && isOOG)
+            PopupMenuButton<int>(
+              onSelected: onTabSelected,
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 1,
+                  child: Text("Generate MS/RA"),
+                ),
+                const PopupMenuItem(
+                  value: 2,
+                  child: Text("Onsite Checklist"),
+                ),
+              ],
+            ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ProjectFormWidget(
+              key: _formKey,
+              project: _project,
+              isNewProject: isNewProject,
+            ),
+            const SizedBox(height: 20),
+            CargoDetailsTableWidget(
+              key: _cargoKey,
+              cargoList: _project!.cargo,
+              isNewProject: isNewProject,
+              isEditable: isNewProject,
+              hasRun: hasRun,
+              onRunPressed: _onRunPressed,
+              resultList: resultsOOG,
+            ),
+            const SizedBox(height: 20),
+            if (isOOG) ...[
+              WorkScopeWidget(
+                key: _workScopeKey,
+                isNewProject: isNewProject,
+                workScopeList: isNewProject ? null 
+                : _project!.scope,
+              ),
+              const SizedBox(height: 20),
+              if (isNewProject || (_project!.scope?.isEmpty ?? true)) ...[
+                ElevatedButton(
+                  onPressed: pickFiles,
+                  child: const Text("Upload Files"),
+                ),
+                if (uploadedFiles.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 10),
+                      const Text("Uploaded files:"),
+                      ...uploadedFiles.map((file) => Text(file.name)),
+                    ],
+                  ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    ElevatedButton(
+                      onPressed: isSaved ? null : onSavePressed,
+                      child: const Text("Save"),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 20),
+              if ((isOOG && isSaved) || (isOOG && _project?.msra != true && !(_project!.scope?.isEmpty ?? true))) ...[
+                Center(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final prefs = await SharedPreferences.getInstance();
+                      final token = prefs.getString('auth_token');
+                      final rawProjectId = _project?.projectId;
+
+                      int? projectId = int.tryParse(rawProjectId.toString());
+
+                      if (projectId == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Invalid project ID.")),
+                        );
+                        return;
+                      }
+
+                      try {
+                        final response = await http.post(
+                          Uri.parse('http://10.0.2.2:3000/project/generate-docs'),
+                          headers: {
+                            'Authorization': 'Bearer $token',
+                            'Content-Type': 'application/json',
+                          },
+                          body: jsonEncode({
+                            'projectid': projectId,
+                          }),
+                        );
+
+                        if (response.statusCode == 200) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("MS/RA generated successfully")),
+                          );
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MSRAGenerationScreen(project: _project),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Generation failed: ${response.body}")),
+                          );
+                        }
+                      } catch (e) {
+                        print("Error triggering MS/RA generation: $e");
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("An error occurred while generating MS/RA"),
+                          ),
+                        );
+                      }
+                    },
+                    child: const Text("Generate MS/RA"),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+            ],
+            if ((isOOG && isSaved) || (isOOG && !(_project!.scope?.isEmpty ?? true)))
+              OffsiteChecklistWidget(
+                projectId: int.tryParse(_project?.projectId.toString() ?? '0') ?? 0,
+              ),
+          ],
+        ),
+      ),
     );
   }
-
-  return Scaffold(
-    appBar: AppBar(
-      title: Text(isNewProject ? "New Project" : _project!.projectName),
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => Navigator.pop(context),
-      ),
-    ),
-    body: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!isNewProject && isOOG)
-          ProjectTabWidget(
-            selectedTabIndex: selectedTabIndex,
-            onTabSelected: onTabSelected,
-          ),
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 3,
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ProjectFormWidget(
-                          key: _formKey,
-                          project: _project,
-                          isNewProject: isNewProject,
-                        ),
-                        const SizedBox(height: 20),
-                        CargoDetailsTableWidget(
-                          key: _cargoKey,
-                          cargoList: _project!.cargo,
-                          isNewProject: isNewProject,
-                          isEditable: isNewProject,
-                          hasRun: hasRun,
-                          onRunPressed: _onRunPressed,
-                          resultList: resultsOOG,
-                        ),
-                        const SizedBox(height: 20),
-                        if (isOOG) ...[
-                          WorkScopeWidget(
-                            key: _workScopeKey,
-                            isNewProject: isNewProject,
-                            workScopeList: isNewProject ? null : _project!.scope,
-                          ),
-                          const SizedBox(height: 20),
-                          // Conditionally render the file upload section and Save button
-                          if (isNewProject || (_project!.scope?.isEmpty ?? true)) ...[
-                            Container(
-                              width: 400,
-                              child: FileUploadWidget(
-                                key: _fileUploadKey,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                ElevatedButton(
-                                  onPressed: isSaved ? null : onSavePressed,
-                                  child: const Text("Save"),
-                                ),
-                                const SizedBox(width: 10),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 20),
-                // Conditionally render the "Generate MS/RA" button
-                if ((isOOG && isSaved) || (isOOG && _project?.msra != true && !( _project!.scope?.isEmpty ?? true))) ...[
-                  Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () async {
-                              final prefs = await SharedPreferences.getInstance();
-                              final token = prefs.getString('auth_token');
-
-                              // Handle null or unexpected project ID
-                              final rawProjectId = _project?.projectId;
-
-                              print('Type of projectId: ${rawProjectId.runtimeType}');
-                              print('Value of projectId: $rawProjectId');
-
-                              int? projectId;
-
-                              // Handle different projectId types (Set or other types)
-                              if (rawProjectId is Set) {
-                                final firstValue = (rawProjectId as Set).first;
-                                projectId = int.tryParse(firstValue.toString());
-                              } else {
-                                projectId = int.tryParse(rawProjectId.toString());
-                              }
-
-                              if (projectId == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text("Invalid project ID.")),
-                                );
-                                return;
-                              }
-
-                              try {
-                                final response = await http.post(
-                                  Uri.parse('http://localhost:5000/project/generate-docs'),
-                                  headers: {
-                                    'Authorization': 'Bearer $token',
-                                    'Content-Type': 'application/json',
-                                  },
-                                  body: jsonEncode({
-                                    'projectid': projectId,
-                                  }),
-                                );
-
-                                if (response.statusCode == 200) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("MS/RA generated successfully")),
-                                  );
-
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => MSRAGenerationScreen(project: _project),
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("Generation failed: ${response.body}")),
-                                  );
-                                }
-                              } catch (e) {
-                                print("Error triggering MS/RA generation: $e");
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text("An error occurred while generating MS/RA"),
-                                  ),
-                                );
-                              }
-                            },
-                            child: const Text("Generate MS/RA"),
-                          ),
-                        ],
-                      ),
-                          ],
-                          const SizedBox(height: 20),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              if ((isOOG && isSaved) || (isOOG && !( _project!.scope?.isEmpty ?? true)))
-                Expanded(
-                  flex: 1,
-                  child: SingleChildScrollView(
-                    child: OffsiteChecklistWidget(
-                      projectId: int.tryParse(_project?.projectId.toString() ?? '0') ?? 0,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
 }
