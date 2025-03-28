@@ -161,7 +161,7 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTextField("Name", _nameController),
+        _buildTextField("Project Name", _nameController),
         const SizedBox(height: 16),
         _buildTextField("Client", _clientController),
         const SizedBox(height: 16),

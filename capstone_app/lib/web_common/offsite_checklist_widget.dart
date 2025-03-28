@@ -43,11 +43,13 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
 
           int? taskId = content['taskid'];
           bool completed = content['completed'] ?? false;
-          String comments = content['comments'] ?? "";
+          bool has_comments = content['has_comments'] ?? false;
+          bool has_attachment = content['has_attachment'] ?? false;
+          // String comments = content['comments'] ?? "";
 
           // Extract all other keys as descriptions
           content.forEach((key, value) {
-            if (key != 'taskid' && key != 'completed' && key != 'comments') {
+            if (key != 'taskid' && key != 'completed' && key != 'has_comments' && key != 'has_attachment') {
               if (value is String) {
                 descriptions.add(value);
               } else if (value is List) {
@@ -61,7 +63,9 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
           checklistData[section] = {
             'taskid': taskId,
             'completed': completed,
-            'comments': comments,
+            'has_comments': has_comments,
+            'has_attachment': has_attachment,
+            //'comments': comments,
             'descriptions': descriptions
           };
 

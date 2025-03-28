@@ -100,7 +100,7 @@ class _AttachmentPopupState extends State<AttachmentPopup> {
 }
 
 /// ---------------------------------------------------------------------------
-///  CommentPopup: add or edit a comment
+///  CommentPopup: simple text field for add comment
 /// ---------------------------------------------------------------------------
 class CommentPopup extends StatefulWidget {
   final String initialComment;
@@ -128,7 +128,7 @@ class _CommentPopupState extends State<CommentPopup> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Add/Edit Comment"),
+      title: const Text("Comments"),
       content: TextField(
         controller: _controller,
         maxLines: 5,
@@ -150,6 +150,251 @@ class _CommentPopupState extends State<CommentPopup> {
         ),
       ],
     );
+  }
+}
+
+/// ---------------------------------------------------------------------------
+///  View CommentPopup: display the entire conversation
+/// ---------------------------------------------------------------------------
+class CommentsConversationPopup extends StatefulWidget {
+  final int taskid;
+  final String taskName;
+  final int projectid;
+
+  const CommentsConversationPopup({
+    Key? key,
+    required this.taskid,
+    required this.taskName,
+    required this.projectid,
+  }) : super(key: key);
+
+  @override
+  _CommentsConversationPopupState createState() => _CommentsConversationPopupState();
+}
+
+class _CommentsConversationPopupState extends State<CommentsConversationPopup> {
+  bool isLoading = true;
+  List<dynamic> comments = [];
+  Map<int, bool> isEditing = {}; // track editing state
+  Map<int, TextEditingController> controllers = {}; // one controller per comment
+
+  @override
+  void initState() {
+    super.initState();
+    loadComments();
+  }
+
+  Future<List<dynamic>> getTaskComments(int taskid) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      final response = await http.get( // ✅ Use GET instead of POST for reading
+        Uri.parse("http://localhost:5000/project/get-task-comments?taskid=${taskid.toString()}"),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print("✅ Successfully fetched comments for task $taskid");
+
+        final decoded = json.decode(response.body);
+
+        // Ensure the data is a List of Maps and convert any string keys if needed
+        if (decoded is List) {
+          return decoded.map((comment) {
+            return {
+              'commentid': int.tryParse(comment['commentid'].toString()) ?? 0,
+              'comments': comment['comments'] ?? '',
+              'username': comment['username'] ?? '',
+            };
+          }).toList();
+        } else {
+          print("❌ Unexpected response format: $decoded");
+          return [];
+        }
+      } else {
+        print("❌ Failed to fetch comments. Status: ${response.statusCode}");
+        return [];
+      }
+    } catch (e) {
+      print("❌ Exception fetching task comments: $e");
+      return [];
+    }
+  }
+
+    Future<void> updateTaskComment(int commentid, String newComment) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      final response = await http.post(
+        Uri.parse("http://localhost:5000/project/update-task-comments"),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json'
+        },
+        body: jsonEncode({
+          'commentid': commentid,
+          'comments': newComment,
+        }),
+      );
+      if (response.statusCode == 200) {
+        print("✅ Comment updated successfully");
+      } else {
+        print("❌ Error updating comment: ${response.body}");
+      }
+    } catch (e) {
+      print("❌ Exception updating comment: $e");
+    }
+  }
+
+  /// Delete a specific comment
+  Future<void> deleteTaskComment(int commentid, int taskid) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      final response = await http.delete(
+        Uri.parse("http://localhost:5000/project/delete-task-comment?commentid=$commentid&taskid=$taskid"),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        print("✅ Comment deleted successfully");
+      } else {
+        print("❌ Error deleting comment: ${response.body}");
+      }
+    } catch (e) {
+      print("❌ Exception deleting comment: $e");
+    }
+  }
+
+
+
+  Future<void> loadComments() async {
+    setState(() => isLoading = true);
+    final fetched = await getTaskComments(widget.taskid);
+    setState(() {
+      comments = fetched;
+      isLoading = false;
+      isEditing.clear();
+      controllers.clear();
+      for (var c in comments) {
+        final id = c['commentid'];
+        isEditing[id] = false;
+        controllers[id] = TextEditingController(text: c['comments']);
+      }
+    });
+  }
+
+  Future<void> handleUpdate(int commentid) async {
+    final text = controllers[commentid]?.text.trim() ?? "";
+    if (text.isNotEmpty) {
+      await updateTaskComment(commentid, text);
+      await loadComments();
+    }
+  }
+
+  Future<void> handleDelete(int commentid) async {
+    await deleteTaskComment(commentid, widget.taskid);
+    await loadComments();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text("Comments for ${widget.taskName}"),
+      content: SizedBox(
+        width: 600,
+        height: 400,
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView.builder(
+                itemCount: comments.length,
+                itemBuilder: (context, index) {
+                  final comment = comments[index];
+                  final commentid = comment['commentid'];
+                  final username = comment['username'] ?? 'Unknown';
+                  final editing = isEditing[commentid] ?? false;
+                  final controller = controllers[commentid]!;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.black26),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(username, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 6),
+                            editing
+                                ? TextField(
+                                    controller: controller,
+                                    maxLines: null,
+                                    decoration: const InputDecoration(
+                                      isDense: true,
+                                      border: InputBorder.none,
+                                    ),
+                                  )
+                                : Text(
+                                    comment['comments'] ?? '',
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                IconButton(
+                                  icon: Icon(editing ? Icons.check : Icons.edit),
+                                  tooltip: editing ? 'Save' : 'Edit',
+                                  onPressed: () {
+                                    if (editing) {
+                                      handleUpdate(commentid);
+                                    } else {
+                                      setState(() => isEditing[commentid] = true);
+                                    }
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete),
+                                  tooltip: 'Delete',
+                                  onPressed: () => handleDelete(commentid),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Close"),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    for (final controller in controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 }
 
@@ -192,6 +437,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
 
     fetchChecklistData();
   }
+
 
   /// 1) Fetch your entire onsite checklist
   Future<void> fetchChecklistData() async {
@@ -246,24 +492,25 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
       if (content is Map<String, dynamic>) {
         int? taskId = content['taskid'];
         bool completed = content['completed'] ?? false;
-        String comments = content['comments'] ?? '';
+        bool hasComments = content['has_comments'] ?? false;
+        bool hasAttachment = content['has_attachment'] ?? false;
+        //String comments = content['comments'] ?? '';
 
-        bool hasAttachment = false;
         // If the server includes an 'attachments' field:
-        if (content.containsKey('attachments')) {
-          final attachVal = content['attachments'];
-          if (attachVal != null && attachVal.toString().isNotEmpty) {
-            hasAttachment = true;
-          }
-        }
+        // if (content.containsKey('attachments')) {
+          // final attachVal = content['attachments'];
+          // if (attachVal != null && attachVal.toString().isNotEmpty) {
+          //   hasAttachment = true;
+          // }
+        // }
 
         // Parse out any descriptions that are leftover
         List<String> descriptions = [];
         content.forEach((key, value) {
           if (key != 'taskid' && 
               key != 'completed' && 
-              key != 'comments' && 
-              key != 'attachments') {
+              key != 'has_comments' && 
+              key != 'has_attachments') {
             if (value is String) {
               descriptions.add(value);
             } else if (value is List) {
@@ -277,8 +524,8 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
         result[subtype] = {
           'taskid': taskId,
           'completed': completed,
-          'comments': comments,
-          'hasAttachment': hasAttachment,
+          'has_comments': hasComments,
+          'has_attachment': hasAttachment,
           'descriptions': descriptions,
           'expanded': false,
         };
@@ -312,28 +559,32 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
     }
   }
 
-  /// 3) Update/Add comments to a subtask
-  Future<void> updateTaskComments(int taskid, String comments) async {
+  /// Add a new comment
+  Future<void> addTaskComment(int taskid, String comment) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
+      final projectid = _project.projectId; // from your project object
 
       final response = await http.post(
-        Uri.parse("http://localhost:5000/project/update-task-comments"),
+        Uri.parse("http://localhost:5000/project/add-task-comments"),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json'
         },
-        body: jsonEncode({'taskid': taskid, 'comments': comments}),
+        body: jsonEncode({
+          'taskid': taskid,
+          'comments': comment,
+          'projectid': projectid,
+        }),
       );
-
       if (response.statusCode == 200) {
-        print("✅ Successfully updated comments for task $taskid");
+        print("✅ Comment added successfully");
       } else {
-        print("❌ Failed to update comments for task $taskid");
+        print("❌ Error adding comment: ${response.body}");
       }
     } catch (e) {
-      print("❌ Error updating task comments: $e");
+      print("❌ Exception adding comment: $e");
     }
   }
 
@@ -417,18 +668,6 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
         return null;
       }
         
-        // Case A: If raw is a String, it's the URL.
-        if (raw is String) {
-          signedUrl = raw;
-        }
-        // Case B: If raw is a Map with key 'signedUrl', use it.
-        else if (raw is Map && raw['signedUrl'] is String) {
-          signedUrl = raw['signedUrl'] as String;
-        } else {
-          print("❌ Unexpected JSON format: $raw");
-          return null;
-        }
-        
         // Now fetch the image bytes from the signed URL.
         // final imageResponse = await http.get(Uri.parse(signedUrl));
         // if (imageResponse.statusCode == 200) {
@@ -445,7 +684,6 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
       return null;
     }
 }
-
 
   // Example of switching tabs, if your app uses them
   void _onTabSelected(int index) {
@@ -527,9 +765,8 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
         final subtype = subEntry.key;
         final data = subEntry.value;
 
-        final bool hasComment =
-            data['comments'] != null && data['comments'].trim().isNotEmpty;
-        final bool hasAttachment = data['hasAttachment'] == true;
+        final bool hasComment = data['has_comments'] == true;
+        final bool hasAttachment = data['has_attachment'] == true;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,48 +806,39 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
                   // A) Add/Edit Comment
                   ElevatedButton(
                     onPressed: () async {
-                      final initialComment = data['comments'] ?? '';
                       final newComment = await showDialog<String>(
                         context: context,
                         builder: (context) => CommentPopup(
-                          initialComment: initialComment,
+                          initialComment: "",
                           onCommentAdded: (text) => Navigator.pop(context, text),
                         ),
                       );
-                      if (newComment != null) {
+                      if (newComment != null && newComment.isNotEmpty) {
                         // Update server
-                        await updateTaskComments(data['taskid'], newComment);
+                        await addTaskComment(data['taskid'], newComment);
                         // Update local
                         setState(() {
-                          data['comments'] = newComment;
+                          data['has_comments'] = true;
                         });
                       }
                     },
-                    child: Text(hasComment ? "Edit Comment" : "Add Comment"),
+                    child: const Text("Add Comment"),
                   ),
 
                   // B) View Comment (only if we have one)
                   if (hasComment)
                     OutlinedButton(
                       onPressed: () {
-                        final latest = data['comments'];
                         showDialog(
                           context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: Text("Comment for $subtype"),
-                            content: SingleChildScrollView(
-                              child: Text(latest),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text("Close"),
-                              ),
-                            ],
+                          builder: (_) => CommentsConversationPopup(
+                            taskid: data['taskid'],
+                            taskName: subtype,
+                            projectid: int.tryParse(_project.projectId.toString()) ?? 0,
                           ),
                         );
                       },
-                      child: const Text("View Comment"),
+                      child: const Text("View Comments"),
                     ),
 
                   // C) Add/Edit Attachment
@@ -631,7 +859,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
                         );
                         if (success) {
                           setState(() {
-                            data['hasAttachment'] = true;
+                            data['has_attachment'] = true;
                           });
                         }
                       }
