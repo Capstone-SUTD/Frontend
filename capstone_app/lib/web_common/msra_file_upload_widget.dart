@@ -18,8 +18,8 @@ class FileUploadWidgetState extends State<FileUploadWidget> {
 
   void _pickFiles() {
     final uploadInput = html.FileUploadInputElement();
-    uploadInput.accept = '.pdf,.doc,.docx,.csv,.xlsx';
-    uploadInput.multiple = true; 
+    uploadInput.accept = '.pdf';
+    uploadInput.multiple = true;
     uploadInput.click();
 
     uploadInput.onChange.listen((event) {
@@ -29,6 +29,12 @@ class FileUploadWidgetState extends State<FileUploadWidget> {
           _uploadedFiles.addAll(files);
         });
       }
+    });
+  }
+
+  void _removeFile(int index) {
+    setState(() {
+      _uploadedFiles.removeAt(index);
     });
   }
 
@@ -88,33 +94,49 @@ class FileUploadWidgetState extends State<FileUploadWidget> {
           onTap: _pickFiles,
           child: Container(
             width: double.infinity,
-            height: 180,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey),
               borderRadius: BorderRadius.circular(8),
               color: _isDragging ? Colors.blue.withOpacity(0.1) : Colors.white,
             ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.cloud_upload, size: 50, color: Colors.grey),
-                  const SizedBox(height: 8),
-                  const Text("Choose or drag & drop multiple files"),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _pickFiles,
-                    child: const Text("Browse Files"),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_upload, size: 50, color: Colors.grey),
+                const SizedBox(height: 8),
+                const Text("Choose or drag & drop MS and RA pdf files"),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: _pickFiles,
+                  child: const Text("Browse Files"),
+                ),
+                const SizedBox(height: 10),
+                if (_uploadedFiles.isNotEmpty)
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _uploadedFiles.length,
+                    itemBuilder: (context, index) {
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              "• ${_uploadedFiles[index].name}",
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.red),
+                            onPressed: () => _removeFile(index),
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                  const SizedBox(height: 10),
-                  if (_uploadedFiles.isNotEmpty)
-                    Column(
-                      children: _uploadedFiles
-                          .map((file) => Text("• ${file.name}"))
-                          .toList(),
-                    ),
-                ],
-              ),
+              ],
             ),
           ),
         ),
@@ -122,6 +144,8 @@ class FileUploadWidgetState extends State<FileUploadWidget> {
     );
   }
 }
+
+
 
 
 

@@ -30,9 +30,11 @@ class _ProjectScreenState extends State<ProjectScreen> {
   bool isOOG = false;
   bool isLoading = true;
   bool hasRun = false;
+  bool isSaving = false;
   bool isSaved = false;
   bool showChecklist = false;
   bool isGenerateMSRAEnabled = false;
+  bool hasGenerateMSRA = false;
   int selectedTabIndex = 0;
   int currentStep = 0;
   List<String> resultsOOG = [];
@@ -78,7 +80,6 @@ class _ProjectScreenState extends State<ProjectScreen> {
             final index = kStepLabels.indexWhere((label) => label.toLowerCase() == stageLabel);
             currentStep = index >= 0 ? index : 0;
           }
-
           isNewProject = false;
           isOOG = true;
           hasRun = isOOG;
@@ -181,6 +182,10 @@ class _ProjectScreenState extends State<ProjectScreen> {
   }
 
   void onSavePressed() async {
+    setState(() {
+      isSaving = true;
+    });
+
     final projectId = _project?.projectId ?? "";
     final rawScopeList = _workScopeKey.currentState?.getWorkScopeData() ?? [];
     final uploadedFiles = _fileUploadKey.currentState?.getUploadedFiles() ?? [];
@@ -240,6 +245,10 @@ class _ProjectScreenState extends State<ProjectScreen> {
         ..open('POST', 'http://localhost:5000/project/save')
         ..setRequestHeader('Authorization', 'Bearer $token')
         ..onLoadEnd.listen((event) async {
+          setState(() {
+            isSaving = false;
+          });
+
           if (request.status == 200) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Project saved successfully.")),
@@ -275,12 +284,18 @@ class _ProjectScreenState extends State<ProjectScreen> {
           }
         })
         ..onError.listen((e) {
+          setState(() {
+            isSaving = false;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Error saving project: $e")),
           );
         })
         ..send(formData);
     } catch (e) {
+      setState(() {
+        isSaving = false;
+      });
       print("Error saving project: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error saving project: $e")),
@@ -304,7 +319,6 @@ class _ProjectScreenState extends State<ProjectScreen> {
       final projectJson = data.firstWhere((p) => p['projectid'].toString() == projectId, orElse: () => null);
       return projectJson != null ? Project.fromJson(projectJson) : null;
     }
-
     return null;
   }
 
@@ -334,183 +348,204 @@ class _ProjectScreenState extends State<ProjectScreen> {
     }
   }
 
-@override
-Widget build(BuildContext context) {
-  if (isLoading) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
-  }
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-  return Scaffold(
-    appBar: AppBar(
-      title: Text(isNewProject ? "New Project" : _project!.projectName),
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => Navigator.pop(context),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(isNewProject ? "New Project" : _project!.projectName),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-    ),
-    body: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!isNewProject && isOOG)
-          ProjectTabWidget(
-            selectedTabIndex: selectedTabIndex,
-            onTabSelected: onTabSelected,
-          ),
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 3,
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ProjectFormWidget(
-                          key: _formKey,
-                          project: _project,
-                          isNewProject: isNewProject,
-                        ),
-                        const SizedBox(height: 20),
-                        CargoDetailsTableWidget(
-                          key: _cargoKey,
-                          cargoList: _project!.cargo,
-                          isNewProject: isNewProject,
-                          isEditable: isNewProject,
-                          hasRun: hasRun,
-                          onRunPressed: _onRunPressed,
-                          resultList: resultsOOG,
-                        ),
-                        const SizedBox(height: 20),
-                        if (isOOG) ...[
-                          WorkScopeWidget(
-                            key: _workScopeKey,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isNewProject && isOOG)
+            ProjectTabWidget(
+              selectedTabIndex: selectedTabIndex,
+              onTabSelected: onTabSelected,
+            ),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ProjectFormWidget(
+                            key: _formKey,
+                            project: _project,
                             isNewProject: isNewProject,
-                            workScopeList: isNewProject ? null : _project!.scope,
                           ),
                           const SizedBox(height: 20),
-                          // Conditionally render the file upload section and Save button
-                          if (isNewProject || (_project!.scope?.isEmpty ?? true)) ...[
-                            Container(
-                              width: 400,
-                              child: FileUploadWidget(
-                                key: _fileUploadKey,
-                              ),
+                          CargoDetailsTableWidget(
+                            key: _cargoKey,
+                            cargoList: _project!.cargo,
+                            isNewProject: isNewProject,
+                            isEditable: isNewProject,
+                            hasRun: hasRun,
+                            onRunPressed: _onRunPressed,
+                            resultList: resultsOOG,
+                          ),
+                          const SizedBox(height: 20),
+                          if (isOOG) ...[
+                            WorkScopeWidget(
+                              key: _workScopeKey,
+                              isNewProject: isNewProject,
+                              workScopeList: isNewProject ? null : _project!.scope,
                             ),
                             const SizedBox(height: 20),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                ElevatedButton(
-                                  onPressed: isSaved ? null : onSavePressed,
-                                  child: const Text("Save"),
+                            // Conditionally render the file upload section and Save button
+                            if (isNewProject || (_project!.scope?.isEmpty ?? true)) ...[
+                              Container(
+                                width: 400,
+                                child: FileUploadWidget(
+                                  key: _fileUploadKey,
                                 ),
-                                const SizedBox(width: 10),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 20),
-                // Conditionally render the "Generate MS/RA" button
-                if ((isOOG && isSaved) || (isOOG && _project?.msra != true && !( _project!.scope?.isEmpty ?? true))) ...[
-                  Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () async {
-                              final prefs = await SharedPreferences.getInstance();
-                              final token = prefs.getString('auth_token');
-
-                              // Handle null or unexpected project ID
-                              final rawProjectId = _project?.projectId;
-
-                              print('Type of projectId: ${rawProjectId.runtimeType}');
-                              print('Value of projectId: $rawProjectId');
-
-                              int? projectId;
-
-                              // Handle different projectId types (Set or other types)
-                              if (rawProjectId is Set) {
-                                final firstValue = (rawProjectId as Set).first;
-                                projectId = int.tryParse(firstValue.toString());
-                              } else {
-                                projectId = int.tryParse(rawProjectId.toString());
-                              }
-
-                              if (projectId == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text("Invalid project ID.")),
-                                );
-                                return;
-                              }
-
-                              try {
-                                final response = await http.post(
-                                  Uri.parse('http://localhost:5000/project/generate-docs'),
-                                  headers: {
-                                    'Authorization': 'Bearer $token',
-                                    'Content-Type': 'application/json',
-                                  },
-                                  body: jsonEncode({
-                                    'projectid': projectId,
-                                  }),
-                                );
-
-                                if (response.statusCode == 200) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("MS/RA generated successfully")),
-                                  );
-
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => MSRAGenerationScreen(project: _project),
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("Generation failed: ${response.body}")),
-                                  );
-                                }
-                              } catch (e) {
-                                print("Error triggering MS/RA generation: $e");
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text("An error occurred while generating MS/RA"),
+                              ),
+                              const SizedBox(height: 20),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  ElevatedButton(
+                                    onPressed: isSaving ? null : onSavePressed,
+                                    child: isSaving
+                                     ? const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child:CircularProgressIndicator(
+                                                strokeAlign: 2,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            SizedBox(width: 10),
+                                            Text("Saving..."),
+                                          ]
+                                        )
+                                        : const Text("Save"),
                                   ),
-                                );
-                              }
-                            },
-                            child: const Text("Generate MS/RA"),
-                          ),
+                                  const SizedBox(width: 10),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 20),
+                            // Conditionally render the "Generate MS/RA" button
+                            if ((isOOG && isSaved) || (isOOG && _project?.msra != true && !( _project!.scope?.isEmpty ?? true))) ...[
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  ElevatedButton(
+                                    onPressed: hasGenerateMSRA
+                                    ? null
+                                    : () async {
+                                        final prefs = await SharedPreferences.getInstance();
+                                        final token = prefs.getString('auth_token');
+
+                                        // Handle null or unexpected project ID
+                                        final rawProjectId = _project?.projectId;
+
+                                        print('Type of projectId: ${rawProjectId.runtimeType}');
+                                        print('Value of projectId: $rawProjectId');
+
+                                        int? projectId;
+
+                                        // Handle different projectId types (Set or other types)
+                                        if (rawProjectId is Set) {
+                                          final firstValue = (rawProjectId as Set).first;
+                                          projectId = int.tryParse(firstValue.toString());
+                                        } else {
+                                          projectId = int.tryParse(rawProjectId.toString());
+                                        }
+
+                                        if (projectId == null) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text("Invalid project ID.")),
+                                          );
+                                          return;
+                                        }
+
+                                        try {
+                                          final response = await http.post(
+                                            Uri.parse('http://localhost:5000/project/generate-docs'),
+                                            headers: {
+                                              'Authorization': 'Bearer $token',
+                                              'Content-Type': 'application/json',
+                                            },
+                                            body: jsonEncode({
+                                              'projectid': projectId,
+                                            }),
+                                          );
+
+                                          if (response.statusCode == 200) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text("MS/RA generated successfully")),
+                                            );
+
+                                            setState(() {
+                                              hasGenerateMSRA = true;
+                                            });
+
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => MSRAGenerationScreen(project: _project),
+                                              ),
+                                            );
+                                          } else {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text("Generation failed: ${response.body}")),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          print("Error triggering MS/RA generation: $e");
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text("An error occurred while generating MS/RA"),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    child: const Text("Generate MS/RA"),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 20),
+                          ],
                         ],
                       ),
-                          ],
-                          const SizedBox(height: 20),
-                        ],
-                      ],
                     ),
                   ),
                 ),
-              ),
-              if ((isOOG && isSaved) || (isOOG && !( _project!.scope?.isEmpty ?? true)))
-                Expanded(
-                  flex: 1,
-                  child: SingleChildScrollView(
-                    child: OffsiteChecklistWidget(
-                      projectId: int.tryParse(_project?.projectId.toString() ?? '0') ?? 0,
+                if ((isOOG && isSaved) || (isOOG && !( _project!.scope?.isEmpty ?? true)))
+                  Expanded(
+                    flex: 1,
+                    child: SingleChildScrollView(
+                      child: OffsiteChecklistWidget(
+                        projectId: int.tryParse(_project?.projectId.toString() ?? '0') ?? 0,
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
-
+        ],
+      ),
+    );
+  }
 }

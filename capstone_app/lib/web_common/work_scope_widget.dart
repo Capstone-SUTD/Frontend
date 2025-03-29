@@ -192,16 +192,31 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
                     ),
                   )
                 : _workScopeList[index]["scope"] == "Transportation"
-                    ? TextFormField(
-                        textAlign: TextAlign.center,
+                    ? DropdownButtonFormField<String>(
+                        value: _workScopeList[index]["equipmentList"]!.isNotEmpty
+                            ? _workScopeList[index]["equipmentList"]
+                            : null,
+                        items: [
+                          "8ft X 40ft Trailer",
+                          "8ft X 45ft Trailer",
+                          "8ft X 50ft Trailer",
+                          "10.5ft X 30ft Low Bed",
+                          "10.5ft X 40ft Low Bed",
+                          "Self Loader"
+                        ].map((option) {
+                          return DropdownMenuItem(value: option, child: Text(option));
+                        }).toList(),
                         onChanged: (value) {
-                          _updateWorkScope(index, "equipmentList", "$value trailer");
+                          if (value != null) {
+                            _updateWorkScope(index, "equipmentList", value);
+                          }
                         },
                         decoration: const InputDecoration(
-                          labelText: "Enter Trailer",
+                          labelText: "Select Trailer",
                           border: InputBorder.none,
                         ),
                       )
+
                     : TextFormField(
                         initialValue: equipmentValue,
                         textAlign: TextAlign.center,
