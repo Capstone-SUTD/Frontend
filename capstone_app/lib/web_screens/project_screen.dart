@@ -18,7 +18,9 @@ import '../web_common/step_label.dart';
 
 class ProjectScreen extends StatefulWidget {
   final String? projectId;
-  const ProjectScreen({super.key, this.projectId});
+  final VoidCallback? onPopCallback; 
+
+  const ProjectScreen({Key? key, this.projectId, this.onPopCallback}) : super(key: key);
 
   @override
   _ProjectScreenState createState() => _ProjectScreenState();
@@ -361,7 +363,12 @@ class _ProjectScreenState extends State<ProjectScreen> {
         title: Text(isNewProject ? "New Project" : _project!.projectName),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+          if (widget.onPopCallback != null) {
+            widget.onPopCallback!();  // Trigger the callback to refetch data
+          }
+          Navigator.pop(context);  // Pop the current screen
+        },
         ),
       ),
       body: Column(

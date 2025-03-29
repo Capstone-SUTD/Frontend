@@ -41,7 +41,7 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
   }
 
   void _initializePendingApprovals() {
-    List<String> validRoles = ["HSEOfficer", "Operations", "ProjectManager"];
+    List<String> validRoles = ["HSEOfficer", "ProjectManager", "Head"];
 
     _pendingApprovals = widget.stakeholders
         .where((stakeholder) => validRoles.contains(stakeholder.role))
@@ -78,6 +78,8 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
 
       if (response.statusCode == 200) {
         widget.onApprovalStageChange(widget.approvalStage + 1);
+        ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Approved succesfully')),);
       } else {
         var responseData = jsonDecode(response.body);
         String errorMessage = responseData['error'] ?? 'Unknown error';
@@ -109,17 +111,24 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
       // Enable the button only if the stage matches the approval stage
       if (widget.approvalStage == 0 && approval["role"] == "HSEOfficer") {
         isEnabled = true;
-      } else if (widget.approvalStage == 1 && approval["role"] == "Operations") {
+        
+      } else if (widget.approvalStage == 1 && approval["role"] == "ProjectManager") {
         isEnabled = true;
-      } else if (widget.approvalStage == 2 && approval["role"] == "ProjectManager") {
+      } else if (widget.approvalStage == 2 && approval["role"] == "Head") {
         isEnabled = true;
       }
     }
 
+    const roleMapping = {
+      "HSEOfficer": "HSE Officer",
+      "ProjectManager": "Project Manager",
+      "Head": "GPIS Head",
+    };
+
     // For selectedTab == 1, display a disabled "Approved" button
     return Card(
       child: ListTile(
-        title: Text("MSRA Approval by ${approval["role"]}"),
+        title: Text("MSRA Approval by ${roleMapping[approval["role"]]}"),
         subtitle: Text("Action by ${approval["name"]}"),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -232,6 +241,9 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
           };
           widget.rejectionList.add(newRejection);
           widget.selectedTab = 2;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Approved succesfully')),
+          );
         }});
       } else {
         var responseData = jsonDecode(response.body);

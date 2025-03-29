@@ -22,6 +22,8 @@ class _EquipmentRecommendationDialogState
   String crane = "";
   String threshold = "";
   String trailer = "";
+  String crane_rule = "";
+  String threshold_rule = "";
 
   bool _isLoading = false;
 
@@ -59,6 +61,8 @@ class _EquipmentRecommendationDialogState
           crane = data['crane'] ?? "N/A";
           threshold = data['threshold']?.toString() ?? "N/A";
           trailer = data['trailer'] ?? "N/A";
+          crane_rule = data['crane_rule'] ?? "N/A";
+          threshold_rule = data['threshold_rule']?.toString() ?? "N/A";
         });
 
         if (mounted) {
@@ -77,7 +81,6 @@ class _EquipmentRecommendationDialogState
     }
   }
 
-
   void _showErrorSnackbar(String message) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -91,19 +94,44 @@ class _EquipmentRecommendationDialogState
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           child: SizedBox(
             width: 400,
-            height: 320,
+            height: 480, // Increased height to avoid overflow
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start, // Left-align the text
                 children: [
                   const Text(
                     "Recommended Equipment",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // By Threshold Rule Section
+                  const Text(
+                    "By Threshold Rule",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: TextEditingController(text: crane_rule),
+                    decoration: const InputDecoration(labelText: "Crane"),
+                    readOnly: true,
+                  ),
+                  TextField(
+                    controller: TextEditingController(text: threshold_rule),
+                    decoration: const InputDecoration(labelText: "Threshold (kg)"),
+                    readOnly: true,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // By ML Model Section
+                  const Text(
+                    "By ML Model",
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -113,7 +141,7 @@ class _EquipmentRecommendationDialogState
                   ),
                   TextField(
                     controller: TextEditingController(text: threshold),
-                    decoration: const InputDecoration(labelText: "Threshold"),
+                    decoration: const InputDecoration(labelText: "Threshold (kg)"),
                     readOnly: true,
                   ),
                   TextField(
@@ -122,13 +150,14 @@ class _EquipmentRecommendationDialogState
                     readOnly: true,
                   ),
                   const SizedBox(height: 20),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       TextButton(
                         onPressed: () {
                           String copyText =
-                              "Crane: $crane\nThreshold: $threshold\nTrailer: $trailer";
+                              "By Rule\nCrane: $crane_rule\nThreshold (kg): $threshold_rule\nBy ML Model\nCrane: $crane\nThreshold (kg): $threshold\nTrailer: $trailer";
                           Clipboard.setData(ClipboardData(text: copyText));
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Copied to clipboard")),
@@ -157,7 +186,7 @@ class _EquipmentRecommendationDialogState
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: SizedBox(
         width: 400,
-        height: 320,
+        height: 315, // Increased height to avoid overflow
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: SingleChildScrollView(
@@ -219,4 +248,3 @@ class _EquipmentRecommendationDialogState
     );
   }
 }
-

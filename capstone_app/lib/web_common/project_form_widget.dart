@@ -103,40 +103,6 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
   }
 }
 
-  // // Fetch Stakeholders from API
-  // Future<void> _fetchStakeholders() async {
-  //   try {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final token = prefs.getString('auth_token');
-
-  //   if (token == null) {
-  //     throw Exception("Token not found");
-  //   }
-
-  //   final response = await http.get(
-  //     Uri.parse('http://localhost:5000/project/stakeholders'),
-  //     headers: {
-  //       'Authorization': 'Bearer $token',
-  //       'Content-Type': 'application/json', // optional but recommended
-  //     },
-  //   );
-
-  //   if (response.statusCode == 200) {
-  //     List<dynamic> data = json.decode(response.body);
-  //     setState(() {
-  //       stakeholdersList = data.map((s) => {
-  //         "userId": s["userid"].toString(),
-  //         "name": s["username"].toString(),
-  //       }).toList();
-  //     });
-  //   } else {
-  //     throw Exception("Failed to load stakeholders");
-  //   }
-  // } catch (e) {
-  //   print("Error fetching stakeholders: $e");
-  // }
-  // }
-
   // Check if a Role is Already Assigned
   bool _isRoleSelectedElsewhere(String role, int currentIndex) {
     return selectedStakeholders.any((s) =>
