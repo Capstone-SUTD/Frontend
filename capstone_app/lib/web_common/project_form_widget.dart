@@ -114,10 +114,28 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
     }
   }
 
-<<<<<<< HEAD
-=======
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      setState(() {
+        stakeholdersList = data.map((s) => {
+          "userId": s["userid"].toString(),
+          "name": s["username"].toString(),
+        }).toList();
+        
+        // Ensure the list isn't empty before trying to populate it
+        if (selectedStakeholders.isEmpty) {
+          selectedStakeholders.add({"userId": "", "role": "", "name": ""});
+        }
+      });
+    } else {
+      throw Exception("Failed to load stakeholders"); 
+    }
+  } catch (e) {
+    print("Error fetching stakeholders: $e");
+  }
+}
+
   // Check if a Role is Already Assigned
->>>>>>> rishika
   bool _isRoleSelectedElsewhere(String role, int currentIndex) {
     return selectedStakeholders.any((s) =>
         s["role"] == role && role != "Additional" && selectedStakeholders.indexOf(s) != currentIndex);
