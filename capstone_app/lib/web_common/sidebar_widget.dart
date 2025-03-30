@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../common/login_signup_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Sidebar extends StatelessWidget {
   final String selectedPage;
@@ -16,118 +18,63 @@ class Sidebar extends StatelessWidget {
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
 
     return Container(
-      width: isSmallScreen ? 60 : 80,
-      color: theme.colorScheme.primary,
-      child: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Top Navigation Icons
-            Column(
-              children: [
-                const SizedBox(height: 20),
-                _buildSidebarItem(
-                  context,
-                  icon: Icons.dashboard,
-                  label: 'Dashboard',
-                  route: '/dashboard',
-                ),
-                const SizedBox(height: 16),
-                _buildSidebarItem(
-                  context,
-                  icon: Icons.list_alt,
-                  label: 'Projects',
-                  route: '/projects',
-                ),
-              ],
-            ),
+      width: 80,
+      color: Colors.blue.shade900,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween, // Ensures top, middle, and bottom spacing
+        children: [
+          // Empty Spacer for top padding
+          SizedBox(height: 20),
 
-            // Bottom Navigation Icons
-            Column(
-              children: [
-                _buildSidebarItem(
-                  context,
-                  icon: Icons.person,
-                  label: 'Profile',
-                  route: '/profile',
-                ),
-                const SizedBox(height: 16),
-                _buildSidebarItem(
-                  context,
-                  icon: Icons.logout,
-                  label: 'Logout',
-                  route: '/logout',
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ],
-        ),
+          // Middle Icons (Home & Projects)
+          Column(
+            children: [
+              _buildSidebarIcon(
+                context, Icons.list, "/projects", selectedPage == "/projects"),
+            ],
+          ),
+
+          // Bottom Icons (User & Logout)
+          Column(
+            children: [
+              _buildSidebarIcon(
+                context, Icons.logout, "/logout", selectedPage == "/logout", _handleLogout), // Attach the logout handler here
+              SizedBox(height: 20), // Extra padding at bottom
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSidebarItem(
-    BuildContext context, {
-    required IconData icon,
-    required String label,
-    required String route,
-  }) {
-    final isSelected = selectedPage == route;
-    final theme = Theme.of(context);
-    final isSmallScreen = MediaQuery.of(context).size.width < 600;
-
-    return Tooltip(
-      message: label,
-      preferBelow: false,
-      verticalOffset: 20,
-      child: InkWell(
-        onTap: () {
-          if (ModalRoute.of(context)?.settings.name != route) {
-            if (onPageSelected != null) {
-              onPageSelected!(route);
-            } else {
-              Navigator.pushNamed(context, route);
-            }
+  // 🔹 Helper function to create a Sidebar Icon
+  Widget _buildSidebarIcon(BuildContext context, IconData icon, String route, bool isSelected, [Function? onTap]) {
+    return IconButton(
+      icon: Icon(icon, color: isSelected ? Colors.orange : Colors.white),
+      onPressed: () {
+        if (route == "/logout") {
+          if (onTap != null) {
+            onTap(context); // Call the logout handler when logout is clicked
           }
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            border: isSelected
-                ? Border(
-                    left: BorderSide(
-                      color: theme.colorScheme.secondary,
-                      width: 3,
-                    ),
-                  )
-                : null,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: isSmallScreen ? 24 : 28,
-                color: isSelected
-                    ? theme.colorScheme.secondary
-                    : theme.colorScheme.onPrimary,
-              ),
-              if (!isSmallScreen) ...[
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: isSelected
-                        ? theme.colorScheme.secondary
-                        : theme.colorScheme.onPrimary,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
+        } else {
+          if (ModalRoute.of(context)!.settings.name != route) {
+            Navigator.pushNamed(context, route);
+          }
+        }
+      },
+    );
+  }
+
+  Future<void> _handleLogout(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Clear the token from SharedPreferences
+    await prefs.remove('auth_token');
+    
+    // Redirect to Login/Signup screen
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginSignUpScreen()),
     );
   }
 }

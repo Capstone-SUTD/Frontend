@@ -3,37 +3,25 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/project_model.dart';
-import '../models/data_service.dart';
 import '../web_screens/project_screen.dart';
 
 class ProjectTableWidget extends StatefulWidget {
-  const ProjectTableWidget({super.key});
+  final List<Project> projects;
+
+  const ProjectTableWidget({super.key, required this.projects});
 
   @override
   _ProjectTableWidgetState createState() => _ProjectTableWidgetState();
 }
 
 class _ProjectTableWidgetState extends State<ProjectTableWidget> {
-  late Future<List<Project>> _projectsFuture;
   int _currentPage = 0;
   final int _rowsPerPage = 10;
   String _searchQuery = '';
   String? _sortColumn;
   bool _sortAscending = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _refreshProjects();
-  }
-
-  void _refreshProjects() {
-    setState(() {
-      _projectsFuture = DataService.getProjects();
-    });
-  }
-
-  void _navigateToProject(String projectId) {
+  void _navigateToProject(BuildContext context, String projectId) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -84,174 +72,68 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isSmallScreen = MediaQuery.of(context).size.width < 600;
+    int totalPages = (widget.projects.length / _rowsPerPage).ceil();
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: TextField(
-            decoration: InputDecoration(
-              labelText: 'Search Projects',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.95,
+              child: DataTable(
+                columnSpacing: 20,
+                headingRowHeight: 40,
+                dataRowHeight: 50,
+                columns: const [
+                  DataColumn(label: Text("Project Name")),
+                  DataColumn(label: Text("Start Destination")),
+                  DataColumn(label: Text("End Destination")),
+                  DataColumn(label: Text("Status")),
+                  DataColumn(label: Text("Date")),
+                ],
+                rows: widget.projects
+                    .skip(_currentPage * _rowsPerPage)
+                    .take(_rowsPerPage)
+                    .map((project) => DataRow(
+                          cells: [
+                            DataCell(
+                              Text(project.projectName),
+                              onTap: () => _navigateToProject(context, project.projectId),
+                            ),
+                            DataCell(Text(project.startDestination)),
+                            DataCell(Text(project.endDestination)),
+                            DataCell(_buildStatusBadge(project.projectStatus)),
+                            DataCell(Text(_formatDate(project.startDate))),
+                          ],
+                        ))
+                    .toList(),
               ),
             ),
-            onChanged: (value) => setState(() {
-              _searchQuery = value;
-              _currentPage = 0;
-            }),
           ),
         ),
-        Expanded(
-          child: FutureBuilder<List<Project>>(
-            future: _projectsFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                      const SizedBox(height: 16),
-                      Text(
-                        "Error loading projects",
-                        //style: theme.textTheme.headline6,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        snapshot.error.toString(),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _refreshProjects,
-                        child: const Text("Retry"),
-                      ),
-                    ],
-                  ),
-                );
-              }
 
-              final projects = _filterAndSortProjects(snapshot.data ?? []);
-              final totalPages = (projects.length / _rowsPerPage).ceil();
-
-              return Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.vertical,
-                        child: DataTable(
-                          columnSpacing: 20,
-                          headingRowHeight: 40,
-                          dataRowHeight: 50,
-                          sortColumnIndex: _sortColumn != null
-                              ? const [
-                                  'Project Name',
-                                  'Start Destination',
-                                  'End Destination',
-                                  'Status',
-                                  'Date'
-                                ].indexOf(_sortColumn!)
-                              : null,
-                          sortAscending: _sortAscending,
-                          columns: [
-                            _buildDataColumn('Project Name', theme),
-                            _buildDataColumn('Start Destination', theme),
-                            _buildDataColumn('End Destination', theme),
-                            _buildDataColumn('Status', theme),
-                            _buildDataColumn('Date', theme),
-                          ],
-                          rows: projects
-                              .skip(_currentPage * _rowsPerPage)
-                              .take(_rowsPerPage)
-                              .map((project) => DataRow(
-                                    cells: [
-                                      DataCell(
-                                        Text(
-                                          project.projectName,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        onTap: () => _navigateToProject(project.projectId),
-                                      ),
-                                      DataCell(Text(
-                                        project.startDestination,
-                                        overflow: TextOverflow.ellipsis,
-                                      )),
-                                      DataCell(Text(
-                                        project.endDestination,
-                                        overflow: TextOverflow.ellipsis,
-                                      )),
-                                      DataCell(_buildStatusBadge(project.projectStatus)),
-                                      DataCell(Text(_formatDate(project.startDate))),
-                                    ],
-                                  ))
-                              .toList(),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Showing ${_currentPage * _rowsPerPage + 1}-${(_currentPage + 1) * _rowsPerPage > projects.length ? projects.length : (_currentPage + 1) * _rowsPerPage} of ${projects.length} projects",
-                          // style: theme.textTheme.caption,
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.chevron_left),
-                              onPressed: _currentPage > 0
-                                  ? () => setState(() => _currentPage--)
-                                  : null,
-                              tooltip: 'Previous page',
-                            ),
-                            Text(
-                              'Page ${_currentPage + 1} of $totalPages',
-                             
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.chevron_right),
-                              onPressed: _currentPage < totalPages - 1
-                                  ? () => setState(() => _currentPage++)
-                                  : null,
-                              tooltip: 'Next page',
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text("Page ${_currentPage + 1} out of $totalPages"),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: _currentPage > 0 ? () => setState(() => _currentPage--) : null,
+                  child: const Text("Previous"),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _currentPage < totalPages - 1 ? () => setState(() => _currentPage++) : null,
+                  child: const Text("Next"),
+                ),
+              ],
+            ),
+          ],
         ),
       ],
-    );
-  }
-
-  DataColumn _buildDataColumn(String label, ThemeData theme) {
-    return DataColumn(
-      label: Text(
-        label,
-        style: TextStyle(fontWeight: FontWeight.bold),
-      ),
-      onSort: (columnIndex, ascending) {
-        setState(() {
-          _sortColumn = label;
-          _sortAscending = ascending;
-        });
-      },
     );
   }
 

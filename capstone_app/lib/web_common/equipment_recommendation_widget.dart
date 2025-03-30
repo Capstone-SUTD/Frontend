@@ -24,6 +24,8 @@ class _EquipmentRecommendationDialogState
   String crane = "";
   String threshold = "";
   String trailer = "";
+  String crane_rule = "";
+  String threshold_rule = "";
 
   bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
@@ -54,9 +56,11 @@ class _EquipmentRecommendationDialogState
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
-          crane = data['crane']?.toString() ?? "Not available";
-          threshold = data['threshold']?.toString() ?? "Not available";
-          trailer = data['trailer']?.toString() ?? "Not available";
+          crane = data['crane'] ?? "N/A";
+          threshold = data['threshold']?.toString() ?? "N/A";
+          trailer = data['trailer'] ?? "N/A";
+          crane_rule = data['crane_rule'] ?? "N/A";
+          threshold_rule = data['threshold_rule']?.toString() ?? "N/A";
         });
         _showResultsDialog(context);
       } else {
@@ -75,8 +79,8 @@ class _EquipmentRecommendationDialogState
     }
   }
 
-  void _showError(String message) {
-    if (mounted) {
+  void _showErrorSnackbar(String message) {
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
@@ -90,16 +94,88 @@ class _EquipmentRecommendationDialogState
   void _showResultsDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Recommended Equipment"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildResultTile("Crane", crane),
-              _buildResultTile("Threshold", threshold),
-              _buildResultTile("Trailer", trailer),
-            ],
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          child: SizedBox(
+            width: 400,
+            height: 480, // Increased height to avoid overflow
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start, // Left-align the text
+                children: [
+                  const Text(
+                    "Recommended Equipment",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // By Threshold Rule Section
+                  const Text(
+                    "By Threshold Rule",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: TextEditingController(text: crane_rule),
+                    decoration: const InputDecoration(labelText: "Crane"),
+                    readOnly: true,
+                  ),
+                  TextField(
+                    controller: TextEditingController(text: threshold_rule),
+                    decoration: const InputDecoration(labelText: "Threshold (kg)"),
+                    readOnly: true,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // By ML Model Section
+                  const Text(
+                    "By ML Model",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: TextEditingController(text: crane),
+                    decoration: const InputDecoration(labelText: "Crane"),
+                    readOnly: true,
+                  ),
+                  TextField(
+                    controller: TextEditingController(text: threshold),
+                    decoration: const InputDecoration(labelText: "Threshold (kg)"),
+                    readOnly: true,
+                  ),
+                  TextField(
+                    controller: TextEditingController(text: trailer),
+                    decoration: const InputDecoration(labelText: "Trailer"),
+                    readOnly: true,
+                  ),
+                  const SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          String copyText =
+                              "By Rule\nCrane: $crane_rule\nThreshold (kg): $threshold_rule\nBy ML Model\nCrane: $crane\nThreshold (kg): $threshold\nTrailer: $trailer";
+                          Clipboard.setData(ClipboardData(text: copyText));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Copied to clipboard")),
+                          );
+                        },
+                        child: const Text("Copy"),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text("Close"),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
         actions: [
@@ -149,19 +225,20 @@ class _EquipmentRecommendationDialogState
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("Cargo Details"),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _lengthController,
-                decoration: const InputDecoration(
-                  labelText: "Length (m)",
-                  border: OutlineInputBorder(),
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: SizedBox(
+        width: 400,
+        height: 315, // Increased height to avoid overflow
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Cargo Details",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 keyboardType: TextInputType.number,
                 validator: _validateNumberInput,

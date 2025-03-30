@@ -114,6 +114,10 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
     }
   }
 
+<<<<<<< HEAD
+=======
+  // Check if a Role is Already Assigned
+>>>>>>> rishika
   bool _isRoleSelectedElsewhere(String role, int currentIndex) {
     return selectedStakeholders.any((s) =>
         s["role"] == role && role != "Additional" && selectedStakeholders.indexOf(s) != currentIndex);

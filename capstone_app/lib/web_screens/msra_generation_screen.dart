@@ -2,7 +2,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
+import '../web_common/project_tab_widget.dart';
+import '../web_common/project_stepper_widget.dart';
+import '../web_common/download_msra_widget.dart';
+import '../web_common/approval_list_widget.dart';
+import '../web_common/feedback_close_widget.dart';
+import '../models/project_model.dart';
+import 'onsite_checklist_screen.dart';
+import 'project_screen.dart';
 
 class MSRAGenerationScreen extends StatefulWidget {
   final dynamic project;
@@ -25,255 +32,261 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
   void initState() {
     super.initState();
     _project = widget.project;
-    _loadApprovalStatus();
+    _callApprovalStatusApi(); 
   }
 
-  Future<void> _loadApprovalStatus() async {
-    setState(() => _isLoading = true);
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
-      if (token == null) throw Exception("Authentication required");
+  Future<void> _callApprovalStatusApi() async {
+  final url = Uri.parse('http://localhost:5000/app/approval-rejection-status');
 
-      final response = await http.post(
-        Uri.parse('https:localhost:3000/approval-rejection-status'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json'
-        },
-        body: jsonEncode({
-          'projectid': int.tryParse(_project?.projectId?.toString() ?? "0") ?? 0
-        }),
-      );
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          _approvalStage = data['Approvals'] ?? 0;
-          _msVersions = data['MSVersions'] ?? 0;
-          _raVersions = data['RAVersions'] ?? 0;
-          _rejectionList = _processRejectionData(data['RejectionDetails']);
-        });
-      } else {
-        throw Exception("Failed to load approval status");
+    if (token == null) {
+      throw Exception("Token not found");
+    }
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'projectid': int.tryParse(_project?.projectId?.toString() ?? "0") ?? 0, // Ensure int
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+
+      // Map rejection details
+      List<Map<String, dynamic>> rejectionList = [];
+      if (data['RejectionDetails'] != null) {
+        for (var rejection in data['RejectionDetails']) {
+          String? role = rejection['role'];
+          String? comments = rejection['comments'];
+
+          // Find the stakeholder name based on the role
+          String? name;
+          if (role != null) {
+            for (var stakeholder in _project.stakeholders) {
+              if (stakeholder.role == role) {
+                name = stakeholder.name;
+                break;
+              }
+            }
+          }
+
+          // Add the rejection details to the rejectionList
+          rejectionList.add({
+            'role': role,
+            'comments': comments,
+            'name': name,
+          });
+        }
       }
-    } catch (e) {
-      _showError("Error loading data: ${e.toString()}");
-    } finally {
-      setState(() => _isLoading = false);
+
+      print(rejectionList);
+
+      // Store the MS and RA versions
+      int msVersions = data['MSVersions'] ?? 0;
+      int raVersions = data['RAVersions'] ?? 0;
+
+      // Set state with the updated rejection list, MS and RA versions
+      setState(() {
+        _approvalStage = data['Approvals'] ?? 0; // Set approvalStage from API response
+        _rejectionList = rejectionList; // Set rejectionList
+        _msVersions = msVersions; // Set MSVersions
+        _raVersions = raVersions; // Set RAVersions
+      });
+    } else {
+      throw Exception("Failed to load approval status: ${response.statusCode}");
     }
+  } catch (e) {
+    _showErrorSnackbar("Error: ${e.toString()}");
+  }
+}
+
+  void _onApprovalTabSelected(int index) {
+    setState(() {
+      _selectedApprovalTab = index;
+    });
   }
 
-  List<Map<String, dynamic>> _processRejectionData(List<dynamic>? rejections) {
-    return (rejections ?? []).map((rejection) {
-      final role = rejection['role'];
-      final stakeholder = _project.stakeholders.firstWhere(
-        (s) => s.role == role,
-        orElse: () => {'name': 'Unknown'},
-      );
-      return {
-        'role': role,
-        'comments': rejection['comments'],
-        'name': stakeholder['name']
-      };
-    }).toList();
-  }
-
-  Future<void> _handleApprovalAction(String action) async {
-    setState(() => _isLoading = true);
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
-      if (token == null) throw Exception("Authentication required");
-
-      final response = await http.post(
-        Uri.parse('https:10.0.2.2:3000/handle-approval'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json'
-        },
-        body: jsonEncode({
-          'projectid': _project.projectId,
-          'action': action,
-          'version': action == 'approve' ? _msVersions : _raVersions,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        _loadApprovalStatus(); // Refresh data
-        _showSuccess("Action completed successfully");
-      } else {
-        throw Exception("Action failed");
+    void _handleVersionIncrease(String fileType) {
+    setState(() {
+      if (fileType == "MS") {
+        _msVersions++;
+      } else if (fileType == "RA") {
+        _raVersions++;
       }
-    } catch (e) {
-      _showError("Error: ${e.toString()}");
-    } finally {
-      setState(() => _isLoading = false);
+    });
+  }
+
+
+  void _onTabSelected(int index) {
+    if (index == 2) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => OnsiteChecklistScreen(project: _project)),
+      );
     }
   }
 
-  Widget _buildApprovalTabs() {
-    return DefaultTabController(
-      length: 4,
-      child: Column(
-        children: [
-          TabBar(
-            isScrollable: true,
-            labelColor: Theme.of(context).primaryColor,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Theme.of(context).primaryColor,
-            tabs: const [
-              Tab(text: "Pending"),
-              Tab(text: "Approved"),
-              Tab(text: "Denied"),
-              Tab(text: "Reupload"),
-            ],
-            onTap: (index) => setState(() => _selectedApprovalTab = index),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Widget _buildVersionIndicator(String label, int version) {
-    return Chip(
-      label: Text("$label v$version"),
-      backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-    );
+  void _updateApprovalStage(int newStage) {
+    setState(() {
+      _approvalStage = newStage;
+    });
   }
 
-  Widget _buildApprovalControls() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        ElevatedButton.icon(
-          icon: const Icon(Icons.check),
-          label: const Text("Approve"),
-          onPressed: () => _handleApprovalAction('approve'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
-          ),
-        ),
-        ElevatedButton.icon(
-          icon: const Icon(Icons.close),
-          label: const Text("Reject"),
-          onPressed: () => _showRejectionDialog(),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-          ),
-        ),
-      ],
-    );
+  void _closeProject(){
+
   }
 
-  Future<void> _showRejectionDialog() async {
-    final comment = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Rejection Reason"),
-        content: TextField(
-          maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: "Enter rejection reason...",
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, "Rejected: User comment"),
-            child: const Text("Submit"),
-          ),
-        ],
-      ),
-    );
+Future<List<Stakeholder>> _fetchUpdatedStakeholders() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
 
-    if (comment != null) {
-      await _handleApprovalAction('reject');
-    }
-  }
-
-  Widget _buildRejectionList() {
-    if (_rejectionList.isEmpty) {
-      return const Center(child: Text("No rejections found"));
+    if (token == null) {
+      throw Exception("Token not found");
     }
 
-    return ExpansionTile(
-      title: const Text("Rejection Details", style: TextStyle(fontWeight: FontWeight.bold)),
-      children: _rejectionList.map((rejection) => ListTile(
-        title: Text("${rejection['role']}: ${rejection['name']}"),
-        subtitle: Text(rejection['comments']),
-        leading: const Icon(Icons.warning, color: Colors.orange),
-      )).toList(),
+    final response = await http.post(
+      Uri.parse('http://localhost:5000/project/stakeholder-comments'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json', // optional but recommended
+      },
+      body: jsonEncode({
+        'projectid': int.tryParse(_project?.projectId?.toString() ?? "0") ?? 0, 
+      }),
     );
-  }
 
-  Widget _buildContent() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      print(data);
+
+      _project.stakeholders = data.map((s) => Stakeholder.fromJson(s)).toList();
+
+      return _project.stakeholders;
+    } else {
+      throw Exception("Failed to load stakeholders");
     }
-
-    return Column(
-      children: [
-        _buildApprovalTabs(),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildVersionIndicator("MS", _msVersions),
-            _buildVersionIndicator("RA", _raVersions),
-          ],
-        ),
-        const SizedBox(height: 20),
-        if (_approvalStage < 2) _buildApprovalControls(),
-        const SizedBox(height: 20),
-        if (_selectedApprovalTab == 2 && _rejectionList.isNotEmpty) 
-          _buildRejectionList(),
-        // Add other tab content here
-      ],
-    );
+  } catch (e) {
+    print("Error API Call: $e");
+    return [];
   }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-
-  void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
+}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("MS/RA Generation"),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadApprovalStatus,
-          ),
-        ],
+      appBar: AppBar(title: const Text("MS/RA Generation")),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // **Project Tab Widget (Switch Between Tabs)**
+            ProjectTabWidget(
+              selectedTabIndex: 1,
+              onTabSelected: _onTabSelected,
+            ),
+            const SizedBox(height: 20),
+
+            // **Stepper Widget**
+            ProjectStepperWidget(
+              currentStage: _project.stage,
+              projectId: _project.projectId,
+              onStepTapped: (newIndex) {
+                // Optional logic when a step is tappedr
+              },
+            ),
+            const SizedBox(height: 20),
+            const Divider(),
+            if (_msVersions > 0 || _raVersions > 0) ...[
+              DownloadMSRAWidget(
+                projectId: _project?.projectId ?? "",
+                msVersion: _msVersions,
+                raVersion: _raVersions,
+              ),
+              const SizedBox(height: 20),
+              const Divider(),
+              if (_approvalStage != 3) // Only render the Row if approvalStage is not 3
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildApprovalTab("Pending", 0),
+                    _buildApprovalTab("Approved", 1),
+                    _buildApprovalTab("Denied", 2),
+                    _buildApprovalTab("Reupload", 3),
+                  ],
+                ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: _approvalStage == 3
+                ? FeedbackAndClose(
+                  stakeholders: _project.stakeholders,
+                  onClose: _closeProject,
+                  fetchUpdatedStakeholders: _fetchUpdatedStakeholders,
+                  projectId: _project?.projectId ?? "",)
+                : ApprovalListWidget(
+                  selectedTab: _selectedApprovalTab,
+                  approvalStage: _approvalStage,
+                  stakeholders: _project.stakeholders,
+                  projectid: int.parse(_project.projectId.toString()),
+                  rejectionList: _rejectionList,
+                  onApprovalStageChange: _updateApprovalStage,
+                  onVersionIncrease: _handleVersionIncrease,
+                ),
+              ),
+            ] else ...[
+              const Center(
+                child: Text("No MS/RA files have been generated yet."),
+              ),
+            ],
+          ],
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: _buildContent(),
+    );
+  }
+
+  Widget _buildApprovalTab(String label, int index) {
+    bool isSelected = _selectedApprovalTab == index;
+    return GestureDetector(
+      onTap: () {
+        setState(() => _selectedApprovalTab = index);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isSelected ? Colors.orange : Colors.grey,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.black : Colors.grey,
+          ),
+        ),
       ),
     );
   }
 }
+
+
+
+
+
+

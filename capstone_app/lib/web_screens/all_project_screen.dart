@@ -1,11 +1,83 @@
-import 'project_screen.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import '../web_common/sidebar_widget.dart';
 import '../web_common/project_table_widget.dart';
 import '../web_common/equipment_recommendation_widget.dart';
+import '../models/project_model.dart';
+import 'project_screen.dart';
 
-class AllProjectsScreen extends StatelessWidget {
+final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+
+class AllProjectsScreen extends StatefulWidget {
   const AllProjectsScreen({super.key});
+
+  @override
+  _AllProjectsScreenState createState() => _AllProjectsScreenState();
+}
+
+class _AllProjectsScreenState extends State<AllProjectsScreen> with AutomaticKeepAliveClientMixin, RouteAware {
+  List<Project> projectsList = [];
+  bool isLoading = true;
+  String? errorMessage;
+
+  @override
+  bool get wantKeepAlive => true; // Keep alive and rebuild widget when it's visible
+
+  @override
+  void initState() {
+    super.initState();
+    getProjects();  // Initial API call on screen load
+  }
+
+  @override
+  void didPopNext() {
+    super.didPopNext();
+    // Called when this screen is popped back into view
+    getProjects();  // Make API call again when navigating back to the screen
+  }
+
+  Future<void> getProjects() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      final response = await http.get(
+        Uri.parse('http://localhost:5000/project/list'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        print("API raw response: ${response.body}");
+
+        if (decoded is List) {
+          List<Project> projects = List<Project>.from(
+            decoded.map((item) => Project.fromJson(item)),
+          );
+
+          setState(() {
+            projectsList = projects;
+            isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          errorMessage = 'Failed to load projects: ${response.statusCode}';
+          isLoading = false;
+        });
+      }
+    } catch (error) {
+      setState(() {
+        errorMessage = 'Error fetching data: $error';
+        isLoading = false;
+      });
+    }
+  }
 
   void _openEquipmentRecommendation(BuildContext context) {
     showDialog(
@@ -19,52 +91,44 @@ class AllProjectsScreen extends StatelessWidget {
   void _createNewProject(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const ProjectScreen(projectId: null)),
+      MaterialPageRoute(builder: (context) => ProjectScreen(projectId: null, onPopCallback: getProjects,)), // Null indicates new project
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // This is required to rebuild the widget properly.
     return Scaffold(
-      appBar: _buildAppBar(context),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final bool isMobile = constraints.maxWidth < 768;
-          
-          return Row(
-            children: [
-              // Sidebar - hidden on mobile in drawer
-              if (!isMobile) Sidebar(selectedPage: '/projects/list'),
-
-              // Main Content
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
-                  child: Column(
+      appBar: _buildAppBar(),
+      body: Row(
+        children: [
+          Sidebar(selectedPage: '/projects'),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : errorMessage != null
+                            ? Center(child: Text(errorMessage!))
+                            : ProjectTableWidget(projects: projectsList),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Project Table
-                      Expanded(child: ProjectTableWidget()),
-
-                      SizedBox(height: isMobile ? 12 : 16),
-
-                      // Equipment Recommendation & New Project Buttons
-                      isMobile
-                          ? Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _buildRecommendationButton(context, isMobile),
-                                SizedBox(height: 8),
-                                _buildNewProjectButton(context, isMobile),
-                              ],
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _buildRecommendationButton(context, isMobile),
-                                SizedBox(width: isMobile ? 8 : 16),
-                                _buildNewProjectButton(context, isMobile),
-                              ],
-                            ),
+                      ElevatedButton(
+                        onPressed: () => _openEquipmentRecommendation(context),
+                        child: const Text("Equipment Recommendation"),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton.icon(
+                        onPressed: () => _createNewProject(context),
+                        icon: const Icon(Icons.add),
+                        label: const Text("New Project"),
+                      ),
                     ],
                   ),
                 ),
@@ -80,74 +144,11 @@ class AllProjectsScreen extends StatelessWidget {
     );
   }
 
-  // Custom AppBar with responsive adjustments
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 768;
-
+  PreferredSizeWidget _buildAppBar() {
     return AppBar(
       title: const Text("All Projects"),
       backgroundColor: Colors.white,
       elevation: 1,
-      leading: isMobile
-          ? IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-            )
-          : null,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.filter_list),
-          onPressed: () {
-            // TODO: Add filter functionality
-          },
-        ),
-        if (!isMobile)
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              // TODO: Add additional options
-            },
-          ),
-      ],
-    );
-  }
-
-  // Reusable button for equipment recommendation
-  Widget _buildRecommendationButton(BuildContext context, bool isMobile) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        minimumSize: Size(isMobile ? double.infinity : 0, 48),
-        padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 12 : 24,
-          vertical: isMobile ? 12 : 16,
-        ),
-      ),
-      onPressed: () => _openEquipmentRecommendation(context),
-      child: Text(
-        "Equipment Recommendation",
-        style: TextStyle(fontSize: isMobile ? 14 : 16),
-      ),
-    );
-  }
-
-  // Reusable button for new project
-  Widget _buildNewProjectButton(BuildContext context, bool isMobile) {
-    return ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(
-        minimumSize: Size(isMobile ? double.infinity : 0, 48),
-        padding: EdgeInsets.symmetric(
-          horizontal: isMobile ? 12 : 24,
-          vertical: isMobile ? 12 : 16,
-        ),
-      ),
-      onPressed: () => _createNewProject(context),
-      icon: const Icon(Icons.add),
-      label: Text(
-        "New Project",
-        style: TextStyle(fontSize: isMobile ? 14 : 16),
-      ),
     );
   }
 }
