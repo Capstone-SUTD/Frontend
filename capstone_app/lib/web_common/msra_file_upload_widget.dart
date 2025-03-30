@@ -10,37 +10,54 @@ class FileUploadWidget extends StatefulWidget {
 class _FileUploadWidgetState extends State<FileUploadWidget> {
   String? _fileName;
   bool _isDragging = false;
-  PlatformFile? _pickedFile;
 
-  Future<void> _pickFile() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx'],
-      );
+  List<html.File> getUploadedFiles() {
+    return _uploadedFiles;
+  }
 
-      if (result != null) {
+  void _pickFiles() {
+    final uploadInput = html.FileUploadInputElement();
+    uploadInput.accept = '.pdf';
+    uploadInput.multiple = true;
+    uploadInput.click();
+
+    uploadInput.onChange.listen((event) {
+      final files = uploadInput.files;
+      if (files != null && files.isNotEmpty) {
         setState(() {
-          _pickedFile = result.files.first;
-          _fileName = _pickedFile?.name;
+          _uploadedFiles.addAll(files);
         });
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking file: $e')),
-      );
+    });
+  }
+
+  void _removeFile(int index) {
+    setState(() {
+      _uploadedFiles.removeAt(index);
+    });
+  }
+
+  void _handleDrop(html.Event event) {
+    event.preventDefault();
+    final dragEvent = event as dynamic;
+    final html.DataTransfer? dataTransfer = dragEvent.dataTransfer;
+
+    if (dataTransfer != null && dataTransfer.files!.isNotEmpty) {
+      setState(() {
+        _uploadedFiles.addAll(dataTransfer.files!);
+      });
     }
   }
 
-  void _handleDragEnter(DragTargetDetails details) {
-    setState(() => _isDragging = true);
+  void _handleDragOver(html.Event event) {
+    event.preventDefault();
+    setState(() {
+      _isDragging = true;
+    });
   }
 
-  void _handleDragExit() {
-    setState(() => _isDragging = false);
-  }
-
-  void _handleDrop(DragTargetDetails<PlatformFile> details) {
+  void _handleDragLeave(html.Event event) {
+    event.preventDefault();
     setState(() {
       _isDragging = false;
       _pickedFile = details.data;
@@ -59,77 +76,62 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
         ),
         const SizedBox(height: 10),
         GestureDetector(
-          onTap: _pickFile,
-          child: MouseRegion(
-            onEnter: (_) => setState(() => _isDragging = true),
-            onExit: (_) => setState(() => _isDragging = false),
-            child: DragTarget<PlatformFile>(
-              onWillAcceptWithDetails: (_) => true,
-              onAcceptWithDetails: _handleDrop,
-              onLeave: (_) => _handleDragExit(),
-              builder: (context, candidateData, rejectedData) {
-                return Container(
-                  width: double.infinity,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: _isDragging ? Colors.blue : Colors.grey,
-                      width: _isDragging ? 2 : 1,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                    color: _isDragging 
-                        ? Colors.blue 
-                        : Colors.grey,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _isDragging ? Icons.file_upload : Icons.cloud_upload,
-                        size: 50,
-                        color: _isDragging ? Colors.blue : Colors.grey,
-                      ),
-                      const SizedBox(height: 8),
-                      if (_fileName == null)
-                        Text(
-                          _isDragging 
-                              ? "Drop your file here"
-                              : "Choose a file or drag & drop it here",
-                          style: TextStyle(
-                            color: _isDragging ? Colors.blue : Colors.grey,
+          onTap: _pickFiles,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(8),
+              color: _isDragging ? Colors.blue.withOpacity(0.1) : Colors.white,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_upload, size: 50, color: Colors.grey),
+                const SizedBox(height: 8),
+                const Text("Choose or drag & drop MS and RA pdf files"),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: _pickFiles,
+                  child: const Text("Browse Files"),
+                ),
+                const SizedBox(height: 10),
+                if (_uploadedFiles.isNotEmpty)
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _uploadedFiles.length,
+                    itemBuilder: (context, index) {
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              "• ${_uploadedFiles[index].name}",
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 14),
+                            ),
                           ),
-                        ),
-                      if (_fileName != null)
-                        Text(
-                          "Uploaded: $_fileName",
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        onPressed: _pickFile,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _isDragging ? Colors.blue : null,
-                        ),
-                        child: Text(
-                          _isDragging ? "Release to upload" : "Browse File",
-                          style: TextStyle(
-                            color: _isDragging ? Colors.white : null,
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.red),
+                            onPressed: () => _removeFile(index),
                           ),
-                        ),
-                      ),
-                    ],
+                        ],
+                      );
+                    },
                   ),
-                );
-              },
+              ],
             ),
           ),
         ),
       ],
     );
   }
-
-  // Add this method to get the picked file data
-  PlatformFile? getPickedFile() {
-    return _pickedFile;
-  }
 }
+
+
+
+
+
+

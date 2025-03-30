@@ -278,88 +278,62 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
 
     return TableCell(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-        child: _isReadOnly
-            ? Text(equipmentValue, style: theme.textTheme.bodyMedium)
-            : _buildEquipmentInput(index, scope, theme),
+        padding: const EdgeInsets.all(8),
+        child: isReadOnly
+            ? Text(equipmentValue, textAlign: TextAlign.center)
+            : _workScopeList[index]["scope"] == "Lifting"
+                ? TextFormField(
+                    textAlign: TextAlign.center,
+                    onChanged: (value) {
+                      _updateWorkScope(index, "equipmentList", "$value ton crane");
+                    },
+                    decoration: const InputDecoration(
+                      labelText: "Enter Crane Threshold (Tons)",
+                      border: InputBorder.none,
+                    ),
+                  )
+                : _workScopeList[index]["scope"] == "Transportation"
+                    ? DropdownButtonFormField<String>(
+                        value: _workScopeList[index]["equipmentList"]!.isNotEmpty
+                            ? _workScopeList[index]["equipmentList"]
+                            : null,
+                        items: [
+                          "8ft X 40ft Trailer",
+                          "8ft X 45ft Trailer",
+                          "8ft X 50ft Trailer",
+                          "10.5ft X 30ft Low Bed",
+                          "10.5ft X 40ft Low Bed",
+                          "Self Loader"
+                        ].map((option) {
+                          return DropdownMenuItem(value: option, child: Text(option));
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            _updateWorkScope(index, "equipmentList", value);
+                          }
+                        },
+                        decoration: const InputDecoration(
+                          labelText: "Select Trailer",
+                          border: InputBorder.none,
+                        ),
+                      )
+
+                    : TextFormField(
+                        initialValue: equipmentValue,
+                        textAlign: TextAlign.center,
+                        onChanged: (value) {
+                          _updateWorkScope(index, "equipmentList", value);
+                        },
+                        decoration: const InputDecoration(
+                          labelText: "",
+                          border: InputBorder.none,
+                        ),
+                      ),
       ),
     );
   }
 
-  Widget _buildEquipmentInput(int index, String scope, ThemeData theme) {
-    switch (scope) {
-      case "Lifting":
-        return TextFormField(
-          initialValue: _workScopeList[index]["equipmentList"]
-              ?.replaceAll(" ton crane", ""),
-          decoration: const InputDecoration(
-            border: InputBorder.none,
-            isDense: true,
-            contentPadding: EdgeInsets.zero,
-            hintText: "Enter tons",
-          ),
-          style: theme.textTheme.bodyMedium,
-          keyboardType: TextInputType.number,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Enter tons';
-            }
-            if (double.tryParse(value) == null) {
-              return 'Enter valid number';
-            }
-            return null;
-          },
-          onChanged: (value) {
-            if (value.isNotEmpty) {
-              _updateWorkScope(index, "equipmentList", "$value ton crane");
-            }
-          },
-        );
-      case "Transportation":
-        return TextFormField(
-          initialValue: _workScopeList[index]["equipmentList"]
-              ?.replaceAll(" trailer", ""),
-          decoration: const InputDecoration(
-            border: InputBorder.none,
-            isDense: true,
-            contentPadding: EdgeInsets.zero,
-            hintText: "Enter trailer type",
-          ),
-          style: theme.textTheme.bodyMedium,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Enter trailer';
-            }
-            return null;
-          },
-          onChanged: (value) {
-            if (value.isNotEmpty) {
-              _updateWorkScope(index, "equipmentList", "$value trailer");
-            }
-          },
-        );
-      default:
-        return TextFormField(
-          initialValue: _workScopeList[index]["equipmentList"],
-          decoration: const InputDecoration(
-            border: InputBorder.none,
-            isDense: true,
-            contentPadding: EdgeInsets.zero,
-            hintText: "Enter equipment",
-          ),
-          style: theme.textTheme.bodyMedium,
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Enter equipment';
-            }
-            return null;
-          },
-          onChanged: (value) => _updateWorkScope(index, "equipmentList", value),
-        );
-    }
-  }
-
-  Widget _buildActionCell(int index, ThemeData theme) {
+  Widget _buildActionCell(int index) {
     return TableCell(
       child: Center(
         child: IconButton(
