@@ -78,8 +78,8 @@ class _FileUploadWidgetState extends State<FileUploadWidget> {
                     ),
                     borderRadius: BorderRadius.circular(8),
                     color: _isDragging 
-                        ? Colors.blue.withOpacity(0.1) 
-                        : Colors.grey.withOpacity(0.05),
+                        ? Colors.blue 
+                        : Colors.grey,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,

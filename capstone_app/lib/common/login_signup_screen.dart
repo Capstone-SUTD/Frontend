@@ -17,7 +17,6 @@ class _LoginSignUpScreenState extends State<LoginSignUpScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _userIdFocus = FocusNode();
   final FocusNode _passwordFocus = FocusNode();
-  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -65,6 +64,7 @@ class _LoginSignUpScreenState extends State<LoginSignUpScreen> {
       // if (!mounted) return;
 
       _showSuccessBanner();
+
 
       Future.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;
@@ -158,7 +158,7 @@ void _showErrorBanner(String message) {
                     FocusScope.of(context).requestFocus(_passwordFocus);
                   },
                   decoration: const InputDecoration(
-                    hintText: 'Email ID',
+                    hintText: 'User ID',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.person),
                   ),
@@ -167,23 +167,13 @@ void _showErrorBanner(String message) {
                 TextField(
                   controller: _passwordController,
                   focusNode: _passwordFocus,
-                  obscureText: _obscurePassword,
+                  obscureText: true,
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _login(context),
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: 'Password',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.lock),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock),
                   ),
                 ),
                 const SizedBox(height: 40),

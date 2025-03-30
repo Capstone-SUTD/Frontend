@@ -314,6 +314,7 @@ Future<Project?> fetchProjectById(String projectId) async {
         throw FormatException("Expected list but got ${responseData.runtimeType}");
       }
 
+      print(responseData);
       // Find matching project with proper type conversion
       final projectJson = responseData.cast<Map<String, dynamic>>().firstWhere(
         (p) => p['projectid']?.toString() == projectId,
