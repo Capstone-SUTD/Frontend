@@ -57,14 +57,32 @@ class _AllProjectsScreenState extends State<AllProjectsScreen>
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
+        print("Decoded response: $decoded");
+
+        List<dynamic>? rawProjects;
 
         if (decoded is List) {
+          // Format: [ {...}, {...} ]
+          rawProjects = decoded;
+        } else if (decoded is Map && decoded['projects'] is List) {
+          // Format: { "projects": [ {...}, {...} ] }
+          rawProjects = decoded['projects'];
+        }
+
+        if (rawProjects != null) {
           List<Project> projects = List<Project>.from(
-            decoded.map((item) => Project.fromJson(item)),
+            rawProjects.map((item) => Project.fromJson(item)),
           );
 
           setState(() {
             projectsList = projects;
+            isLoading = false;
+            errorMessage = null;
+          });
+        } else {
+          setState(() {
+            projectsList = [];
+            errorMessage = 'Unexpected response format.';
             isLoading = false;
           });
         }
@@ -135,9 +153,44 @@ class _AllProjectsScreenState extends State<AllProjectsScreen>
                     child: isLoading
                         ? const Center(child: CircularProgressIndicator())
                         : errorMessage != null
-                            ? Center(child: Text(errorMessage!))
-                            : ProjectTableWidget(projects: projectsList),
-                  ),
+                            ? Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.error_outline,
+                                        color: Colors.redAccent, size: 48),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      errorMessage!,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.redAccent,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton.icon(
+                                      onPressed: getProjects,
+                                      icon: const Icon(Icons.refresh),
+                                      label: const Text("Try Again"),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : projectsList.isEmpty
+                                ? const Center(
+                                    child: Text(
+                                      "No projects found.",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  )
+                                : ProjectTableWidget(projects: projectsList),
+                  )
                 ],
               ),
             ),
