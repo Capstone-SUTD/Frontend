@@ -687,20 +687,26 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
 
   // Example of switching tabs, if your app uses them
   void _onTabSelected(int index) {
-    // example only; do what your real app needs
-    if (index == 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => MSRAGenerationScreen(project: _project)),
-      );
-    }
-    if (index == 0) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => ProjectScreen(projectId: _project?.projectId))
-      );
-    }
+  if (index == 0) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProjectScreen(
+          projectId: _project?.projectId,
+          selectedTab: 0, 
+        ),
+      ),
+    );
   }
+  if (index == 1) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MSRAGenerationScreen(project: _project),
+      ),
+    );
+  }
+}
 
   @override
   Widget build(BuildContext context) {

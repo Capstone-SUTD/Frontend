@@ -1,19 +1,22 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../web_common/project_tab_widget.dart';
-import '../web_common/project_stepper_widget.dart';
-import '../web_common/download_msra_widget.dart';
-import '../web_common/approval_list_widget.dart';
-import '../web_common/feedback_close_widget.dart';
+
 import '../models/project_model.dart';
+import '../web_common/approval_list_widget.dart';
+import '../web_common/download_msra_widget.dart';
+import '../web_common/feedback_close_widget.dart';
+import '../web_common/project_stepper_widget.dart';
+import '../web_common/project_tab_widget.dart';
 import 'onsite_checklist_screen.dart';
 import 'project_screen.dart';
 
 class MSRAGenerationScreen extends StatefulWidget {
   final dynamic project; // ideally use a Project type if available
-  const MSRAGenerationScreen({Key? key, required this.project}) : super(key: key);
+  const MSRAGenerationScreen({Key? key, required this.project})
+      : super(key: key);
 
   @override
   _MSRAGenerationScreenState createState() => _MSRAGenerationScreenState();
@@ -33,81 +36,85 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
   void initState() {
     super.initState();
     _project = widget.project;
-    _callApprovalStatusApi(); 
+    _callApprovalStatusApi();
   }
 
   Future<void> _callApprovalStatusApi() async {
-  final url = Uri.parse('http://localhost:5000/app/approval-rejection-status');
+    final url =
+        Uri.parse('http://localhost:5000/app/approval-rejection-status');
 
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
 
-    if (token == null) {
-      throw Exception("Token not found");
-    }
-
-    final response = await http.post(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'projectid': int.tryParse(_project?.projectId?.toString() ?? "0") ?? 0, // Ensure int
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-
-      // Map rejection details
-      List<Map<String, dynamic>> rejectionList = [];
-      if (data['RejectionDetails'] != null) {
-        for (var rejection in data['RejectionDetails']) {
-          String? role = rejection['role'];
-          String? comments = rejection['comments'];
-
-          // Find the stakeholder name based on the role
-          String? name;
-          if (role != null) {
-            for (var stakeholder in _project.stakeholders) {
-              if (stakeholder.role == role) {
-                name = stakeholder.name;
-                break;
-              }
-            }
-          }
-
-          // Add the rejection details to the rejectionList
-          rejectionList.add({
-            'role': role,
-            'comments': comments,
-            'name': name,
-          });
-        }
+      if (token == null) {
+        throw Exception("Token not found");
       }
 
-      print(rejectionList);
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'projectid': int.tryParse(_project?.projectId?.toString() ?? "0") ??
+              0, // Ensure int
+        }),
+      );
 
-      // Store the MS and RA versions
-      int msVersions = data['MSVersions'] ?? 0;
-      int raVersions = data['RAVersions'] ?? 0;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
 
-      // Set state with the updated rejection list, MS and RA versions
-      setState(() {
-        _approvalStage = data['Approvals'] ?? 0; // Set approvalStage from API response
-        _rejectionList = rejectionList; // Set rejectionList
-        _msVersions = msVersions; // Set MSVersions
-        _raVersions = raVersions; // Set RAVersions
-      });
-    } else {
-      throw Exception("Failed to load approval status: ${response.statusCode}");
+        // Map rejection details
+        List<Map<String, dynamic>> rejectionList = [];
+        if (data['RejectionDetails'] != null) {
+          for (var rejection in data['RejectionDetails']) {
+            String? role = rejection['role'];
+            String? comments = rejection['comments'];
+
+            // Find the stakeholder name based on the role
+            String? name;
+            if (role != null) {
+              for (var stakeholder in _project.stakeholders) {
+                if (stakeholder.role == role) {
+                  name = stakeholder.name;
+                  break;
+                }
+              }
+            }
+
+            // Add the rejection details to the rejectionList
+            rejectionList.add({
+              'role': role,
+              'comments': comments,
+              'name': name,
+            });
+          }
+        }
+
+        print(rejectionList);
+
+        // Store the MS and RA versions
+        int msVersions = data['MSVersions'] ?? 0;
+        int raVersions = data['RAVersions'] ?? 0;
+
+        // Set state with the updated rejection list, MS and RA versions
+        setState(() {
+          _approvalStage =
+              data['Approvals'] ?? 0; // Set approvalStage from API response
+          _rejectionList = rejectionList; // Set rejectionList
+          _msVersions = msVersions; // Set MSVersions
+          _raVersions = raVersions; // Set RAVersions
+        });
+      } else {
+        throw Exception(
+            "Failed to load approval status: ${response.statusCode}");
+      }
+    } catch (e) {
+      _showErrorSnackbar("Error: ${e.toString()}");
     }
-  } catch (e) {
-    _showErrorSnackbar("Error: ${e.toString()}");
   }
-}
 
   void _onApprovalTabSelected(int index) {
     setState(() {
@@ -115,7 +122,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
     });
   }
 
-    void _handleVersionIncrease(String fileType) {
+  void _handleVersionIncrease(String fileType) {
     setState(() {
       if (fileType == "MS") {
         _msVersions++;
@@ -125,18 +132,31 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
     });
   }
 
-
   void _onTabSelected(int index) {
-    if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => OnsiteChecklistScreen(project: _project)),
-      );
-    }
+  if (index == 0) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProjectScreen(
+          projectId: _project?.projectId,
+          selectedTab: 0, 
+        ),
+      ),
+    );
   }
+  if (index == 2) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OnsiteChecklistScreen(project: _project),
+      ),
+    );
+  }
+}
 
   void _showErrorSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _updateApprovalStage(int newStage) {
@@ -145,45 +165,45 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
     });
   }
 
-  void _closeProject(){
+  void _closeProject() {}
 
-  }
+  Future<List<Stakeholder>> _fetchUpdatedStakeholders() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
 
-Future<List<Stakeholder>> _fetchUpdatedStakeholders() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+      if (token == null) {
+        throw Exception("Token not found");
+      }
 
-    if (token == null) {
-      throw Exception("Token not found");
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/project/stakeholder-comments'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json', // optional but recommended
+        },
+        body: jsonEncode({
+          'projectid':
+              int.tryParse(_project?.projectId?.toString() ?? "0") ?? 0,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+        print(data);
+
+        _project.stakeholders =
+            data.map((s) => Stakeholder.fromJson(s)).toList();
+
+        return _project.stakeholders;
+      } else {
+        throw Exception("Failed to load stakeholders");
+      }
+    } catch (e) {
+      print("Error API Call: $e");
+      return [];
     }
-
-    final response = await http.post(
-      Uri.parse('http://localhost:5000/project/stakeholder-comments'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json', // optional but recommended
-      },
-      body: jsonEncode({
-        'projectid': int.tryParse(_project?.projectId?.toString() ?? "0") ?? 0, 
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      List<dynamic> data = json.decode(response.body);
-      print(data);
-
-      _project.stakeholders = data.map((s) => Stakeholder.fromJson(s)).toList();
-
-      return _project.stakeholders;
-    } else {
-      throw Exception("Failed to load stakeholders");
-    }
-  } catch (e) {
-    print("Error API Call: $e");
-    return [];
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -219,7 +239,8 @@ Future<List<Stakeholder>> _fetchUpdatedStakeholders() async {
               ),
               const SizedBox(height: 20),
               const Divider(),
-              if (_approvalStage != 3) // Only render the Row if approvalStage is not 3
+              if (_approvalStage !=
+                  3) // Only render the Row if approvalStage is not 3
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -232,20 +253,21 @@ Future<List<Stakeholder>> _fetchUpdatedStakeholders() async {
               const SizedBox(height: 10),
               Expanded(
                 child: _approvalStage == 3
-                ? FeedbackAndClose(
-                  stakeholders: _project.stakeholders,
-                  onClose: _closeProject,
-                  fetchUpdatedStakeholders: _fetchUpdatedStakeholders,
-                  projectId: _project?.projectId ?? "",)
-                : ApprovalListWidget(
-                  selectedTab: _selectedApprovalTab,
-                  approvalStage: _approvalStage,
-                  stakeholders: _project.stakeholders,
-                  projectid: int.parse(_project.projectId.toString()),
-                  rejectionList: _rejectionList,
-                  onApprovalStageChange: _updateApprovalStage,
-                  onVersionIncrease: _handleVersionIncrease,
-                ),
+                    ? FeedbackAndClose(
+                        stakeholders: _project.stakeholders,
+                        onClose: _closeProject,
+                        fetchUpdatedStakeholders: _fetchUpdatedStakeholders,
+                        projectId: _project?.projectId ?? "",
+                      )
+                    : ApprovalListWidget(
+                        selectedTab: _selectedApprovalTab,
+                        approvalStage: _approvalStage,
+                        stakeholders: _project.stakeholders,
+                        projectid: int.parse(_project.projectId.toString()),
+                        rejectionList: _rejectionList,
+                        onApprovalStageChange: _updateApprovalStage,
+                        onVersionIncrease: _handleVersionIncrease,
+                      ),
               ),
             ] else ...[
               const Center(
@@ -285,9 +307,3 @@ Future<List<Stakeholder>> _fetchUpdatedStakeholders() async {
     );
   }
 }
-
-
-
-
-
-
