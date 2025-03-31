@@ -43,21 +43,24 @@ class ProjectTabWidget extends StatelessWidget {
     final isSelected = index == selectedTabIndex;
 
     return Expanded(
-      child: GestureDetector(
-        onTap: () => onTabSelected(index),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.orange : Colors.transparent,
-            borderRadius: borderRadius ?? BorderRadius.zero,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            title,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isSelected ? Colors.white : Colors.black,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () => onTabSelected(index),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: isSelected ? Colors.orange : Colors.transparent,
+              borderRadius: borderRadius ?? BorderRadius.zero,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isSelected ? Colors.white : Colors.black,
+              ),
             ),
           ),
         ),
