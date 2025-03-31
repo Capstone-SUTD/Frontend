@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:capstone_app/common/splash_screen.dart';
 import 'package:capstone_app/web_screens/all_project_screen.dart';
 import 'package:capstone_app/web_screens/dashboard_screen.dart';
 import 'package:capstone_app/web_screens/web_splash_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,10 +21,12 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: kIsWeb ? WebSplashScreen() : SplashScreen(), // ✅ Different splash screen for web
-      debugShowCheckedModeBanner: false,  // Remove debug banner
+      home: kIsWeb
+          ? WebSplashScreen()
+          : SplashScreen(), // ✅ Different splash screen for web
+      debugShowCheckedModeBanner: false, // Remove debug banner
       routes: {
-        '/dashboard': (context) => kIsWeb ? DashboardScreen() : SplashScreen(), 
+        '/dashboard': (context) => kIsWeb ? DashboardScreen() : SplashScreen(),
         '/projects': (context) => kIsWeb ? AllProjectsScreen() : SplashScreen(),
       },
     );

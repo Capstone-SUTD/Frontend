@@ -1,11 +1,13 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import '../web_common/sidebar_widget.dart';
-import '../web_common/project_table_widget.dart';
-import '../web_common/equipment_recommendation_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/project_model.dart';
+import '../web_common/equipment_recommendation_widget.dart';
+import '../web_common/project_table_widget.dart';
+import '../web_common/sidebar_widget.dart';
 import 'project_screen.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
@@ -17,25 +19,27 @@ class AllProjectsScreen extends StatefulWidget {
   _AllProjectsScreenState createState() => _AllProjectsScreenState();
 }
 
-class _AllProjectsScreenState extends State<AllProjectsScreen> with AutomaticKeepAliveClientMixin, RouteAware {
+class _AllProjectsScreenState extends State<AllProjectsScreen>
+    with AutomaticKeepAliveClientMixin, RouteAware {
   List<Project> projectsList = [];
   bool isLoading = true;
   String? errorMessage;
 
   @override
-  bool get wantKeepAlive => true; // Keep alive and rebuild widget when it's visible
+  bool get wantKeepAlive =>
+      true; // Keep alive and rebuild widget when it's visible
 
   @override
   void initState() {
     super.initState();
-    getProjects();  // Initial API call on screen load
+    getProjects(); // Initial API call on screen load
   }
 
   @override
   void didPopNext() {
     super.didPopNext();
     // Called when this screen is popped back into view
-    getProjects();  // Make API call again when navigating back to the screen
+    getProjects(); // Make API call again when navigating back to the screen
   }
 
   Future<void> getProjects() async {
@@ -91,7 +95,11 @@ class _AllProjectsScreenState extends State<AllProjectsScreen> with AutomaticKee
   void _createNewProject(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => ProjectScreen(projectId: null, onPopCallback: getProjects,)), // Null indicates new project
+      MaterialPageRoute(
+          builder: (context) => ProjectScreen(
+                projectId: null,
+                onPopCallback: getProjects,
+              )), // Null indicates new project
     );
   }
 
@@ -108,13 +116,6 @@ class _AllProjectsScreenState extends State<AllProjectsScreen> with AutomaticKee
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  Expanded(
-                    child: isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : errorMessage != null
-                            ? Center(child: Text(errorMessage!))
-                            : ProjectTableWidget(projects: projectsList),
-                  ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -131,6 +132,13 @@ class _AllProjectsScreenState extends State<AllProjectsScreen> with AutomaticKee
                       ),
                     ],
                   ),
+                  Expanded(
+                    child: isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : errorMessage != null
+                            ? Center(child: Text(errorMessage!))
+                            : ProjectTableWidget(projects: projectsList),
+                  ),
                 ],
               ),
             ),
@@ -142,7 +150,7 @@ class _AllProjectsScreenState extends State<AllProjectsScreen> with AutomaticKee
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      title: const Text("All Projects"),
+      title: const Text("OOG Navigator"),
       backgroundColor: Colors.white,
       elevation: 1,
     );
