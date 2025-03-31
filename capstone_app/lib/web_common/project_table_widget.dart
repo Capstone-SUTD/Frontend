@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/project_model.dart';
 import '../web_screens/project_screen.dart';
 
@@ -18,13 +19,16 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
   void _navigateToProject(BuildContext context, String projectId) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => ProjectScreen(projectId: projectId)),
+      MaterialPageRoute(
+          builder: (context) => ProjectScreen(projectId: projectId)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    int totalPages = (widget.projects.length / _rowsPerPage).ceil();
+    int totalPages = widget.projects.isEmpty
+        ? 1
+        : (widget.projects.length / _rowsPerPage).ceil();
 
     return Column(
       children: [
@@ -51,7 +55,8 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
                           cells: [
                             DataCell(
                               Text(project.projectName),
-                              onTap: () => _navigateToProject(context, project.projectId),
+                              onTap: () => _navigateToProject(
+                                  context, project.projectId),
                             ),
                             DataCell(Text(project.startDestination)),
                             DataCell(Text(project.endDestination)),
@@ -64,7 +69,6 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
             ),
           ),
         ),
-
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -73,12 +77,17 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
             Row(
               children: [
                 ElevatedButton(
-                  onPressed: _currentPage > 0 ? () => setState(() => _currentPage--) : null,
+                  onPressed: _currentPage > 0 && widget.projects.isNotEmpty
+                      ? () => setState(() => _currentPage--)
+                      : null,
                   child: const Text("Previous"),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: _currentPage < totalPages - 1 ? () => setState(() => _currentPage++) : null,
+                  onPressed: _currentPage < totalPages - 1 &&
+                          widget.projects.isNotEmpty
+                      ? () => setState(() => _currentPage++)
+                      : null,
                   child: const Text("Next"),
                 ),
               ],
@@ -116,7 +125,8 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
       ),
       child: Text(
         status,
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        style:
+            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
     );
   }

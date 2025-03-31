@@ -22,7 +22,7 @@ class ProjectScreen extends StatefulWidget {
   final VoidCallback? onPopCallback;
   final int selectedTab;
 
- const ProjectScreen({
+  const ProjectScreen({
     Key? key,
     this.projectId,
     this.onPopCallback,
@@ -46,6 +46,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
   bool showChecklist = false;
   bool isGenerateMSRAEnabled = false;
   bool hasGenerateMSRA = false;
+  bool enableRunButton = false;
   int currentStep = 0;
   List<String> resultsOOG = [];
 
@@ -61,8 +62,67 @@ class _ProjectScreenState extends State<ProjectScreen> {
   @override
   void initState() {
     super.initState();
-    selectedTabIndex = widget.selectedTab; 
+    selectedTabIndex = widget.selectedTab;
     _loadProjectData();
+  }
+
+  bool _canRun() {
+    final formState = _formKey.currentState;
+    final cargoState = _cargoKey.currentState;
+
+    final projectName = formState?.getProjectName() ?? '';
+    final client = formState?.getClient() ?? '';
+    final emailSubject = formState?.getEmailSubjectHeader() ?? '';
+    final stakeholders = formState?.getSelectedStakeholders() ?? [];
+    final cargo = cargoState?.getCargoList() ?? [];
+
+    return projectName.isNotEmpty &&
+        client.isNotEmpty &&
+        emailSubject.isNotEmpty &&
+        stakeholders.isNotEmpty &&
+        cargo.isNotEmpty;
+  }
+
+  void _evaluateRunButton() {
+    final formState = _formKey.currentState;
+    final cargoState = _cargoKey.currentState;
+
+    final projectName = formState?.getProjectName() ?? '';
+    final client = formState?.getClient() ?? '';
+    final emailSubject = formState?.getEmailSubjectHeader() ?? '';
+    final stakeholders = formState?.getSelectedStakeholders() ?? [];
+    final cargo = cargoState?.getCargoList() ?? [];
+
+    final hasAtLeastOneRow = cargo.isNotEmpty;
+
+    final allRowsAreComplete = cargo.every((c) =>
+        (c["cargoname"]?.trim().isNotEmpty ?? false) &&
+        (c["length"]?.trim().isNotEmpty ?? false) &&
+        (c["breadth"]?.trim().isNotEmpty ?? false) &&
+        (c["height"]?.trim().isNotEmpty ?? false) &&
+        (c["weight"]?.trim().isNotEmpty ?? false) &&
+        (c["quantity"]?.trim().isNotEmpty ?? false));
+
+    final hasAtLeastOneCompleteRow = cargo.any((c) =>
+        (c["cargoname"]?.trim().isNotEmpty ?? false) &&
+        (c["length"]?.trim().isNotEmpty ?? false) &&
+        (c["breadth"]?.trim().isNotEmpty ?? false) &&
+        (c["height"]?.trim().isNotEmpty ?? false) &&
+        (c["weight"]?.trim().isNotEmpty ?? false) &&
+        (c["quantity"]?.trim().isNotEmpty ?? false));
+
+    final cargoIsValid =
+        hasAtLeastOneRow && allRowsAreComplete && hasAtLeastOneCompleteRow;
+
+    final canRun = projectName.isNotEmpty &&
+        client.isNotEmpty &&
+        emailSubject.isNotEmpty &&
+        stakeholders.isNotEmpty &&
+        cargoIsValid;
+
+    setState(() {
+      enableRunButton = canRun;
+    });
   }
 
   void _loadProjectData() async {
@@ -420,6 +480,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
                             key: _formKey,
                             project: _project,
                             isNewProject: isNewProject,
+                            onChanged: _evaluateRunButton,
                           ),
                           const SizedBox(height: 20),
                           CargoDetailsTableWidget(
@@ -430,6 +491,8 @@ class _ProjectScreenState extends State<ProjectScreen> {
                             hasRun: hasRun,
                             onRunPressed: _onRunPressed,
                             resultList: resultsOOG,
+                            enableRunButton: enableRunButton,
+                            onCargoChanged: _evaluateRunButton,
                           ),
                           const SizedBox(height: 20),
                           if (isOOG) ...[
@@ -459,18 +522,22 @@ class _ProjectScreenState extends State<ProjectScreen> {
                                         ? const Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                                SizedBox(
-                                                  height: 20,
-                                                  width: 20,
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                    strokeAlign: 2,
-                                                    color: Colors.white,
-                                                  ),
+                                              SizedBox(
+                                                height: 16,
+                                                width: 16,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth:
+                                                      2, // Makes it thinner
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                          Color>(Colors.white),
                                                 ),
-                                                SizedBox(width: 10),
-                                                Text("Saving..."),
-                                              ])
+                                              ),
+                                              SizedBox(width: 10),
+                                              Text("Saving..."),
+                                            ],
+                                          )
                                         : const Text("Save"),
                                   ),
                                   const SizedBox(width: 10),

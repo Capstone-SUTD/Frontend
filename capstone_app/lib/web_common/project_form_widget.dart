@@ -1,18 +1,22 @@
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/project_model.dart';
 
 class ProjectFormWidget extends StatefulWidget {
   final Project? project;
   final bool isNewProject;
+  final VoidCallback? onChanged;
 
   const ProjectFormWidget({
     Key? key,
     this.project,
     required this.isNewProject,
+    this.onChanged,
   }) : super(key: key);
 
   @override
@@ -26,10 +30,15 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
   late TextEditingController _startDateController;
 
   List<Map<String, String>> selectedStakeholders = [];
-  List<Map<String, String>> stakeholdersList = []; 
+  List<Map<String, String>> stakeholdersList = [];
   Set<String> selectedRoles = {};
 
-  final List<String> _roleOptions = ["HSEOfficer", "Operations", "ProjectManager", "Additional"];
+  final List<String> _roleOptions = [
+    "HSEOfficer",
+    "Operations",
+    "ProjectManager",
+    "Additional"
+  ];
 
   @override
   void initState() {
@@ -37,11 +46,16 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
 
     String formattedDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-    _nameController = TextEditingController(text: widget.project?.projectName ?? "");
-    _clientController = TextEditingController(text: widget.project?.client ?? "");
-    _emailController = TextEditingController(text: widget.project?.emailsubjectheader ?? "");
+    _nameController =
+        TextEditingController(text: widget.project?.projectName ?? "");
+    _clientController =
+        TextEditingController(text: widget.project?.client ?? "");
+    _emailController =
+        TextEditingController(text: widget.project?.emailsubjectheader ?? "");
     _startDateController = TextEditingController(
-      text: widget.isNewProject ? formattedDate : widget.project?.startDate.toString() ?? "",
+      text: widget.isNewProject
+          ? formattedDate
+          : widget.project?.startDate.toString() ?? "",
     );
 
     _fetchStakeholders();
@@ -49,9 +63,9 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
     // Ensure at least one row exists
     if (widget.isNewProject) {
       selectedStakeholders = [
-        {"userId": "", "role": "HSEOfficer", "name":""},
-        {"userId": "", "role": "Operations", "name":""},
-        {"userId": "", "role": "ProjectManager", "name":""},
+        {"userId": "", "role": "HSEOfficer", "name": ""},
+        {"userId": "", "role": "Operations", "name": ""},
+        {"userId": "", "role": "ProjectManager", "name": ""},
       ];
     }
   }
@@ -66,53 +80,58 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
   }
 
   Future<void> _fetchStakeholders() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
 
-    if (token == null) {
-      throw Exception("Token not found");
+      if (token == null) {
+        throw Exception("Token not found");
+      }
+
+      final response = await http.get(
+        Uri.parse('http://localhost:5000/project/stakeholders'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json', // optional but recommended
+        },
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+        setState(() {
+          stakeholdersList = data
+              .map((s) => {
+                    "userId": s["userid"].toString(),
+                    "name": s["username"].toString(),
+                  })
+              .toList();
+
+          // Ensure the list isn't empty before trying to populate it
+          // if (selectedStakeholders.isEmpty) {
+          //  selectedStakeholders.add({"userId": "", "role": "", "name": ""});
+          // }
+        });
+      } else {
+        throw Exception("Failed to load stakeholders");
+      }
+    } catch (e) {
+      print("Error fetching stakeholders: $e");
     }
-
-    final response = await http.get(
-      Uri.parse('http://localhost:5000/project/stakeholders'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json', // optional but recommended
-      },
-    );
-
-    if (response.statusCode == 200) {
-      List<dynamic> data = json.decode(response.body);
-      setState(() {
-        stakeholdersList = data.map((s) => {
-          "userId": s["userid"].toString(),
-          "name": s["username"].toString(),
-        }).toList();
-        
-        // Ensure the list isn't empty before trying to populate it
-        // if (selectedStakeholders.isEmpty) {
-        //  selectedStakeholders.add({"userId": "", "role": "", "name": ""});
-        // }
-      });
-    } else {
-      throw Exception("Failed to load stakeholders");
-    }
-  } catch (e) {
-    print("Error fetching stakeholders: $e");
   }
-}
 
   // Check if a Role is Already Assigned
   bool _isRoleSelectedElsewhere(String role, int currentIndex) {
     return selectedStakeholders.any((s) =>
-        s["role"] == role && role != "Additional" && selectedStakeholders.indexOf(s) != currentIndex);
+        s["role"] == role &&
+        role != "Additional" &&
+        selectedStakeholders.indexOf(s) != currentIndex);
   }
 
   // Add a New Stakeholder Row
   void _addStakeholder() {
     setState(() {
-      selectedStakeholders.add({"userId": "", "role": "Additional", "name":""});
+      selectedStakeholders
+          .add({"userId": "", "role": "Additional", "name": ""});
     });
   }
 
@@ -125,141 +144,155 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
 
   @override
   Widget build(BuildContext context) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16), // Ensure padding
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildTextField("Project Name", _nameController),
-        const SizedBox(height: 16),
-        _buildTextField("Client", _clientController),
-        const SizedBox(height: 16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16), // Ensure padding
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTextField("Project Name", _nameController),
+          const SizedBox(height: 16),
+          _buildTextField("Client", _clientController),
+          const SizedBox(height: 16),
 
-        // Stakeholder Section - Show table if not a new project
-        if (!widget.isNewProject && widget.project != null && widget.project!.stakeholders.isNotEmpty)
-          _buildStakeholdersTable(widget.project!.stakeholders),
-        if (widget.isNewProject)
-          Column(
-            children: List.generate(selectedStakeholders.length, (index) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  children:[
-                    // Stakeholder Dropdown (Searchable)
-                    // Expanded(
-                    //   flex: 4,
-                    //   child: DropdownButtonFormField<String>(
-                    //     decoration: const InputDecoration(
-                    //       labelText: "Select Stakeholder",
-                    //       border: OutlineInputBorder(),
-                    //     ),
-                    //     items: stakeholdersList.map((s) {
-                    //       return DropdownMenuItem(value: s["userId"], child: Text(s["name"]!));
-                    //     }).toList(),
-                    //     value: selectedStakeholders[index]["userId"]!.isNotEmpty
-                    //         ? selectedStakeholders[index]["userId"]
-                    //         : null,
-                    //     onChanged: (value) {
-                    //       setState(() {
-                    //         selectedStakeholders[index]["userId"] = value!;
-                    //       });
-                    //     },
-                    //   ),
-                    // ),
-                    Expanded(
-                      flex: 4,
-                      child: DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: "Select Stakeholder",
-                          border: OutlineInputBorder(),
-                        ),
-                        items: stakeholdersList.map((s) {
-                          return DropdownMenuItem(
-                            value: s["userId"], 
-                            child: Text(s["name"]!),  // Ensure the name is used here
-                          );
-                        }).toList(),
-                        value: selectedStakeholders[index]["userId"]!.isNotEmpty
-                            ? selectedStakeholders[index]["userId"]
-                            : null,
-                        onChanged: (value) {
+          // Stakeholder Section - Show table if not a new project
+          if (!widget.isNewProject &&
+              widget.project != null &&
+              widget.project!.stakeholders.isNotEmpty)
+            _buildStakeholdersTable(widget.project!.stakeholders),
+          if (widget.isNewProject)
+            Column(
+              children: List.generate(selectedStakeholders.length, (index) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      // Stakeholder Dropdown (Searchable)
+                      // Expanded(
+                      //   flex: 4,
+                      //   child: DropdownButtonFormField<String>(
+                      //     decoration: const InputDecoration(
+                      //       labelText: "Select Stakeholder",
+                      //       border: OutlineInputBorder(),
+                      //     ),
+                      //     items: stakeholdersList.map((s) {
+                      //       return DropdownMenuItem(value: s["userId"], child: Text(s["name"]!));
+                      //     }).toList(),
+                      //     value: selectedStakeholders[index]["userId"]!.isNotEmpty
+                      //         ? selectedStakeholders[index]["userId"]
+                      //         : null,
+                      //     onChanged: (value) {
+                      //       setState(() {
+                      //         selectedStakeholders[index]["userId"] = value!;
+                      //       });
+                      //     },
+                      //   ),
+                      // ),
+                      Expanded(
+                        flex: 4,
+                        child: DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            labelText: "Select Stakeholder",
+                            border: OutlineInputBorder(),
+                          ),
+                          items: stakeholdersList.map((s) {
+                            return DropdownMenuItem(
+                              value: s["userId"],
+                              child: Text(
+                                  s["name"]!), // Ensure the name is used here
+                            );
+                          }).toList(),
+                          value:
+                              selectedStakeholders[index]["userId"]!.isNotEmpty
+                                  ? selectedStakeholders[index]["userId"]
+                                  : null,
+                          onChanged: (value) {
                             setState(() {
                               selectedStakeholders[index]["userId"] = value!;
-                              final selectedStakeholder = stakeholdersList.firstWhere((s) => s["userId"] == value);
-                              selectedStakeholders[index]["name"] = selectedStakeholder["name"]!;
+                              final selectedStakeholder = stakeholdersList
+                                  .firstWhere((s) => s["userId"] == value);
+                              selectedStakeholders[index]["name"] =
+                                  selectedStakeholder["name"]!;
                             });
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-
-                    // Role Dropdown
-                    Expanded(
-                      flex: 3,
-                      child: DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: "Role",
-                          border: OutlineInputBorder(),
+                            widget.onChanged?.call();
+                          },
                         ),
-                        items: _roleOptions.map((role) {
-                          bool isDisabled = _isRoleSelectedElsewhere(role, index);
-                          return DropdownMenuItem(
-                            value: role,
-                            child: Text(
-                              role,
-                              style: TextStyle(
-                                color: isDisabled ? Colors.grey : Colors.black,
-                              ),
-                            ),
-                            enabled: !isDisabled || role == "Additional",
-                          );
-                        }).toList(),
-                        value: selectedStakeholders[index]["role"]!.isNotEmpty
-                            ? selectedStakeholders[index]["role"]
-                            : null,
-                        onChanged: (value) {
-                          if (!_isRoleSelectedElsewhere(value!, index) || value == "Additional") {
-                            setState(() {
-                              selectedStakeholders[index]["role"] = value;
-                            });
-                          }
-                        },
                       ),
-                    ),
-                    const SizedBox(width: 10),
+                      const SizedBox(width: 10),
 
-                    // Remove Button (only for rows other than the first)
-                    SizedBox(
-                      width: 48, // same width as IconButton
-                      child: index == 0
-                          ? IconButton(
-                              icon: const Icon(Icons.add_circle, color: Colors.blue),
-                              onPressed: _addStakeholder,
-                            )
-                          : index > 2
-                              ? IconButton(
-                                  icon: const Icon(Icons.remove_circle, color: Colors.red),
-                                  onPressed: () => _removeStakeholder(index),
-                                )
-                              : const SizedBox.shrink(), // keeps alignment but no button
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ),
+                      // Role Dropdown
+                      Expanded(
+                        flex: 3,
+                        child: DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            labelText: "Role",
+                            border: OutlineInputBorder(),
+                          ),
+                          items: _roleOptions.map((role) {
+                            bool isDisabled =
+                                _isRoleSelectedElsewhere(role, index);
+                            return DropdownMenuItem(
+                              value: role,
+                              child: Text(
+                                role,
+                                style: TextStyle(
+                                  color:
+                                      isDisabled ? Colors.grey : Colors.black,
+                                ),
+                              ),
+                              enabled: !isDisabled || role == "Additional",
+                            );
+                          }).toList(),
+                          value: selectedStakeholders[index]["role"]!.isNotEmpty
+                              ? selectedStakeholders[index]["role"]
+                              : null,
+                          onChanged: (value) {
+                            if (!_isRoleSelectedElsewhere(value!, index) ||
+                                value == "Additional") {
+                              setState(() {
+                                selectedStakeholders[index]["role"] = value;
+                              });
+                              widget.onChanged?.call();
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
 
-        const SizedBox(height: 16),
+                      // Remove Button (only for rows other than the first)
+                      SizedBox(
+                        width: 48, // same width as IconButton
+                        child: index == 0
+                            ? IconButton(
+                                icon: const Icon(Icons.add_circle,
+                                    color: Colors.blue),
+                                onPressed: _addStakeholder,
+                              )
+                            : index > 2
+                                ? IconButton(
+                                    icon: const Icon(Icons.remove_circle,
+                                        color: Colors.red),
+                                    onPressed: () => _removeStakeholder(index),
+                                  )
+                                : const SizedBox
+                                    .shrink(), // keeps alignment but no button
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
 
-        _buildTextField("Email Subject Header", _emailController),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
 
-        // Auto-Generated Start Date Field (Read-Only)
-        _buildTextField("Start Date", _startDateController, readOnly: true),
-      ],
-    ),
-  );
-}
+          _buildTextField("Email Subject Header", _emailController),
+          const SizedBox(height: 16),
+
+          // Auto-Generated Start Date Field (Read-Only)
+          _buildTextField("Start Date", _startDateController, readOnly: true),
+        ],
+      ),
+    );
+  }
 
   Widget _buildStakeholdersTable(List<Stakeholder> stakeholders) {
     return Padding(
@@ -267,7 +300,8 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Stakeholders", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text("Stakeholders",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Table(
             border: TableBorder.all(color: Colors.grey),
@@ -302,10 +336,12 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
   }
 
   /// **Reusable TextField Builder**
-  Widget _buildTextField(String label, TextEditingController controller, {bool readOnly = false}) {
+  Widget _buildTextField(String label, TextEditingController controller,
+      {bool readOnly = false}) {
     return TextField(
       controller: controller,
       readOnly: readOnly,
+      onChanged: (_) => widget.onChanged?.call(),
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(),
@@ -314,43 +350,41 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
   }
 
   Widget _buildHeaderCell(String title) {
-      return TableCell(
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+    return TableCell(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-      );
-    }
+      ),
+    );
+  }
 
-    Widget _buildTableCell(String value) {
-      return TableCell(
-        child: Padding(
+  Widget _buildTableCell(String value) {
+    return TableCell(
+      child: Padding(
           padding: const EdgeInsets.all(8),
-          child: 
-          Text(value, textAlign: TextAlign.center)
-        ),
-      );
-    }
+          child: Text(value, textAlign: TextAlign.center)),
+    );
+  }
 
-    List<Stakeholder> getSelectedStakeholders() {
+  List<Stakeholder> getSelectedStakeholders() {
     return selectedStakeholders.map((s) {
       final rawUserId = s["userId"];
       final parsedUserId = int.tryParse(rawUserId ?? '') ?? -1;
 
-      print("Final userId to send: $parsedUserId, type: ${parsedUserId.runtimeType}");
+      print(
+          "Final userId to send: $parsedUserId, type: ${parsedUserId.runtimeType}");
 
       return Stakeholder(
         userId: parsedUserId,
         role: s["role"] ?? "",
-        name: s["name"] ?? "",  // Ensure name is returned
+        name: s["name"] ?? "", // Ensure name is returned
       );
     }).toList();
   }
-
 
 //   // Expose values to parent using GlobalKey
 //   List<Stakeholder> getSelectedStakeholders() {
@@ -371,9 +405,3 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
   String getClient() => _clientController.text;
   String getEmailSubjectHeader() => _emailController.text;
 }
-
-
-
-
-
-
