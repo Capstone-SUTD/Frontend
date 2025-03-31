@@ -1,5 +1,7 @@
 import 'package:capstone_app/common/login_signup_screen.dart';
+import 'package:capstone_app/web_screens/all_project_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WebSplashScreen extends StatefulWidget {
   @override
@@ -15,7 +17,6 @@ class _WebSplashScreenState extends State<WebSplashScreen>
   void initState() {
     super.initState();
 
-    // Setup fade controller
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
@@ -25,19 +26,34 @@ class _WebSplashScreenState extends State<WebSplashScreen>
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
 
-    // Start fading after a short delay
+    // Start fade after delay
     Future.delayed(const Duration(milliseconds: 800), () {
       _controller.forward();
     });
 
-    // After fade completes, navigate to login
+    // After fade, check if token exists, then redirect accordingly
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginSignUpScreen()),
-        );
+        _redirectBasedOnToken();
       }
     });
+  }
+
+  Future<void> _redirectBasedOnToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    if (!mounted) return;
+
+    if (token != null && token.isNotEmpty) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const AllProjectsScreen()),
+      );
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginSignUpScreen()),
+      );
+    }
   }
 
   @override
@@ -53,7 +69,7 @@ class _WebSplashScreenState extends State<WebSplashScreen>
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: RichText(
-            text: TextSpan(
+            text: const TextSpan(
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               children: [
                 TextSpan(text: 'OOG ', style: TextStyle(color: Colors.red)),

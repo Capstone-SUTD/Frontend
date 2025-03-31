@@ -57,7 +57,6 @@ class _AllProjectsScreenState extends State<AllProjectsScreen>
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
-        print("API raw response: ${response.body}");
 
         if (decoded is List) {
           List<Project> projects = List<Project>.from(
