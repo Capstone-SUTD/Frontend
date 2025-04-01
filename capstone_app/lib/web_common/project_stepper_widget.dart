@@ -1,10 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'step_label.dart';
 
 class ProjectStepperWidget extends StatefulWidget {
-  final int currentStep;
   final Function(int) onStepTapped;
+  final dynamic projectId;
+  final String? currentStage;
 
-  const ProjectStepperWidget({super.key, required this.currentStep, required this.onStepTapped});
+  // 1) New callback to notify parent about updated stage
+  final Function(String newStage)? onStageUpdated;
+
+  const ProjectStepperWidget({
+    Key? key,
+    required this.projectId,
+    required this.currentStage,
+    required this.onStepTapped,
+    this.onStageUpdated, // <-- optional
+  }) : super(key: key);
 
   @override
   _ProjectStepperWidgetState createState() => _ProjectStepperWidgetState();
@@ -12,31 +26,73 @@ class ProjectStepperWidget extends StatefulWidget {
 
 class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
   late int _selectedStep;
-
-  final List<String> _stepLabels = [
-    "Seller", "Customs", "Loading", "Carrier", "Cargo Terminal",
-    "Port", "Transport", "Port", "Cargo Terminal", "Carrier",
-    "Customs", "Unloading", "Buyer"
-  ];
+  final List<String> _stepLabels = kStepLabels;
 
   @override
   void initState() {
     super.initState();
-    _selectedStep = widget.currentStep;
+    _selectedStep = _getStepIndex(widget.currentStage);
   }
 
-  void _onStepTapped(int index) {
+  int _getStepIndex(String? stage) {
+    if (stage == null) return 0;
+    final index = _stepLabels.indexWhere(
+        (label) => label.toLowerCase() == stage.toLowerCase());
+    return index >= 0 ? index : 0;
+  }
+
+  void _onStepTapped(int index) async {
     setState(() {
       _selectedStep = index;
     });
 
+    final String stage = _stepLabels[index];
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      if (token == null) throw Exception("Token not found");
+
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/project/update-stage'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'projectid': widget.projectId,
+          'stage': stage,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print("Stage updated to: $stage");
+
+        // 2) Call parent callback to update the parent's _project.stage
+        if (widget.onStageUpdated != null) {
+          widget.onStageUpdated!(stage);
+        }
+      } else {
+        print("Failed to update stage: ${response.body}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to update stage: ${response.body}")),
+        );
+      }
+    } catch (e) {
+      print("Error updating stage: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error updating stage")),
+      );
+    }
+
+    // Notify parent if they need to do something else
     widget.onStepTapped(index);
   }
 
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
-    double stepWidth = (screenWidth - 40) / (_stepLabels.length - 1);
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -46,13 +102,12 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Step Circles & Connector Line
             Stack(
               alignment: Alignment.center,
               children: [
-                // Connector Line (Placed at the back)
+                // The horizontal line behind the step circles
                 Positioned(
-                  top: 15, // Aligns the line at the middle of the circles
+                  top: 15,
                   left: 0,
                   right: 0,
                   child: Row(
@@ -67,8 +122,7 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
                     }),
                   ),
                 ),
-
-                // Step Circles (Placed at the front)
+                // The actual step circles and labels
                 Row(
                   children: List.generate(_stepLabels.length, (index) {
                     bool isCompleted = index <= _selectedStep;
@@ -77,7 +131,6 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
                         onTap: () => _onStepTapped(index),
                         child: Column(
                           children: [
-                            // Step Circle
                             Container(
                               width: 30,
                               height: 30,
@@ -90,13 +143,13 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
                                   ? const Icon(Icons.check, color: Colors.white, size: 16)
                                   : null,
                             ),
-
-                            const SizedBox(height: 5), // Proper spacing
-
-                            // Step Label
+                            const SizedBox(height: 5),
                             Text(
                               _stepLabels[index],
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ],
@@ -113,6 +166,8 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
     );
   }
 }
+
+
 
 
 

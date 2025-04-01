@@ -721,12 +721,12 @@ class _NewProjectScreenState extends State<NewProjectScreen> {
       child: ElevatedButton.icon(
         onPressed: () {
           Navigator.pop(context); // Close the current screen
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => MSRAGenerationScreen(), // Navigate to the CargoDetailPage
-            ),
-          );
+          //Navigator.push(
+            //context,
+            //MaterialPageRoute(
+              //builder: (context) => CargoDetailPage(), // Navigate to the CargoDetailPage
+            //),
+          //);
 
           // Show a SnackBar after navigation
           ScaffoldMessenger.of(context).showSnackBar(
