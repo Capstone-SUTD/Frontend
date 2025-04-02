@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter/services.dart';
 import '../models/project_model.dart';
 
 class CargoDetailsTableWidget extends StatefulWidget {
@@ -85,86 +85,91 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // **Cargo Details Header with Add Row Button**
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              "Cargo Details",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            if (widget.isNewProject && widget.isEditable)
-              ElevatedButton.icon(
-                onPressed: _addRow,
-                icon: const Icon(Icons.add),
-                label: const Text("Add Row"),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-
-        Table(
-          border: TableBorder.all(color: Colors.grey),
-          columnWidths: const {
-            0: FlexColumnWidth(2),
-            1: FlexColumnWidth(3),
-            2: FlexColumnWidth(2),
-            3: FlexColumnWidth(2),
-            4: FlexColumnWidth(2),
-            5: FlexColumnWidth(2),
-          },
-          children: [
-            // Table Header
-            TableRow(
-              decoration: BoxDecoration(color: Colors.grey[300]),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return ConstrainedBox(
+          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+          child: IntrinsicHeight(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeaderCell("Cargo Name"),
-                _buildHeaderCell("Dimension (LxBxH)"),
-                _buildHeaderCell("Weight"),
-                _buildHeaderCell("No of Units"),
-                _buildHeaderCell("Result"),
-                if (widget.isNewProject) _buildHeaderCell("Action"),
+                // **Cargo Details Header with Add Row Button**
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Cargo Details",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    if (widget.isNewProject && widget.isEditable)
+                      ElevatedButton.icon(
+                        onPressed: _addRow,
+                        icon: const Icon(Icons.add),
+                        label: const Text("Add Row"),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                Table(
+                  border: TableBorder.all(color: Colors.grey),
+                  columnWidths: const {
+                    0: FlexColumnWidth(2),
+                    1: FlexColumnWidth(3),
+                    2: FlexColumnWidth(2),
+                    3: FlexColumnWidth(2),
+                    4: FlexColumnWidth(2),
+                    5: FlexColumnWidth(2),
+                  },
+                  children: [
+                    TableRow(
+                      decoration: BoxDecoration(color: Colors.grey[300]),
+                      children: [
+                        _buildHeaderCell("Cargo Name"),
+                        _buildHeaderCell("Dimension (LxBxH)"),
+                        _buildHeaderCell("Weight"),
+                        _buildHeaderCell("No of Units"),
+                        _buildHeaderCell("Result"),
+                        if (widget.isNewProject) _buildHeaderCell("Action"),
+                      ],
+                    ),
+                    for (int i = 0; i < _cargoList.length; i++)
+                      TableRow(
+                        children: [
+                          _buildTableCell(i, "cargoname", isString: true),
+                          _buildDimensionCell(i),
+                          _buildWeightCell(i),
+                          _buildTableCell(i, "quantity"),
+                          _buildResultCell(i),
+                          if (widget.isNewProject) _buildActionButtons(i),
+                        ],
+                      ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                if (widget.isNewProject && !widget.hasRun)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton(
+                      onPressed: widget.enableRunButton ? widget.onRunPressed : null,
+                      child: const Text("Run"),
+                    ),
+                  ),
               ],
             ),
-
-            // Table Data Rows
-            for (int i = 0; i < _cargoList.length; i++)
-              TableRow(
-                children: [
-                  _buildTableCell(i, "cargoname"),
-                  _buildDimensionCell(i), // Updated Dimension field
-                  _buildWeightCell(i), // Updated Weight field with "tons"
-                  _buildTableCell(i, "quantity"),
-                  _buildResultCell(i),
-                  if (widget.isNewProject) _buildActionButtons(i),
-                ],
-              ),
-          ],
-        ),
-
-        const SizedBox(height: 8),
-
-        // Show "Run" button if it's a new project & hasn't run yet
-        if (widget.isNewProject && !widget.hasRun)
-          Align(
-            alignment: Alignment.centerRight,
-            child: ElevatedButton(
-              onPressed: widget.enableRunButton ? widget.onRunPressed : null,
-              child: const Text("Run"),
-            ),
           ),
-      ],
+        );
+      },
     );
   }
+
 
   List<Map<String, String>> getCargoList() {
     return _cargoList;
   }
 
-  // ✅ **Header Cell Builder**
   Widget _buildHeaderCell(String title) {
     return TableCell(
       child: Padding(
@@ -178,89 +183,7 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
     );
   }
 
-  // // ✅ **Table Cell Builder for Editable Fields**
-  // Widget _buildTableCell(int index, String key) {
-  //   return TableCell(
-  //     child: Padding(
-  //       padding: const EdgeInsets.all(8),
-  //       child: TextFormField(
-  //         initialValue: _cargoList[index][key],
-  //         textAlign: TextAlign.center,
-  //         onChanged: (value) => _updateCargo(index, key, value),
-  //         decoration: const InputDecoration(border: InputBorder.none),
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // // ✅ **Dimension Cell with "cm" Always Visible**
-  // Widget _buildDimensionCell(int index) {
-  //   return TableCell(
-  //     child: Padding(
-  //       padding: const EdgeInsets.all(8),
-  //       child: Row(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         children: [
-  //           _buildDimensionInput(index, "length"),
-  //           const Text(" m × "),
-  //           _buildDimensionInput(index, "breadth"),
-  //           const Text(" m × "),
-  //           _buildDimensionInput(index, "height"),
-  //           const Text(" m"),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // // **Helper for Dimension Input Fields**
-  // Widget _buildDimensionInput(int index, String key) {
-  //   return SizedBox(
-  //     width: 40,
-  //     child: TextFormField(
-  //       initialValue: _cargoList[index][key],
-  //       textAlign: TextAlign.center,
-  //       keyboardType: TextInputType.number,
-  //       onChanged: (value) => _updateCargo(index, key, value),
-  //       decoration: const InputDecoration(
-  //         border: InputBorder.none,
-  //         contentPadding: EdgeInsets.symmetric(vertical: 4),
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // // ✅ **Weight Cell with "tons" Always Visible**
-  // Widget _buildWeightCell(int index) {
-  //   return TableCell(
-  //     child: Padding(
-  //       padding: const EdgeInsets.all(8),
-  //       child: Row(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         children: [
-  //           SizedBox(
-  //             width: 40,
-  //             child: TextFormField(
-  //               initialValue: _cargoList[index]["weight"],
-  //               textAlign: TextAlign.center,
-  //               keyboardType: TextInputType.number,
-  //               onChanged: (value) => _updateCargo(index, "weight", value),
-  //               decoration: const InputDecoration(
-  //                 border: InputBorder.none,
-  //                 contentPadding: EdgeInsets.symmetric(vertical: 4),
-  //               ),
-  //             ),
-  //           ),
-  //           const SizedBox(width: 5),
-  //           const Text("kg"),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // ✅ **Table Cell Builder for Editable Fields**
-  Widget _buildTableCell(int index, String key) {
+  Widget _buildTableCell(int index, String key, {bool isString = false}) {
     return TableCell(
       child: Padding(
         padding: const EdgeInsets.all(8),
@@ -268,6 +191,10 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
             ? TextFormField(
                 initialValue: _cargoList[index][key],
                 textAlign: TextAlign.center,
+                keyboardType: key == "quantity" ? TextInputType.number : TextInputType.text,
+                inputFormatters: key == "quantity"
+                    ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$'))]
+                    : [],
                 onChanged: (value) => _updateCargo(index, key, value),
                 decoration: const InputDecoration(border: InputBorder.none),
               )
@@ -279,13 +206,13 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
     );
   }
 
-// ✅ **Dimension Cell with "cm" Always Visible**
   Widget _buildDimensionCell(int index) {
     return TableCell(
       child: Padding(
         padding: const EdgeInsets.all(8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             _buildDimensionInput(index, "length"),
             const Text(" m × "),
@@ -299,7 +226,6 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
     );
   }
 
-// **Helper for Dimension Input Fields**
   Widget _buildDimensionInput(int index, String key) {
     return SizedBox(
       width: 40,
@@ -308,6 +234,9 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
               initialValue: _cargoList[index][key],
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
+              ],
               onChanged: (value) => _updateCargo(index, key, value),
               decoration: const InputDecoration(
                 border: InputBorder.none,
@@ -321,7 +250,6 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
     );
   }
 
-// ✅ **Weight Cell with "kg" Always Visible**
   Widget _buildWeightCell(int index) {
     return TableCell(
       child: Padding(
@@ -329,27 +257,22 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(
-              width: 70,
-              child: widget.isEditable
-                  ? TextFormField(
-                      initialValue: _cargoList[index]["weight"],
-                      textAlign: TextAlign.center,
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) =>
-                          _updateCargo(index, "weight", value),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 10),
-                      ),
-                    )
-                  : Text(
-                      _cargoList[index]["weight"] ?? "",
-                      textAlign: TextAlign.center,
-                    ),
+            Flexible(
+              child: TextFormField(
+                initialValue: _cargoList[index]["weight"],
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                onChanged: (value) => _updateCargo(index, "weight", value),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                ),
+                style: const TextStyle(fontSize: 14),
+              ),
             ),
-            const SizedBox(width: 5),
-            const Text("kg"),
+            const SizedBox(width: 4),
+            const Text("kg", style: TextStyle(fontSize: 14)),
           ],
         ),
       ),
@@ -372,19 +295,27 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
     );
   }
 
-  // ✅ **Action Buttons for New Projects**
   Widget _buildActionButtons(int index) {
     return TableCell(
       verticalAlignment: TableCellVerticalAlignment.middle,
-      child: IconButton(
-        icon: const Icon(Icons.delete, color: Colors.red),
-        onPressed: () {
-          setState(() {
-            _cargoList.removeAt(index);
-          });
-          widget.onCargoChanged?.call();
-        },
-      ),
+      child: index == 0
+          ? const SizedBox.shrink() // No delete button for first row
+          : MouseRegion(
+              cursor: SystemMouseCursors.basic, // Remove hover effect
+              child: IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                hoverColor: Colors.transparent,
+                onPressed: () {
+                  setState(() {
+                    _cargoList.removeAt(index);
+                  });
+                  widget.onCargoChanged?.call();
+                },
+              ),
+            ),
     );
   }
 }
+
