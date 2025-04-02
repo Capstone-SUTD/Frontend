@@ -25,6 +25,7 @@ class FeedbackAndClose extends StatefulWidget {
 class _FeedbackAndCloseState extends State<FeedbackAndClose> {
   final Map<int, TextEditingController> _controllers = {};
   List<Stakeholder> _updatedStakeholders = [];
+  bool _isProjectClosed = false;
 
   @override
   void initState() {
@@ -44,47 +45,84 @@ class _FeedbackAndCloseState extends State<FeedbackAndClose> {
     List<Stakeholder> updatedList = await widget.fetchUpdatedStakeholders();
 
     setState(() {
-        _updatedStakeholders = List.from(updatedList); // Create a new reference
-        _controllers.clear(); // Clear old controllers
-        for (var stakeholder in _updatedStakeholders) {
+      _updatedStakeholders = List.from(updatedList);
+      _controllers.clear();
+      for (var stakeholder in _updatedStakeholders) {
         _controllers[stakeholder.userId] = TextEditingController();
-        }
+      }
     });
-    }
+  }
 
   Future<void> _sendFeedbackToAPI(int userId, String feedback, String role) async {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final token = prefs.getString('auth_token');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
 
-        if (token == null) {
+      if (token == null) {
         throw Exception("Token not found");
-        }
+      }
 
-        final response = await http.post(
+      final response = await http.post(
         Uri.parse('http://localhost:5000/project/feedback'),
         headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json', // optional but recommended
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
         },
         body: jsonEncode({
-            'projectid': int.tryParse(widget.projectId ?? "0") ?? 0, 
-            'comments' : feedback,
-            'role' : role,
+          'projectid': int.tryParse(widget.projectId) ?? 0,
+          'comments': feedback,
+          'role': role,
         }),
-        );
+      );
 
-        if (response.statusCode == 200) {
-            ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Feedback submitted succesfully')),
-          );
-        } else {
-            var responseData = jsonDecode(response.body);
-            String errorMessage = responseData['error'] ?? 'Unknown error';
-            _showErrorSnackbar("Failed. ($errorMessage)");
-        }
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Feedback submitted successfully')),
+        );
+      } else {
+        var responseData = jsonDecode(response.body);
+        String errorMessage = responseData['error'] ?? 'Unknown error';
+        _showErrorSnackbar("Failed. ($errorMessage)");
+      }
     } catch (e) {
-        _showErrorSnackbar("Error: ${e.toString()}");
+      _showErrorSnackbar("Error: ${e.toString()}");
+    }
+  }
+
+  Future<void> _closeProject() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      if (token == null) {
+        throw Exception("Token not found");
+      }
+
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/project/close'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'projectid': int.tryParse(widget.projectId) ?? 0,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _isProjectClosed = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Project successfully closed')),
+        );
+      } else {
+        var responseData = jsonDecode(response.body);
+        String errorMessage = responseData['error'] ?? 'Unknown error';
+        _showErrorSnackbar("Failed. ($errorMessage)");
+      }
+    } catch (e) {
+      _showErrorSnackbar("Error: ${e.toString()}");
     }
   }
 
@@ -175,8 +213,8 @@ class _FeedbackAndCloseState extends State<FeedbackAndClose> {
         ),
         SizedBox(height: 20),
         ElevatedButton(
-          onPressed: widget.onClose,
-          child: Text("Close Project"),
+          onPressed: _isProjectClosed ? null : _closeProject,
+          child: Text(_isProjectClosed ? "Project Closed" : "Close Project"),
         ),
       ],
     );
