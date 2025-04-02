@@ -134,21 +134,6 @@ class _AllProjectsScreenState extends State<AllProjectsScreen>
               child: Column(
                 children: [
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () => _openEquipmentRecommendation(context),
-                        child: const Text("Equipment Recommendation"),
-                      ),
-                      const SizedBox(width: 16),
-                      ElevatedButton.icon(
-                        onPressed: () => _createNewProject(context),
-                        icon: const Icon(Icons.add),
-                        label: const Text("New Project"),
-                      ),
-                    ],
-                  ),
                   Expanded(
                     child: isLoading
                         ? const Center(child: CircularProgressIndicator())

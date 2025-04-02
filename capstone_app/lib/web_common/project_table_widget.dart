@@ -15,20 +15,38 @@ class ProjectTableWidget extends StatefulWidget {
 class _ProjectTableWidgetState extends State<ProjectTableWidget> {
   int _currentPage = 0;
   final int _rowsPerPage = 10;
+  bool _isDateAscending = true;
+  late List<Project> _sortedProjects;
+
+  @override
+  void initState() {
+    super.initState();
+    _sortedProjects = List.from(widget.projects);
+  }
+
+  void _sortByDate() {
+    setState(() {
+      _isDateAscending = !_isDateAscending;
+      _sortedProjects.sort((a, b) => _isDateAscending
+          ? a.startDate.compareTo(b.startDate)
+          : b.startDate.compareTo(a.startDate));
+    });
+  }
 
   void _navigateToProject(BuildContext context, String projectId) {
     Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (context) => ProjectScreen(projectId: projectId)),
+        builder: (context) => ProjectScreen(projectId: projectId),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    int totalPages = widget.projects.isEmpty
+    int totalPages = _sortedProjects.isEmpty
         ? 1
-        : (widget.projects.length / _rowsPerPage).ceil();
+        : (_sortedProjects.length / _rowsPerPage).ceil();
 
     return Column(
       children: [
@@ -41,22 +59,36 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
                 columnSpacing: 20,
                 headingRowHeight: 40,
                 dataRowHeight: 50,
-                columns: const [
-                  DataColumn(label: Text("Project Name")),
-                  DataColumn(label: Text("Start Destination")),
-                  DataColumn(label: Text("End Destination")),
-                  DataColumn(label: Text("Status")),
-                  DataColumn(label: Text("Date")),
+                columns: [
+                  const DataColumn(label: Text("Project Name")),
+                  const DataColumn(label: Text("Start Destination")),
+                  const DataColumn(label: Text("End Destination")),
+                  const DataColumn(label: Text("Status")),
+                  DataColumn(
+                    label: InkWell(
+                      onTap: _sortByDate,
+                      child: Row(
+                        children: [
+                          const Text("Date"),
+                          Icon(
+                            _isDateAscending
+                                ? Icons.arrow_drop_up
+                                : Icons.arrow_drop_down,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
-                rows: widget.projects
+                rows: _sortedProjects
                     .skip(_currentPage * _rowsPerPage)
                     .take(_rowsPerPage)
                     .map((project) => DataRow(
                           cells: [
                             DataCell(
                               Text(project.projectName),
-                              onTap: () => _navigateToProject(
-                                  context, project.projectId),
+                              onTap: () =>
+                                  _navigateToProject(context, project.projectId),
                             ),
                             DataCell(Text(project.startDestination)),
                             DataCell(Text(project.endDestination)),
@@ -77,7 +109,7 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
             Row(
               children: [
                 ElevatedButton(
-                  onPressed: _currentPage > 0 && widget.projects.isNotEmpty
+                  onPressed: _currentPage > 0 && _sortedProjects.isNotEmpty
                       ? () => setState(() => _currentPage--)
                       : null,
                   child: const Text("Previous"),
@@ -85,7 +117,7 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: _currentPage < totalPages - 1 &&
-                          widget.projects.isNotEmpty
+                          _sortedProjects.isNotEmpty
                       ? () => setState(() => _currentPage++)
                       : null,
                   child: const Text("Next"),

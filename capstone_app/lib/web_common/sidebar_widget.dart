@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../common/login_signup_screen.dart';
+import '../web_screens/project_screen.dart';
+import 'equipment_recommendation_widget.dart';
 
 class Sidebar extends StatefulWidget {
   final String selectedPage;
@@ -41,7 +43,7 @@ class _SidebarState extends State<Sidebar> {
             ),
           ),
 
-          // Navigation Items (flush to top)
+          // Navigation Items
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,16 +51,43 @@ class _SidebarState extends State<Sidebar> {
                 _buildNavItem(
                   context,
                   icon: Icons.list,
-                  label: 'Projects',
+                  label: 'Dashboard',
                   route: '/projects',
                   isSelected: widget.selectedPage == '/projects',
                 ),
-                // Add more nav items here if needed
+                _buildNavItem(
+                  context,
+                  icon: Icons.add,
+                  label: 'New Project',
+                  route: '',
+                  isSelected: false,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ProjectScreen(projectId: null),
+                      ),
+                    );
+                  },
+                ),
+                _buildNavItem(
+                  context,
+                  icon: Icons.precision_manufacturing,
+                  label: 'Equipment',
+                  route: '',
+                  isSelected: false,
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => const EquipmentRecommendationDialog(),
+                    );
+                  },
+                ),
               ],
             ),
           ),
 
-          // Logout Button (pinned to bottom)
+          // Logout Button
           Padding(
             padding: const EdgeInsets.only(bottom: 20),
             child: _buildNavItem(
@@ -75,7 +104,6 @@ class _SidebarState extends State<Sidebar> {
     );
   }
 
-  /// Helper to build nav item row
   Widget _buildNavItem(
     BuildContext context, {
     required IconData icon,
@@ -87,6 +115,8 @@ class _SidebarState extends State<Sidebar> {
     return InkWell(
       onTap: () {
         if (route == '/logout') {
+          if (onTap != null) onTap();
+        } else if (route.isEmpty) {
           if (onTap != null) onTap();
         } else if (ModalRoute.of(context)?.settings.name != route) {
           Navigator.pushReplacementNamed(context, route);
@@ -113,7 +143,6 @@ class _SidebarState extends State<Sidebar> {
     );
   }
 
-  /// Handle logout logic
   Future<void> _handleLogout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
@@ -124,3 +153,5 @@ class _SidebarState extends State<Sidebar> {
     );
   }
 }
+
+

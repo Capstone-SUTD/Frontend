@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import '../models/project_model.dart';
+import 'package:flutter/services.dart';
 
 class WorkScopeWidget extends StatefulWidget {
   final bool isNewProject;
   final List<Scope>? workScopeList;
-
-  // ✅ New callback to notify when scope changes
   final VoidCallback? onWorkScopeChanged;
 
   const WorkScopeWidget({
     Key? key,
     required this.isNewProject,
     this.workScopeList,
-    this.onWorkScopeChanged, // ✅ Include it here
+    this.onWorkScopeChanged,
   }) : super(key: key);
 
   @override
@@ -49,21 +48,21 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
     setState(() {
       _workScopeList.add({"startDestination": "", "endDestination": "", "scope": "", "equipmentList": ""});
     });
-    widget.onWorkScopeChanged?.call(); // ✅ Trigger on add
+    widget.onWorkScopeChanged?.call();
   }
 
   void _updateWorkScope(int index, String key, String value) {
     setState(() {
       _workScopeList[index][key] = value;
     });
-    widget.onWorkScopeChanged?.call(); // ✅ Trigger on update
+    widget.onWorkScopeChanged?.call();
   }
 
   void _removeRow(int index) {
     setState(() {
       _workScopeList.removeAt(index);
     });
-    widget.onWorkScopeChanged?.call(); // ✅ Trigger on delete
+    widget.onWorkScopeChanged?.call();
   }
 
   @override
@@ -71,7 +70,6 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Work Scope Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -88,7 +86,6 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
           ],
         ),
         const SizedBox(height: 8),
-
         LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
@@ -215,6 +212,7 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
                         onChanged: (value) {
                           _updateWorkScope(index, "equipmentList", "$value ton crane");
                         },
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         decoration: const InputDecoration(
                           labelText: "Enter Crane Threshold (Tons)",
                           border: InputBorder.none,
@@ -289,4 +287,5 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
     );
   }
 }
+
 
