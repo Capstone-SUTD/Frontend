@@ -7,13 +7,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/data_service.dart';
 import '../models/project_model.dart';
-import '../web_common/cargo_details_table_widget.dart';
-import '../web_common/msra_file_upload_widget.dart';
-import '../web_common/offsite_checklist_widget.dart';
-import '../web_common/project_form_widget.dart';
-import '../web_common/project_tab_widget.dart';
-import '../web_common/step_label.dart';
-import '../web_common/work_scope_widget.dart';
+import '../common/cargo_details_table_widget.dart';
+import '../common/msra_file_upload_widget.dart';
+import '../common/offsite_checklist_widget.dart';
+import '../common/project_form_widget.dart';
+import '../common/project_tab_widget.dart';
+import '../common/step_label.dart';
+import '../common/work_scope_widget.dart';
 import 'msra_generation_screen.dart';
 import 'onsite_checklist_screen.dart';
 

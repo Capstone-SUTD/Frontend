@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../common/login_signup_screen.dart';
-import '../web_screens/project_screen.dart';
+import '../screens/login_signup_screen.dart';
+import '../screens/project_screen.dart';
 import 'equipment_recommendation_widget.dart';
 
 class Sidebar extends StatefulWidget {

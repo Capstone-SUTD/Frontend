@@ -1,4 +1,4 @@
-import 'package:capstone_app/web_screens/dashboard_screen.dart';
+import 'package:capstone_app/screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 
 class LoginSignupWidget extends StatefulWidget {

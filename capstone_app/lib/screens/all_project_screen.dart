@@ -5,9 +5,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/project_model.dart';
-import '../web_common/equipment_recommendation_widget.dart';
-import '../web_common/project_table_widget.dart';
-import '../web_common/sidebar_widget.dart';
+import '../common/equipment_recommendation_widget.dart';
+import '../common/project_table_widget.dart';
+import '../common/sidebar_widget.dart';
 import 'project_screen.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();

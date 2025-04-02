@@ -5,11 +5,11 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/project_model.dart';
-import '../web_common/approval_list_widget.dart';
-import '../web_common/download_msra_widget.dart';
-import '../web_common/feedback_close_widget.dart';
-import '../web_common/project_stepper_widget.dart';
-import '../web_common/project_tab_widget.dart';
+import '../common/approval_list_widget.dart';
+import '../common/download_msra_widget.dart';
+import '../common/feedback_close_widget.dart';
+import '../common/project_stepper_widget.dart';
+import '../common/project_tab_widget.dart';
 import 'onsite_checklist_screen.dart';
 import 'project_screen.dart';
 
