@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'msra_file_upload_widget.dart';
+import 'msra_reupload_widget.dart';
 import '../models/project_model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -32,7 +32,7 @@ class ApprovalListWidget extends StatefulWidget {
 
 class _ApprovalListWidgetState extends State<ApprovalListWidget> {
   late List<Map<String, dynamic>> _pendingApprovals;
-  final GlobalKey<FileUploadWidgetState> _fileUploadKey = GlobalKey<FileUploadWidgetState>();
+  final GlobalKey<FileReUploadWidgetState> _fileUploadKey = GlobalKey<FileReUploadWidgetState>();
 
   @override
   void initState() {
@@ -262,13 +262,14 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
 
     html.File? file;
     for (final uploadedFile in uploadedFiles) {
-      final name = uploadedFile.name.toLowerCase();
-      if (name.contains('ms')) {
-        filetype = "MS";
-        file = uploadedFile;  
-      } else if (name.contains('ra')) {
+      final extension = uploadedFile.name.split('.').last.toLowerCase(); 
+
+      if (extension == 'xlsx') {
         filetype = "RA";
-        file = uploadedFile; 
+        file = uploadedFile;
+      } else if (extension == 'docx') {
+        filetype = "MS";
+        file = uploadedFile;
       }
     }
 
@@ -381,12 +382,13 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
     }
 
     if (widget.selectedTab == 3) {
-      return Column(
+      return SingleChildScrollView (
+      child: Column(
         children: [
           const SizedBox(height: 20),
           SizedBox(
             width: 400,
-            child: FileUploadWidget(
+            child: FileReUploadWidget(
               key: _fileUploadKey,
             ),
           ),
@@ -402,6 +404,7 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
             ],
           ),
         ],
+      ),
       );
     }
 

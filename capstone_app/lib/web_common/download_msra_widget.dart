@@ -22,10 +22,14 @@ class DownloadMSRAWidget extends StatefulWidget {
 }
 
 class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
+  late int selectedMSVersion;
+  late int selectedRAVersion;
 
   @override
   void initState() {
     super.initState();
+    selectedMSVersion = widget.msVersion;
+    selectedRAVersion = widget.raVersion;
   }
 
   Future<void> _downloadFile(String fileType) async {
@@ -45,25 +49,23 @@ class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
         body: jsonEncode({
           'projectid': int.tryParse(widget.projectId),
           'filetype': fileType,
-          'version': fileType == "MS" ? widget.msVersion : widget.raVersion,
+          'version': fileType == "MS" ? selectedMSVersion : selectedRAVersion,
         }),
       );
 
-     if (response.statusCode == 200) {
-      final blob = html.Blob([response.bodyBytes]);
-      final url = html.Url.createObjectUrlFromBlob(blob);
+      if (response.statusCode == 200) {
+        final blob = html.Blob([response.bodyBytes]);
+        final url = html.Url.createObjectUrlFromBlob(blob);
 
-      // Map fileType to actual extensions (modify based on your server response)
-      String extension = fileType == "MS" ? "docx" : "xlsx"; // Example mapping
-      String fileName = "downloaded_file_$fileType.$extension"; 
+        String extension = fileType == "MS" ? "docx" : "xlsx";
+        String fileName = "downloaded_file_$fileType.$extension";
 
-      final anchor = html.AnchorElement(href: url)
-      
-        ..setAttribute("download", fileName) // Set proper filename with extension
-        ..click();
+        final anchor = html.AnchorElement(href: url)
+          ..setAttribute("download", fileName)
+          ..click();
 
-      html.Url.revokeObjectUrl(url);
-    } else {
+        html.Url.revokeObjectUrl(url);
+      } else {
         throw Exception("Download failed: ${response.body}");
       }
     } catch (e) {
@@ -74,35 +76,59 @@ class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
     }
   }
 
+  void _changeVersion(String fileType, int change) {
+    setState(() {
+      if (fileType == "MS") {
+        selectedMSVersion = (selectedMSVersion + change).clamp(1, widget.msVersion);
+      } else {
+        selectedRAVersion = (selectedRAVersion + change).clamp(1, widget.raVersion);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildDownloadButton("Download MS", "MS"),
-        _buildDownloadButton("Download RA", "RA"),
+        _buildDownloadButton("Download MS", "MS", selectedMSVersion),
+        _buildDownloadButton("Download RA", "RA", selectedRAVersion),
       ],
     );
   }
 
-  Widget _buildDownloadButton(String label, String fileType) {
+  Widget _buildDownloadButton(String label, String fileType, int version) {
     return Column(
       children: [
-        ElevatedButton.icon(
-          onPressed: () => _downloadFile(fileType),
-          icon: const Icon(Icons.download, color: Colors.deepPurple),
-          label: Text(label, style: const TextStyle(color: Colors.deepPurple)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-              side: const BorderSide(color: Colors.deepPurple),
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_left),
+              onPressed: version > 1 ? () => _changeVersion(fileType, -1) : null,
             ),
-          ),
+            ElevatedButton.icon(
+              onPressed: () => _downloadFile(fileType),
+              icon: const Icon(Icons.download, color: Colors.deepPurple),
+              label: Text(label, style: const TextStyle(color: Colors.deepPurple)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  side: const BorderSide(color: Colors.deepPurple),
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.arrow_right),
+              onPressed: version < (fileType == "MS" ? widget.msVersion : widget.raVersion)
+                  ? () => _changeVersion(fileType, 1)
+                  : null,
+            ),
+          ],
         ),
         const SizedBox(height: 5),
         Text(
-          "Version :" + (fileType == "MS" ? widget.msVersion : widget.raVersion).toString(),
+          "Version: $version",
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
@@ -110,5 +136,3 @@ class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
     );
   }
 }
-
-
