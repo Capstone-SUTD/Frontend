@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/project_model.dart';
+import 'package:flutter/services.dart';
 
 class WorkScopeWidget extends StatefulWidget {
   final bool isNewProject;
@@ -211,6 +212,7 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
                         onChanged: (value) {
                           _updateWorkScope(index, "equipmentList", "$value ton crane");
                         },
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         decoration: const InputDecoration(
                           labelText: "Enter Crane Threshold (Tons)",
                           border: InputBorder.none,

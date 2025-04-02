@@ -46,6 +46,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
   bool enableSaveButton = false;
   bool showChecklist = false;
   bool isGenerateMSRAEnabled = false;
+  bool isGeneratingMSRA = false;
   bool hasGenerateMSRA = false;
   bool enableRunButton = false;
   int currentStep = 0;
@@ -578,9 +579,13 @@ class _ProjectScreenState extends State<ProjectScreen> {
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
                                     ElevatedButton(
-                                      onPressed: hasGenerateMSRA
+                                      onPressed: (hasGenerateMSRA || isGeneratingMSRA)
                                           ? null
                                           : () async {
+                                            setState(() {
+                                              isGeneratingMSRA = true;
+                                            });
+
                                               final prefs = await SharedPreferences.getInstance();
                                               final token = prefs.getString('auth_token');
                                               final rawProjectId = _project?.projectId;
@@ -600,6 +605,9 @@ class _ProjectScreenState extends State<ProjectScreen> {
                                                 ScaffoldMessenger.of(context).showSnackBar(
                                                   const SnackBar(content: Text("Invalid project ID.")),
                                                 );
+                                                setState(() {
+                                                  isGeneratingMSRA = false;
+                                                });
                                                 return;
                                               }
 
@@ -642,7 +650,23 @@ class _ProjectScreenState extends State<ProjectScreen> {
                                                 );
                                               }
                                             },
-                                      child: const Text("Generate MS/RA"),
+                                      child: isGeneratingMSRA
+                                      ? const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          SizedBox(
+                                            height: 16,
+                                            width: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            ),
+                                          ),
+                                          SizedBox(width: 10),
+                                          Text("Generating..."),
+                                        ],
+                                      )
+                                      : const Text("Generate MS/RA"),
                                     ),
                                   ],
                                 ),
