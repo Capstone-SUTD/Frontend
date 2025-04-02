@@ -638,8 +638,17 @@ class _ProjectScreenState extends State<ProjectScreen> {
                                                     ),
                                                   );
                                                 } else {
+                                                  String errorMsg = "Generation failed.";
+                                                  try{
+                                                    final decoded = jsonDecode(response.body);
+                                                    if (decoded['error'] != null){
+                                                      errorMsg = decoded['error'];
+                                                    }
+                                                  }catch (_){
+                                                    errorMsg = response.body;
+                                                  }
                                                   ScaffoldMessenger.of(context).showSnackBar(
-                                                    SnackBar(content: Text("Generation failed: ${response.body}")),
+                                                    SnackBar(content: Text(errorMsg)),
                                                   );
                                                 }
                                               } catch (e) {
