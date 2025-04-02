@@ -165,7 +165,6 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
     );
   }
 
-
   List<Map<String, String>> getCargoList() {
     return _cargoList;
   }
@@ -185,42 +184,48 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
 
   Widget _buildTableCell(int index, String key, {bool isString = false}) {
     return TableCell(
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: widget.isEditable
-            ? TextFormField(
-                initialValue: _cargoList[index][key],
-                textAlign: TextAlign.center,
-                keyboardType: key == "quantity" ? TextInputType.number : TextInputType.text,
-                inputFormatters: key == "quantity"
-                    ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$'))]
-                    : [],
-                onChanged: (value) => _updateCargo(index, key, value),
-                decoration: const InputDecoration(border: InputBorder.none),
-              )
-            : Text(
-                _cargoList[index][key] ?? "",
-                textAlign: TextAlign.center,
-              ),
+      verticalAlignment: TableCellVerticalAlignment.middle,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: widget.isEditable
+              ? TextFormField(
+                  initialValue: _cargoList[index][key],
+                  textAlign: TextAlign.center,
+                  keyboardType: key == "quantity" ? TextInputType.number : TextInputType.text,
+                  inputFormatters: key == "quantity"
+                      ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$'))]
+                      : [],
+                  onChanged: (value) => _updateCargo(index, key, value),
+                  decoration: const InputDecoration(border: InputBorder.none),
+                )
+              : Text(
+                  _cargoList[index][key] ?? "",
+                  textAlign: TextAlign.center,
+                ),
+        ),
       ),
     );
   }
 
   Widget _buildDimensionCell(int index) {
     return TableCell(
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            _buildDimensionInput(index, "length"),
-            const Text(" m × "),
-            _buildDimensionInput(index, "breadth"),
-            const Text(" m × "),
-            _buildDimensionInput(index, "height"),
-            const Text(" m"),
-          ],
+      verticalAlignment: TableCellVerticalAlignment.middle,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _buildDimensionInput(index, "length"),
+              const Text(" m × "),
+              _buildDimensionInput(index, "breadth"),
+              const Text(" m × "),
+              _buildDimensionInput(index, "height"),
+              const Text(" m"),
+            ],
+          ),
         ),
       ),
     );
@@ -252,28 +257,31 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
 
   Widget _buildWeightCell(int index) {
     return TableCell(
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Flexible(
-              child: TextFormField(
-                initialValue: _cargoList[index]["weight"],
-                textAlign: TextAlign.center,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
-                onChanged: (value) => _updateCargo(index, "weight", value),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+      verticalAlignment: TableCellVerticalAlignment.middle,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: TextFormField(
+                  initialValue: _cargoList[index]["weight"],
+                  textAlign: TextAlign.center,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                  onChanged: (value) => _updateCargo(index, "weight", value),
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                  ),
+                  style: const TextStyle(fontSize: 14),
                 ),
-                style: const TextStyle(fontSize: 14),
               ),
-            ),
-            const SizedBox(width: 4),
-            const Text("kg", style: TextStyle(fontSize: 14)),
-          ],
+              const SizedBox(width: 4),
+              const Text("kg", style: TextStyle(fontSize: 14)),
+            ],
+          ),
         ),
       ),
     );
@@ -282,14 +290,16 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
   Widget _buildResultCell(int index) {
     return TableCell(
       verticalAlignment: TableCellVerticalAlignment.middle,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Text(
-          (widget.resultList != null && index < widget.resultList!.length)
-              ? widget.resultList![index]
-              : (_cargoList[index]["result"] ?? " "),
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Text(
+            (widget.resultList != null && index < widget.resultList!.length)
+                ? widget.resultList![index]
+                : (_cargoList[index]["result"] ?? " "),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
       ),
     );
@@ -299,9 +309,9 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
     return TableCell(
       verticalAlignment: TableCellVerticalAlignment.middle,
       child: index == 0
-          ? const SizedBox.shrink() // No delete button for first row
+          ? const SizedBox.shrink()
           : MouseRegion(
-              cursor: SystemMouseCursors.basic, // Remove hover effect
+              cursor: SystemMouseCursors.basic,
               child: IconButton(
                 icon: const Icon(Icons.delete, color: Colors.red),
                 splashColor: Colors.transparent,
@@ -318,4 +328,5 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
     );
   }
 }
+
 
