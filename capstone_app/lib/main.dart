@@ -16,10 +16,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Capstone App',
       theme: ThemeData(
+          scaffoldBackgroundColor: Colors.white,
+          canvasColor: Colors.white,
+          cardColor: Colors.white,
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      debugShowCheckedModeBanner: false, // 🟢 Move this ABOVE the `home`
+      debugShowCheckedModeBanner: false,
       home: WebSplashScreen(),
       routes: {
         '/dashboard': (context) => DashboardScreen(),
