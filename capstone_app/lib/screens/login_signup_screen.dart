@@ -423,10 +423,11 @@ class _LoginSignUpScreenState extends State<LoginSignUpScreen> {
                                         ),
                                       ),
                                       onPressed: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                SignUpScreen(),
+                                        Navigator.of(context).pushReplacement(
+                                          PageRouteBuilder(
+                                            pageBuilder: (_, __, ___) => SignUpScreen(),
+                                            transitionDuration: Duration.zero,
+                                            reverseTransitionDuration: Duration.zero,
                                           ),
                                         );
                                       },

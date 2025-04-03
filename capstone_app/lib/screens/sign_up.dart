@@ -313,7 +313,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         EdgeInsets.zero),
                                   ),
                                   onPressed: () {
-                                    Navigator.of(context).pop();
+                                    Navigator.of(context).pushReplacement(
+                                      PageRouteBuilder(
+                                        pageBuilder: (_, __, ___) => LoginSignUpScreen(),
+                                        transitionDuration: Duration.zero,
+                                        reverseTransitionDuration: Duration.zero,
+                                      ),
+                                    );
                                   },
                                   child: const Text(
                                     "Already have an account? Log In",
