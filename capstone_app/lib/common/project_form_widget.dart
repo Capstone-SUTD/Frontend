@@ -119,6 +119,12 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
     }
   }
 
+  // Check if a User is Already Assigned
+  bool _isUserSelectedElsewhere(String userId, int currentIndex) {
+    return selectedStakeholders.any((s) =>
+        s["userId"] == userId && selectedStakeholders.indexOf(s) != currentIndex);
+  }
+
   // Check if a Role is Already Assigned
   bool _isRoleSelectedElsewhere(String role, int currentIndex) {
     return selectedStakeholders.any((s) =>
@@ -180,21 +186,36 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
                                 border: OutlineInputBorder(),
                               ),
                               items: stakeholdersList.map((s) {
+                                final isDisabled = _isUserSelectedElsewhere(s["userId"]!, index);
                                 return DropdownMenuItem(
                                   value: s["userId"],
-                                  child: Text(s["name"]!),
+                                  enabled: !isDisabled,
+                                  child: Text(
+                                    s["name"]!,
+                                    style: TextStyle(
+                                      color: isDisabled ? Colors.grey : Colors.black,
+                                    ),
+                                  ),
                                 );
                               }).toList(),
                               value: selectedStakeholders[index]["userId"]!.isNotEmpty
                                   ? selectedStakeholders[index]["userId"]
                                   : null,
                               onChanged: (value) {
+                                if (_isUserSelectedElsewhere(value!, index)) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('User already assigned to another role.'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                  return;
+                                }
                                 setState(() {
-                                  selectedStakeholders[index]["userId"] = value!;
-                                  final selectedStakeholder = stakeholdersList
-                                      .firstWhere((s) => s["userId"] == value);
-                                  selectedStakeholders[index]["name"] =
-                                      selectedStakeholder["name"]!;
+                                  selectedStakeholders[index]["userId"] = value;
+                                  final selectedStakeholder =
+                                      stakeholdersList.firstWhere((s) => s["userId"] == value);
+                                  selectedStakeholders[index]["name"] = selectedStakeholder["name"]!;
                                 });
                                 widget.onChanged?.call();
                               },

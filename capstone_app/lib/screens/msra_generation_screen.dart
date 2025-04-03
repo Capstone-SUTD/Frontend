@@ -36,6 +36,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
   void initState() {
     super.initState();
     _project = widget.project;
+    _currentStage = widget.project.stage;
     _callApprovalStatusApi();
   }
 
@@ -165,6 +166,13 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
     });
   }
 
+  void _updateProjectStage(String newStage) {
+    setState(() {
+      _currentStage = newStage; // Update the current stage
+    });
+    print("3, Stage Updated: $newStage");
+  }
+
   void _closeProject() {}
 
   Future<List<Stakeholder>> _fetchUpdatedStakeholders() async {
@@ -223,7 +231,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
 
             // **Stepper Widget**
             ProjectStepperWidget(
-              currentStage: _project.stage,
+              currentStage: _currentStage,
               projectId: _project.projectId,
               onStepTapped: (newIndex) {
                 // Optional logic when a step is tappedr
@@ -256,8 +264,10 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
                     ? FeedbackAndClose(
                         stakeholders: _project.stakeholders,
                         onClose: _closeProject,
+                        projectStage: _currentStage,
                         fetchUpdatedStakeholders: _fetchUpdatedStakeholders,
                         projectId: _project?.projectId ?? "",
+                        onStageUpdated: _updateProjectStage
                       )
                     : ApprovalListWidget(
                         selectedTab: _selectedApprovalTab,
@@ -267,6 +277,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
                         rejectionList: _rejectionList,
                         onApprovalStageChange: _updateApprovalStage,
                         onVersionIncrease: _handleVersionIncrease,
+                        onStageUpdated: _updateProjectStage
                       ),
               ),
             ] else ...[

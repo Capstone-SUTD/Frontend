@@ -14,6 +14,7 @@ class ApprovalListWidget extends StatefulWidget {
   final List<Map<String, dynamic>> rejectionList;
   final Function(int) onApprovalStageChange;
   final Function(String) onVersionIncrease;
+  final Function(String) onStageUpdated;
 
   ApprovalListWidget({
     super.key,
@@ -24,6 +25,7 @@ class ApprovalListWidget extends StatefulWidget {
     required this.rejectionList, // Initialize rejectionList prop
     required this.onApprovalStageChange,
     required this.onVersionIncrease,
+    required this.onStageUpdated,
   });
 
   @override
@@ -38,6 +40,11 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
   void initState() {
     super.initState();
     _initializePendingApprovals();
+  }
+
+  void _updateStage(String newStage) {
+      print("2, Stage Updated: $newStage");
+      widget.onStageUpdated(newStage); // Update the project stage
   }
 
   void _initializePendingApprovals() {
@@ -78,6 +85,19 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
 
       if (response.statusCode == 200) {
         widget.onApprovalStageChange(widget.approvalStage + 1);
+        print("Approval Stage ${widget.approvalStage}");
+        if(widget.approvalStage == 0){
+          _updateStage("Approved - HSE");
+          print("1, Stage Updated: Approved HSE");
+        }
+        if(widget.approvalStage == 1){
+          _updateStage("Approved - PM");
+          print("1, Stage Updated: Approved PM");
+        }
+        if(widget.approvalStage == 2){
+          _updateStage("Approved - Mr. Jeong");
+          print("1, Stage Updated: Approved Mr. Jeong");
+        }
         ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Approved succesfully')),);
       } else {
@@ -242,7 +262,7 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
           widget.rejectionList.add(newRejection);
           widget.selectedTab = 2;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Approved succesfully')),
+            const SnackBar(content: Text('Rejected succesfully')),
           );
         }});
       } else {
