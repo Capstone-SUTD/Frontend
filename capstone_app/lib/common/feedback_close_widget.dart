@@ -9,12 +9,15 @@ class FeedbackAndClose extends StatefulWidget {
   final VoidCallback onClose;
   final Future<List<Stakeholder>> Function() fetchUpdatedStakeholders;
   final String projectId;
-
+  final String projectStage;
+  final Function(String) onStageUpdated;
   const FeedbackAndClose({
     required this.stakeholders,
     required this.onClose,
     required this.fetchUpdatedStakeholders,
     required this.projectId,
+    required this.projectStage,
+    required this.onStageUpdated,
     Key? key,
   }) : super(key: key);
 
@@ -25,15 +28,20 @@ class FeedbackAndClose extends StatefulWidget {
 class _FeedbackAndCloseState extends State<FeedbackAndClose> {
   final Map<int, TextEditingController> _controllers = {};
   List<Stakeholder> _updatedStakeholders = [];
-  bool _isProjectClosed = false;
+  late String _projectStage;
 
   @override
   void initState() {
     super.initState();
     _updatedStakeholders = widget.stakeholders;
+    _projectStage = widget.projectStage;
     for (var stakeholder in _updatedStakeholders) {
       _controllers[stakeholder.userId] = TextEditingController();
     }
+  }
+
+  void _updateStage(String newStage) {
+      widget.onStageUpdated(newStage); // Update the project stage
   }
 
   Future<void> _submitFeedback(int userId, String role) async {
@@ -111,8 +119,9 @@ class _FeedbackAndCloseState extends State<FeedbackAndClose> {
 
       if (response.statusCode == 200) {
         setState(() {
-          _isProjectClosed = true;
+          _projectStage = "Project Completion";
         });
+        _updateStage("Project Completion");
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Project successfully closed')),
         );
@@ -213,8 +222,8 @@ class _FeedbackAndCloseState extends State<FeedbackAndClose> {
         ),
         SizedBox(height: 20),
         ElevatedButton(
-          onPressed: _isProjectClosed ? null : _closeProject,
-          child: Text(_isProjectClosed ? "Project Closed" : "Close Project"),
+          onPressed: _projectStage == "Project Completion" ? null : _closeProject,
+          child: Text(_projectStage == "Project Completion" ? "Project Completed" : "Close Project"),
         ),
       ],
     );
