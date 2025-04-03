@@ -453,12 +453,12 @@ class _LoginSignUpScreenState extends State<LoginSignUpScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(top: 5.0), // adjust value as needed
+                          padding: const EdgeInsets.only(top: 5.0),
                           child: const Text(
                             'IN PARTNERSHIP WITH',
                             style: TextStyle(
                               fontSize: 14,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.bold,
                               color: Colors.black,
                             ),
                           ),

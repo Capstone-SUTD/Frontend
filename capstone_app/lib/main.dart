@@ -1,6 +1,5 @@
 import 'package:capstone_app/screens/all_project_screen.dart';
-import 'package:capstone_app/screens/dashboard_screen.dart';
-import 'package:capstone_app/screens/web_splash_screen.dart';
+import 'package:capstone_app/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -23,10 +22,9 @@ class MyApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       debugShowCheckedModeBanner: false,
-      home: WebSplashScreen(),
+      home: SplashScreen(),
       routes: {
-        '/dashboard': (context) => DashboardScreen(),
-        '/projects': (context) => AllProjectsScreen(),
+        '/dashboard': (context) => AllProjectsScreen(),
       },
     );
   }
