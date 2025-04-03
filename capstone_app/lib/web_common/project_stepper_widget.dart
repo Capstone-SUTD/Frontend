@@ -27,6 +27,7 @@ class ProjectStepperWidget extends StatefulWidget {
 class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
   late int _selectedStep;
   final List<String> _stepLabels = kStepLabels;
+  static const String _onsiteInspectionLabel = 'Onsite Inspection'; // The second-to-last step label
 
   @override
   void initState() {
@@ -41,7 +42,69 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
     return index >= 0 ? index : 0;
   }
 
+  void _fetchStage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      if (token == null) throw Exception("Token not found");
+
+      final response = await http.get(
+        Uri.parse('http://localhost:5000/project/get-stage?projectid=${widget.projectId}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        final String newStage = responseData['stage'];
+
+        if (mounted) {
+          setState(() {
+            _selectedStep = _getStepIndex(newStage);
+          });
+        }
+      } else {
+        print("Failed to fetch stage: ${response.body}");
+      }
+    } catch (e) {
+      print("Error fetching stage: $e");
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _fetchStage(); // Fetch latest stage on page load
+  }
+
+  @override
+  void didUpdateWidget(ProjectStepperWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.currentStage != oldWidget.currentStage) {
+      _fetchStage(); // Fetch latest stage on widget update
+    }
+  }
+
+  // @override
+  // void didUpdateWidget(ProjectStepperWidget oldWidget) {
+  //   super.didUpdateWidget(oldWidget);
+  //   if (widget.currentStage != oldWidget.currentStage) {
+  //     setState(() {
+  //       _selectedStep = _getStepIndex(widget.currentStage);
+  //     });
+  //   }
+  // }
+
   void _onStepTapped(int index) async {
+    // Restrict clicking steps that are not "Onsite Inspection" unless the current stage is "Approved - Mr. Jeong"
+    if (_stepLabels[index] != _onsiteInspectionLabel &&
+        widget.currentStage != 'Approved - Mr. Jeong') {
+      return;
+    }
+
     setState(() {
       _selectedStep = index;
     });
@@ -126,9 +189,12 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
                 Row(
                   children: List.generate(_stepLabels.length, (index) {
                     bool isCompleted = index <= _selectedStep;
+                    bool isClickable = _stepLabels[index] == _onsiteInspectionLabel &&
+                        widget.currentStage == 'Approved - Mr. Jeong';
+
                     return Expanded(
                       child: GestureDetector(
-                        onTap: () => _onStepTapped(index),
+                        onTap: isClickable ? () => _onStepTapped(index) : null,
                         child: Column(
                           children: [
                             Container(
@@ -146,9 +212,12 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
                             const SizedBox(height: 5),
                             Text(
                               _stepLabels[index],
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
+                                color: isClickable
+                                    ? Colors.blue // Color for clickable step
+                                    : Colors.black, // Default color for non-clickable
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -166,8 +235,3 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
     );
   }
 }
-
-
-
-
-
