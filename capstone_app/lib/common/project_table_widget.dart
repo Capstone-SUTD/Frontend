@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/project_model.dart';
-import '../web_screens/project_screen.dart';
+import '../screens/project_screen.dart';
 
 class ProjectTableWidget extends StatefulWidget {
   final List<Project> projects;

@@ -1,5 +1,5 @@
-import 'package:capstone_app/common/login_signup_screen.dart';
-import 'package:capstone_app/web_screens/all_project_screen.dart';
+import 'package:capstone_app/screens/login_signup_screen.dart';
+import 'package:capstone_app/screens/all_project_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

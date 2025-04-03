@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../web_common/project_stepper_widget.dart';
-import '../web_common/project_tab_widget.dart';
+import '../common/project_stepper_widget.dart';
+import '../common/project_tab_widget.dart';
 import 'msra_generation_screen.dart';
 import 'project_screen.dart';
 
