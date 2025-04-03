@@ -3,12 +3,12 @@ import 'package:capstone_app/screens/all_project_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class WebSplashScreen extends StatefulWidget {
+class SplashScreen extends StatefulWidget {
   @override
-  _WebSplashScreenState createState() => _WebSplashScreenState();
+  _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _WebSplashScreenState extends State<WebSplashScreen>
+class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;

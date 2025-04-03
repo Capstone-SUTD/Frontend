@@ -70,7 +70,10 @@ flutter:
         # Fonts
         - assets/fonts/
         # Images
-        - assets/images/logo.png
+        - assets/images/background.jpg
+        - assets/images/cargo3.png
+        - assets/images/app-logo.png
+        - assets/images/db-schenker-logo.png
         # Icons
         - assets/icons/
 

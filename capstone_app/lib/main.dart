@@ -1,6 +1,5 @@
 import 'package:capstone_app/screens/all_project_screen.dart';
-import 'package:capstone_app/screens/dashboard_screen.dart';
-import 'package:capstone_app/screens/web_splash_screen.dart';
+import 'package:capstone_app/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -16,14 +15,16 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Capstone App',
       theme: ThemeData(
+          scaffoldBackgroundColor: Colors.white,
+          canvasColor: Colors.white,
+          cardColor: Colors.white,
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      debugShowCheckedModeBanner: false, // 🟢 Move this ABOVE the `home`
-      home: WebSplashScreen(),
+      debugShowCheckedModeBanner: false,
+      home: SplashScreen(),
       routes: {
-        '/dashboard': (context) => DashboardScreen(),
-        '/projects': (context) => AllProjectsScreen(),
+        '/dashboard': (context) => AllProjectsScreen(),
       },
     );
   }
