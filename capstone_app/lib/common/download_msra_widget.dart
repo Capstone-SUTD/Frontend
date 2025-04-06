@@ -39,7 +39,7 @@ class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
 
       if (token == null) throw Exception("Token not found");
 
-      final uri = Uri.parse('http://localhost:5000/app/download');
+      final uri = Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/app/download');
       final response = await http.post(
         uri,
         headers: {

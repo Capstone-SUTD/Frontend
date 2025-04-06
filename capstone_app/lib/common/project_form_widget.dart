@@ -89,7 +89,7 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
       }
 
       final response = await http.get(
-        Uri.parse('http://localhost:5000/project/stakeholders'),
+        Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/stakeholders'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json', // optional but recommended

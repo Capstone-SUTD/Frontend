@@ -62,7 +62,7 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
   }
 
   Future<void> _approveProject(int projectId) async {
-    final url = Uri.parse('http://localhost:5000/app/approve');
+    final url = Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/app/approve');
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -228,7 +228,7 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
   }
 
   Future<void> _rejectProject(Map<String, dynamic> approval, String comments) async {
-    final url = Uri.parse('http://localhost:5000/app/reject');
+    final url = Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/app/reject');
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -310,7 +310,7 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
 
       final request = html.HttpRequest();
       request
-        ..open('POST', 'http://localhost:5000/app/reupload')
+        ..open('POST', 'https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/app/reupload')
         ..setRequestHeader('Authorization', 'Bearer $token')
         ..onLoadEnd.listen((event) async {
           if (request.status == 200) {

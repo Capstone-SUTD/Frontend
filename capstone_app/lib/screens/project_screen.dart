@@ -204,7 +204,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
     });
 
     final response = await http.post(
-      Uri.parse('http://localhost:5000/project/new'),
+      Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/new'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -333,7 +333,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
 
       final request = html.HttpRequest();
       request
-        ..open('POST', 'http://localhost:5000/project/save')
+        ..open('POST', 'https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/save')
         ..setRequestHeader('Authorization', 'Bearer $token')
         ..onLoadEnd.listen((event) async {
           setState(() {
@@ -347,7 +347,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
 
             // ✅ Generate Checklist (AFTER project is saved)
             final generateChecklistResponse = await http.post(
-              Uri.parse('http://localhost:5000/project/generate-checklist'),
+              Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/generate-checklist'),
               headers: {
                 'Authorization': 'Bearer $token',
                 'Content-Type': 'application/json',
@@ -402,7 +402,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
     final token = prefs.getString('auth_token');
 
     final response = await http.get(
-      Uri.parse('http://localhost:5000/project/list'),
+      Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/list'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -613,7 +613,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
 
                                               try {
                                                 final response = await http.post(
-                                                  Uri.parse('http://localhost:5000/project/generate-docs'),
+                                                  Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/generate-docs'),
                                                   headers: {
                                                     'Authorization': 'Bearer $token',
                                                     'Content-Type': 'application/json',
