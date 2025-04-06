@@ -239,7 +239,7 @@ class _CommentsConversationPopupState extends State<CommentsConversationPopup> {
       final response = await http.get(
         // ✅ Use GET instead of POST for reading
         Uri.parse(
-            "http://localhost:5000/project/get-task-comments?taskid=${taskid.toString()}"),
+            "https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/get-task-comments?taskid=${taskid.toString()}"),
         headers: {
           'Authorization': 'Bearer $token',
         },
@@ -279,7 +279,7 @@ class _CommentsConversationPopupState extends State<CommentsConversationPopup> {
       final token = prefs.getString('auth_token');
 
       final response = await http.post(
-        Uri.parse("http://localhost:5000/project/update-task-comments"),
+        Uri.parse("https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/update-task-comments"),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json'
@@ -307,7 +307,7 @@ class _CommentsConversationPopupState extends State<CommentsConversationPopup> {
 
       final response = await http.delete(
         Uri.parse(
-            "http://localhost:5000/project/delete-task-comment?commentid=$commentid&taskid=$taskid"),
+            "https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/delete-task-comment?commentid=$commentid&taskid=$taskid"),
         headers: {
           'Authorization': 'Bearer $token',
         },
@@ -508,7 +508,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
 
       final response = await http.get(
         Uri.parse(
-            "http://localhost:5000/project/get-project-checklist?projectid=${_project.projectId}"),
+            "https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/get-project-checklist?projectid=${_project.projectId}"),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -602,7 +602,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
       final token = prefs.getString('auth_token');
 
       final response = await http.post(
-        Uri.parse("http://localhost:5000/project/update-checklist-completion"),
+        Uri.parse("https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/update-checklist-completion"),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -628,7 +628,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
       final projectid = _project.projectId; // from your project object
 
       final response = await http.post(
-        Uri.parse("http://localhost:5000/project/add-task-comments"),
+        Uri.parse("https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/add-task-comments"),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json'
@@ -656,7 +656,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
-      final uri = Uri.parse("http://localhost:5000/project/upload-blob-azure");
+      final uri = Uri.parse("https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/upload-blob-azure");
       final request = http.MultipartRequest('POST', uri);
       request.headers['Authorization'] = 'Bearer $token';
 
@@ -694,7 +694,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
 
       // First, fetch the signed URL.
       final response = await http.get(
-        Uri.parse("http://localhost:5000/project/get-blob-url?taskid=$taskid"),
+        Uri.parse("https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/get-blob-url?taskid=$taskid"),
         headers: {'Authorization': 'Bearer $token'},
       );
 

@@ -9,7 +9,7 @@ class DataService {
     final token = prefs.getString('auth_token'); 
 
     final response = await http.get(
-      Uri.parse('http://localhost:5000/project/list'),
+      Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/list'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
