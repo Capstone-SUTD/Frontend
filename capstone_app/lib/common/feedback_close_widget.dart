@@ -71,7 +71,7 @@ class _FeedbackAndCloseState extends State<FeedbackAndClose> {
       }
 
       final response = await http.post(
-        Uri.parse('http://localhost:5000/project/feedback'),
+        Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/feedback'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ class _FeedbackAndCloseState extends State<FeedbackAndClose> {
       }
 
       final response = await http.post(
-        Uri.parse('http://localhost:5000/project/close'),
+        Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/close'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

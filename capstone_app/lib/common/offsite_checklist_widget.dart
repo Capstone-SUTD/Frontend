@@ -29,7 +29,7 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
       final token = prefs.getString('auth_token');
 
       final response = await http.get(
-        Uri.parse("http://localhost:5000/project/get-project-checklist?projectid=${widget.projectId}"),
+        Uri.parse("https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/get-project-checklist?projectid=${widget.projectId}"),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -89,7 +89,7 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
       final token = prefs.getString('auth_token');
 
       final response = await http.post(
-        Uri.parse("http://localhost:5000/project/update-checklist-completion"),
+        Uri.parse("https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/update-checklist-completion"),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

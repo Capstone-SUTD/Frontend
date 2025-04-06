@@ -50,7 +50,7 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
       if (token == null) throw Exception("Token not found");
 
       final response = await http.get(
-        Uri.parse('http://localhost:5000/project/get-stage?projectid=${widget.projectId}'),
+        Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/get-stage?projectid=${widget.projectId}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -118,7 +118,7 @@ class _ProjectStepperWidgetState extends State<ProjectStepperWidget> {
       if (token == null) throw Exception("Token not found");
 
       final response = await http.post(
-        Uri.parse('http://localhost:5000/project/update-stage'),
+        Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/update-stage'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

@@ -28,7 +28,7 @@ class _EquipmentRecommendationDialogState
   bool _isLoading = false;
 
   Future<void> _callBackendApi(BuildContext context) async {
-    final url = Uri.parse('http://localhost:5000/project/equipment');
+    final url = Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/equipment');
     setState(() {
       _isLoading = true;
     });

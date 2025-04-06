@@ -42,7 +42,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
 
   Future<void> _callApprovalStatusApi() async {
     final url =
-        Uri.parse('http://localhost:5000/app/approval-rejection-status');
+        Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/app/approval-rejection-status');
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -185,7 +185,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
       }
 
       final response = await http.post(
-        Uri.parse('http://localhost:5000/project/stakeholder-comments'),
+        Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/stakeholder-comments'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json', // optional but recommended
