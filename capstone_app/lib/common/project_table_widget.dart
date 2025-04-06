@@ -21,7 +21,9 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
   @override
   void initState() {
     super.initState();
-    _sortedProjects = List.from(widget.projects);
+    _sortedProjects = List.from(widget.projects)
+      ..sort((a, b) => b.startDate.compareTo(a.startDate));
+    _isDateAscending = false;
   }
 
   void _sortByDate() {
@@ -60,16 +62,39 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
                 headingRowHeight: 40,
                 dataRowHeight: 50,
                 columns: [
-                  const DataColumn(label: Text("Project Name")),
-                  const DataColumn(label: Text("Start Destination")),
-                  const DataColumn(label: Text("End Destination")),
-                  const DataColumn(label: Text("Status")),
+                  const DataColumn(
+                    label: Text(
+                      "Project Name",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  const DataColumn(
+                    label: Text(
+                      "Start Destination",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  const DataColumn(
+                    label: Text(
+                      "End Destination",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  const DataColumn(
+                    label: Text(
+                      "Status",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   DataColumn(
                     label: InkWell(
                       onTap: _sortByDate,
                       child: Row(
                         children: [
-                          const Text("Date"),
+                          const Text(
+                            "Date",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           Icon(
                             _isDateAscending
                                 ? Icons.arrow_drop_up

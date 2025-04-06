@@ -94,84 +94,70 @@ class _EquipmentRecommendationDialogState
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          child: SizedBox(
-            width: 400,
-            height: 480, // Increased height to avoid overflow
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          backgroundColor: Colors.white,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 400,
+              maxHeight: 500,
+            ),
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start, // Left-align the text
-                children: [
-                  const Text(
-                    "Recommended Equipment",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
+              padding: const EdgeInsets.all(20.0),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Recommended Equipment",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 20),
 
-                  // By Threshold Rule Section
-                  const Text(
-                    "By Threshold Rule",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: TextEditingController(text: crane_rule),
-                    decoration: const InputDecoration(labelText: "Crane"),
-                    readOnly: true,
-                  ),
-                  TextField(
-                    controller: TextEditingController(text: threshold_rule),
-                    decoration: const InputDecoration(labelText: "Threshold (kg)"),
-                    readOnly: true,
-                  ),
-                  const SizedBox(height: 20),
+                    const Text("By Threshold Rule", style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 10),
+                    _buildStyledTextField("Crane", crane_rule),
+                    const SizedBox(height: 10),
+                    _buildStyledTextField("Threshold (kg)", threshold_rule),
+                    const SizedBox(height: 20),
 
-                  // By ML Model Section
-                  const Text(
-                    "By ML Model",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: TextEditingController(text: crane),
-                    decoration: const InputDecoration(labelText: "Crane"),
-                    readOnly: true,
-                  ),
-                  TextField(
-                    controller: TextEditingController(text: threshold),
-                    decoration: const InputDecoration(labelText: "Threshold (kg)"),
-                    readOnly: true,
-                  ),
-                  TextField(
-                    controller: TextEditingController(text: trailer),
-                    decoration: const InputDecoration(labelText: "Trailer"),
-                    readOnly: true,
-                  ),
-                  const SizedBox(height: 20),
+                    const Text("By ML Model", style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 10),
+                    _buildStyledTextField("Crane", crane),
+                    const SizedBox(height: 10),
+                    _buildStyledTextField("Threshold (kg)", threshold),
+                    const SizedBox(height: 10),
+                    _buildStyledTextField("Trailer", trailer),
+                    const SizedBox(height: 20),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          String copyText =
-                              "By Rule\nCrane: $crane_rule\nThreshold (kg): $threshold_rule\nBy ML Model\nCrane: $crane\nThreshold (kg): $threshold\nTrailer: $trailer";
-                          Clipboard.setData(ClipboardData(text: copyText));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Copied to clipboard")),
-                          );
-                        },
-                        child: const Text("Copy"),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("Close"),
-                      ),
-                    ],
-                  ),
-                ],
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            String copyText =
+                                "By Rule\nCrane: $crane_rule\nThreshold (kg): $threshold_rule\nBy ML Model\nCrane: $crane\nThreshold (kg): $threshold\nTrailer: $trailer";
+                            Clipboard.setData(ClipboardData(text: copyText));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Copied to clipboard")),
+                            );
+                          },
+                          child: const Text("Copy", style: TextStyle(color: Color(0xFF167D86))),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF167D86),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          ),
+                          child: const Text("Close"),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -180,71 +166,160 @@ class _EquipmentRecommendationDialogState
     );
   }
 
+  Widget _buildStyledTextField(String label, String value) {
+    final focusNode = FocusNode();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Focus(
+        focusNode: focusNode,
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            focusNode.addListener(() {
+              setState(() {}); // Rebuild when focus changes
+            });
+
+            return TextField(
+              controller: TextEditingController(text: value),
+              readOnly: true,
+              decoration: InputDecoration(
+                labelText: label,
+                isDense: true,
+                labelStyle: TextStyle(
+                  color: focusNode.hasFocus ? const Color(0xFF167D86) : Colors.black,
+                ),
+                enabledBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black),
+                ),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF167D86)),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: SizedBox(
-        width: 400,
-        height: 315, // Increased height to avoid overflow
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: Colors.white,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 100),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: 400,
+          maxHeight: 400,
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  "Cargo Details",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: const [
+                  Text(
+                    "Cargo Details",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
+
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Please fill in all cargo dimensions before proceeding.",
+                  style: TextStyle(fontSize: 13, color: Colors.black87),
                 ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _lengthController,
-                  decoration: const InputDecoration(labelText: "Length (m)"),
-                  keyboardType: TextInputType.number,
-                ),
-                TextField(
-                  controller: _widthController,
-                  decoration: const InputDecoration(labelText: "Width (m)"),
-                  keyboardType: TextInputType.number,
-                ),
-                TextField(
-                  controller: _heightController,
-                  decoration: const InputDecoration(labelText: "Height (m)"),
-                  keyboardType: TextInputType.number,
-                ),
-                TextField(
-                  controller: _weightController,
-                  decoration: const InputDecoration(labelText: "Weight (kg)"),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text("Cancel"),
+              ),
+              const SizedBox(height: 20),
+
+              _buildFieldRow("Length", _lengthController, "m"),
+              const SizedBox(height: 12),
+              _buildFieldRow("Width", _widthController, "m"),
+              const SizedBox(height: 12),
+              _buildFieldRow("Height", _heightController, "m"),
+              const SizedBox(height: 12),
+              _buildFieldRow("Weight", _weightController, "kg"),
+              const SizedBox(height: 24),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF4EB8C1),
                     ),
-                    ElevatedButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => _callBackendApi(context),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text("Run"),
+                    child: const Text("Cancel"),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : () => _callBackendApi(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF167D86),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
-                  ],
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text("Run"),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFieldRow(String label, TextEditingController controller, String unit) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(label, style: const TextStyle(fontSize: 14)),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              inputDecorationTheme: const InputDecorationTheme(
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF167D86)),
                 ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            child: TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,6}')),
               ],
             ),
           ),
         ),
-      ),
+        const SizedBox(width: 8),
+        Text(unit, style: const TextStyle(color: Colors.grey)),
+      ],
     );
   }
 }

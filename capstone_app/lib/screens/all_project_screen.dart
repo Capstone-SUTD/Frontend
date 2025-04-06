@@ -24,22 +24,21 @@ class _AllProjectsScreenState extends State<AllProjectsScreen>
   List<Project> projectsList = [];
   bool isLoading = true;
   String? errorMessage;
+  String selectedPage = '/projects';
 
   @override
-  bool get wantKeepAlive =>
-      true; // Keep alive and rebuild widget when it's visible
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
-    getProjects(); // Initial API call on screen load
+    getProjects();
   }
 
   @override
   void didPopNext() {
     super.didPopNext();
-    // Called when this screen is popped back into view
-    getProjects(); // Make API call again when navigating back to the screen
+    getProjects();
   }
 
   Future<void> getProjects() async {
@@ -62,10 +61,8 @@ class _AllProjectsScreenState extends State<AllProjectsScreen>
         List<dynamic>? rawProjects;
 
         if (decoded is List) {
-          // Format: [ {...}, {...} ]
           rawProjects = decoded;
         } else if (decoded is Map && decoded['projects'] is List) {
-          // Format: { "projects": [ {...}, {...} ] }
           rawProjects = decoded['projects'];
         }
 
@@ -100,13 +97,22 @@ class _AllProjectsScreenState extends State<AllProjectsScreen>
     }
   }
 
-  void _openEquipmentRecommendation(BuildContext context) {
-    showDialog(
+  void _openEquipmentRecommendation(BuildContext context) async {
+    setState(() {
+      selectedPage = '/equipment';
+    });
+
+    // Wait for the dialog to close
+    await showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return const EquipmentRecommendationDialog();
-      },
+      barrierDismissible: false,
+      builder: (_) => const EquipmentRecommendationDialog(),
     );
+
+    // After dialog is closed, reset the selection to dashboard
+    setState(() {
+      selectedPage = '/projects';
+    });
   }
 
   void _createNewProject(BuildContext context) {
@@ -116,18 +122,21 @@ class _AllProjectsScreenState extends State<AllProjectsScreen>
           builder: (context) => ProjectScreen(
                 projectId: null,
                 onPopCallback: getProjects,
-              )), // Null indicates new project
+              )),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // This is required to rebuild the widget properly.
+    super.build(context);
     return Scaffold(
       appBar: _buildAppBar(),
       body: Row(
         children: [
-          Sidebar(selectedPage: '/projects'),
+          Sidebar(
+            selectedPage: selectedPage,
+            onEquipmentSelected: () => _openEquipmentRecommendation(context),
+          ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -187,9 +196,41 @@ class _AllProjectsScreenState extends State<AllProjectsScreen>
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      title: const Text("OOG Navigator"),
-      backgroundColor: Colors.white,
       elevation: 1,
+      backgroundColor: const Color(0xFF167D86),
+      title: Row(
+        children: [
+          Image.asset(
+            'assets/images/app-logo-white.png',
+            height: 28,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(width: 8),
+          const Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: 'OOG ',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextSpan(
+                  text: 'Navigator',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
+

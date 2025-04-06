@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/project_model.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+const String _prefsKey = 'custom_equipment_options';
 
 class WorkScopeWidget extends StatefulWidget {
   final bool isNewProject;
@@ -25,9 +29,38 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
 
   List<Map<String, String>> getWorkScopeData() => _workScopeList;
 
+  List<String> _defaultEquipmentOptions = [
+    "8ft X 40ft Trailer",
+    "8ft X 45ft Trailer",
+    "8ft X 50ft Trailer",
+    "10.5ft X 30ft Low Bed",
+    "10.5ft X 40ft Low Bed",
+    "Self Loader",
+  ];
+
+  Set<String> _customEquipmentOptions = {};
+  Map<int, TextEditingController> _controllers = {};
+
+  Future<void> _saveCustomEquipmentOptions() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_prefsKey, _customEquipmentOptions.toList());
+  }
+
+  Future<void> _loadCustomEquipmentOptions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedOptions = prefs.getStringList(_prefsKey);
+    if (savedOptions != null) {
+      setState(() {
+        _customEquipmentOptions = savedOptions.toSet();
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    _loadCustomEquipmentOptions();
+
     if (widget.workScopeList != null && widget.workScopeList!.isNotEmpty) {
       _workScopeList = widget.workScopeList!
           .map((scope) => {
@@ -61,8 +94,17 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
   void _removeRow(int index) {
     setState(() {
       _workScopeList.removeAt(index);
+      _controllers.remove(index);
     });
     widget.onWorkScopeChanged?.call();
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   @override
@@ -197,13 +239,14 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
   }
 
   Widget _buildEquipmentCell(int index) {
-    String equipmentValue = _workScopeList[index]["equipmentList"] ?? "";
+    String currentValue = _workScopeList[index]["equipmentList"] ?? "";
+    _controllers[index] ??= TextEditingController(text: currentValue);
 
     return TableCell(
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: isReadOnly
-            ? Text(equipmentValue, textAlign: TextAlign.center)
+            ? Text(currentValue, textAlign: TextAlign.center)
             : ConstrainedBox(
                 constraints: const BoxConstraints(minWidth: 200, maxWidth: 300),
                 child: _workScopeList[index]["scope"] == "Lifting"
@@ -221,38 +264,83 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
                         ),
                       )
                     : _workScopeList[index]["scope"] == "Transportation"
-                        ? DropdownButtonFormField<String>(
-                            isExpanded: true,
-                            value: _workScopeList[index]["equipmentList"]!.isNotEmpty
-                                ? _workScopeList[index]["equipmentList"]
-                                : null,
-                            items: [
-                              "8ft X 40ft Trailer",
-                              "8ft X 45ft Trailer",
-                              "8ft X 50ft Trailer",
-                              "10.5ft X 30ft Low Bed",
-                              "10.5ft X 40ft Low Bed",
-                              "Self Loader"
-                            ].map((option) {
-                              return DropdownMenuItem(
-                                value: option,
-                                child: Text(option, overflow: TextOverflow.ellipsis),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                _updateWorkScope(index, "equipmentList", value);
-                              }
-                            },
-                            decoration: const InputDecoration(
-                              labelText: "Select Transport",
-                              border: InputBorder.none,
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                            ),
+                        ? Row(
+                            children: [
+                              Expanded(
+                                child: TypeAheadFormField<String>(
+                                  textFieldConfiguration: TextFieldConfiguration(
+                                    controller: _controllers[index]!,
+                                    onEditingComplete: () {
+                                      String newValue = _controllers[index]!.text.trim();
+                                      if (!_defaultEquipmentOptions.contains(newValue) &&
+                                          !_customEquipmentOptions.contains(newValue) &&
+                                          newValue.isNotEmpty) {
+                                        setState(() {
+                                          _customEquipmentOptions.add(newValue);
+                                        });
+                                        _saveCustomEquipmentOptions();
+                                      }
+                                      _updateWorkScope(index, "equipmentList", newValue);
+                                      FocusScope.of(context).unfocus();
+                                    },
+                                    decoration: const InputDecoration(
+                                      labelText: "Select or Add Equipment",
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    ),
+                                  ),
+                                  suggestionsCallback: (pattern) {
+                                    return [
+                                      ..._defaultEquipmentOptions,
+                                      ..._customEquipmentOptions
+                                    ].where((item) => item.toLowerCase().contains(pattern.toLowerCase()));
+                                  },
+                                  itemBuilder: (context, suggestion) {
+                                    return ListTile(title: Text(suggestion));
+                                  },
+                                  onSuggestionSelected: (suggestion) {
+                                    _controllers[index]!.text = suggestion;
+                                    _updateWorkScope(index, "equipmentList", suggestion);
+                                  },
+                                ),
+                              ),
+                              if (!_defaultEquipmentOptions.contains(currentValue) &&
+                                  currentValue.isNotEmpty)
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () async {
+                                      final confirmed = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text("Confirm Delete"),
+                                          content: Text("Are you sure you want to delete \"$currentValue\" from your custom equipment list?"),
+                                          actions: [
+                                            TextButton(
+                                              child: const Text("Cancel"),
+                                              onPressed: () => Navigator.of(context).pop(false),
+                                            ),
+                                            TextButton(
+                                              child: const Text("Delete", style: TextStyle(color: Colors.red)),
+                                              onPressed: () => Navigator.of(context).pop(true),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+
+                                      if (confirmed == true) {
+                                        setState(() {
+                                          _customEquipmentOptions.remove(currentValue);
+                                          _workScopeList[index]["equipmentList"] = "";
+                                          _controllers[index]!.clear();
+                                        });
+                                        _saveCustomEquipmentOptions();
+                                      }
+                                    },
+                                  ),
+                            ],
                           )
                         : TextFormField(
-                            initialValue: equipmentValue,
+                            initialValue: currentValue,
                             textAlign: TextAlign.center,
                             onChanged: (value) {
                               _updateWorkScope(index, "equipmentList", value);
@@ -287,5 +375,6 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
     );
   }
 }
+
 
 
