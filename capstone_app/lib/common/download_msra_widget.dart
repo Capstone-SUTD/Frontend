@@ -7,12 +7,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class DownloadMSRAWidget extends StatefulWidget {
   final String projectId;
+  final String projectName;
   final int msVersion;
   final int raVersion;
 
   const DownloadMSRAWidget({
     Key? key,
     required this.projectId,
+    required this.projectName,
     required this.msVersion,
     required this.raVersion,
   }) : super(key: key);
@@ -58,7 +60,9 @@ class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
         final url = html.Url.createObjectUrlFromBlob(blob);
 
         String extension = fileType == "MS" ? "docx" : "xlsx";
-        String fileName = "downloaded_file_$fileType.$extension";
+        String projname = widget.projectName;
+        String ver = fileType == "MS" ? selectedMSVersion.toString() : selectedRAVersion.toString();
+        String fileName = "$projname-$fileType(v$ver).$extension";
 
         final anchor = html.AnchorElement(href: url)
           ..setAttribute("download", fileName)

@@ -242,6 +242,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
             if (_msVersions > 0 || _raVersions > 0) ...[
               DownloadMSRAWidget(
                 projectId: _project?.projectId ?? "",
+                projectName: _project?.projectName ?? "",
                 msVersion: _msVersions,
                 raVersion: _raVersions,
               ),
