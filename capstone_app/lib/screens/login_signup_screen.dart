@@ -72,410 +72,326 @@ class _LoginSignUpScreenState extends State<LoginSignUpScreen> {
   }
 
   void _showSuccessBanner() {
-    ScaffoldMessenger.of(context).showMaterialBanner(
-      MaterialBanner(
-        content: const Text('Login Successful!',
-            style: TextStyle(fontSize: 18, color: Colors.white)),
-        backgroundColor: Colors.green,
-        leading: const Icon(Icons.check_circle, color: Colors.white),
-        margin: const EdgeInsets.all(10),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
-            onPressed: () {
-              ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-            },
+    final overlay = Overlay.of(context);
+    final overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: 20,
+        left: 16,
+        right: 16,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.green,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: const [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Login Successful!',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
-  }
 
-  void _showErrorBanner(String message) {
-    ScaffoldMessenger.of(context).showMaterialBanner(
-      MaterialBanner(
-        content: Text(message,
-            style: const TextStyle(fontSize: 18, color: Colors.white)),
-        backgroundColor: Colors.red,
-        margin: const EdgeInsets.all(10),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
-            onPressed: () {
-              ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
-            },
-          ),
-        ],
-      ),
-    );
+    overlay.insert(overlayEntry);
 
     Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+      overlayEntry.remove();
     });
   }
 
-/*
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-      },
-      child: Scaffold(
-        body: Stack(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage("assets/images/background.jpg"), // update this path
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                    Colors.black.withOpacity(0.7), // adjust transparency
-                    BlendMode.darken,
+  void _showErrorBanner(String message) {
+    final overlay = Overlay.of(context);
+    late OverlayEntry overlayEntry; 
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: 20,
+        left: 16,
+        right: 16,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
                 ),
-              ),
+                GestureDetector(
+                  onTap: () {
+                    overlayEntry.remove();
+                  },
+                  child: const Icon(Icons.close, color: Colors.white),
+                ),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
 
-            // 🔹 Login box over image
-            Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 400),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
+    overlay.insert(overlayEntry);
+
+    Future.delayed(const Duration(seconds: 3), () {
+      if (overlayEntry.mounted) {
+        overlayEntry.remove();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textSelectionTheme: const TextSelectionThemeData(
+          cursorColor: Colors.black87,
+          selectionColor: Colors.black26,
+          selectionHandleColor: Colors.black45,
+        ),
+      ),
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Scaffold(
+          body: SafeArea(
+            child:Row(
+              children: [
+                // Left Panel (Background Image)
+                Expanded(
+                  flex: 7,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage("assets/images/cargo3.png"),
+                        fit: BoxFit.cover,
+                        filterQuality: FilterQuality.high,
+                        colorFilter: ColorFilter.mode(
+                          Colors.black.withOpacity(0.2),
+                          BlendMode.darken,
+                        ),
                       ),
-                    ],
+                    ),
                   ),
+                ),
+
+                // Right Panel (Login Form + Footer)
+                Expanded(
+                  flex: 3,
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      RichText(
-                        text: const TextSpan(
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: 'OOG ',
-                              style: TextStyle(color: Colors.red),
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(24.0),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 400),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Logo
+                                  Image.asset(
+                                    'assets/images/app-logo.png',
+                                    height: 60,
+                                    fit: BoxFit.contain,
+                                  ),
+                                  const SizedBox(height: 10),
+
+                                  // App Title
+                                  RichText(
+                                    text: const TextSpan(
+                                      style: TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      children: [
+                                        TextSpan(
+                                          text: 'OOG ',
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                        TextSpan(
+                                          text: 'Navigator',
+                                          style: TextStyle(color: Colors.black),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+
+                                  // Email Field
+                                  TextField(
+                                    controller: _userIdController,
+                                    focusNode: _userIdFocus,
+                                    keyboardType: TextInputType.text,
+                                    textInputAction: TextInputAction.next,
+                                    onSubmitted: (_) => FocusScope.of(context)
+                                        .requestFocus(_passwordFocus),
+                                    cursorColor: Colors.black87, 
+                                    decoration: const InputDecoration(
+                                      hintText: 'Email ID',
+                                      focusedBorder: const OutlineInputBorder(
+                                        borderSide: BorderSide(color: Colors.black87),
+                                      ),
+                                      border: OutlineInputBorder(),
+                                      prefixIcon: Icon(Icons.person),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+
+                                  // Password Field
+                                  TextField(
+                                    controller: _passwordController,
+                                    focusNode: _passwordFocus,
+                                    obscureText: _obscurePassword,
+                                    textInputAction: TextInputAction.done,
+                                    onSubmitted: (_) => _login(context),
+                                    cursorColor: Colors.black87, 
+                                    decoration: InputDecoration(
+                                      hintText: 'Password',
+                                      focusedBorder: const OutlineInputBorder(
+                                        borderSide: BorderSide(color: Colors.black87),
+                                      ),
+                                      border: OutlineInputBorder(),
+                                      prefixIcon: const Icon(Icons.lock),
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _obscurePassword
+                                              ? Icons.visibility_off
+                                              : Icons.visibility,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _obscurePassword = !_obscurePassword;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 30),
+
+                                  // Buttons
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 14),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                          ),
+                                          onPressed: () => _login(context),
+                                          child: const Text(
+                                            'Log In',
+                                            style: TextStyle(
+                                                fontSize: 16, color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.black,
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 14),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                          ),
+                                          onPressed: () {
+                                            Navigator.of(context).pushReplacement(
+                                              PageRouteBuilder(
+                                                pageBuilder: (_, __, ___) => SignUpScreen(),
+                                                transitionDuration: Duration.zero,
+                                                reverseTransitionDuration: Duration.zero,
+                                              ),
+                                            );
+                                          },
+                                          child: const Text(
+                                            'Sign Up',
+                                            style: TextStyle(
+                                                fontSize: 16, color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                            TextSpan(
-                              text: 'Navigator',
-                              style: TextStyle(color: Colors.black),
+                          ),
+                        ),
+                      ),
+
+                      // Footer Section
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 24.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 5.0),
+                              child: const Text(
+                                'IN COLLABORATION WITH',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                            Image.asset(
+                              'assets/images/db-schenker-logo.png',
+                              height: 60,
+                              fit: BoxFit.contain,
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      TextField(
-                        controller: _userIdController,
-                        focusNode: _userIdFocus,
-                        keyboardType: TextInputType.text,
-                        textInputAction: TextInputAction.next,
-                        onSubmitted: (_) {
-                          FocusScope.of(context).requestFocus(_passwordFocus);
-                        },
-                        decoration: const InputDecoration(
-                          hintText: 'Email ID',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.person),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: _passwordController,
-                        focusNode: _passwordFocus,
-                        obscureText: _obscurePassword,
-                        textInputAction: TextInputAction.done,
-                        onSubmitted: (_) => _login(context),
-                        decoration: InputDecoration(
-                          hintText: 'Password',
-                          border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.lock),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              onPressed: () => _login(context),
-                              child: const Text(
-                                'Log In',
-                                style: TextStyle(
-                                    fontSize: 16, color: Colors.white),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => SignUpScreen(),
-                                  ),
-                                );
-                              },
-                              child: const Text(
-                                'Sign Up',
-                                style: TextStyle(
-                                    fontSize: 16, color: Colors.white),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-*/
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        body: Row(
-          children: [
-            // Left Panel (Background Image)
-            Expanded(
-              flex: 7,
-              child: Container(
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage("assets/images/cargo3.png"),
-                    fit: BoxFit.cover,
-                    filterQuality: FilterQuality.high,
-                    colorFilter: ColorFilter.mode(
-                      Colors.black.withOpacity(0.2),
-                      BlendMode.darken,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Right Panel (Login Form + Footer)
-            Expanded(
-              flex: 3,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Center(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(24.0),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 400),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Logo
-                              Image.asset(
-                                'assets/images/app-logo.png',
-                                height: 60,
-                                fit: BoxFit.contain,
-                              ),
-                              const SizedBox(height: 10),
-
-                              // App Title
-                              RichText(
-                                text: const TextSpan(
-                                  style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  children: [
-                                    TextSpan(
-                                      text: 'OOG ',
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                    TextSpan(
-                                      text: 'Navigator',
-                                      style: TextStyle(color: Colors.black),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-
-                              // Email Field
-                              TextField(
-                                controller: _userIdController,
-                                focusNode: _userIdFocus,
-                                keyboardType: TextInputType.text,
-                                textInputAction: TextInputAction.next,
-                                onSubmitted: (_) => FocusScope.of(context)
-                                    .requestFocus(_passwordFocus),
-                                decoration: const InputDecoration(
-                                  hintText: 'Email ID',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.person),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-
-                              // Password Field
-                              TextField(
-                                controller: _passwordController,
-                                focusNode: _passwordFocus,
-                                obscureText: _obscurePassword,
-                                textInputAction: TextInputAction.done,
-                                onSubmitted: (_) => _login(context),
-                                decoration: InputDecoration(
-                                  hintText: 'Password',
-                                  border: const OutlineInputBorder(),
-                                  prefixIcon: const Icon(Icons.lock),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_off
-                                          : Icons.visibility,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscurePassword = !_obscurePassword;
-                                      });
-                                    },
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 30),
-
-                              // Buttons
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red,
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 14),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                      ),
-                                      onPressed: () => _login(context),
-                                      child: const Text(
-                                        'Log In',
-                                        style: TextStyle(
-                                            fontSize: 16, color: Colors.white),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.black,
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 14),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                      ),
-                                      onPressed: () {
-                                        Navigator.of(context).pushReplacement(
-                                          PageRouteBuilder(
-                                            pageBuilder: (_, __, ___) => SignUpScreen(),
-                                            transitionDuration: Duration.zero,
-                                            reverseTransitionDuration: Duration.zero,
-                                          ),
-                                        );
-                                      },
-                                      child: const Text(
-                                        'Sign Up',
-                                        style: TextStyle(
-                                            fontSize: 16, color: Colors.white),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Footer Section
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 24.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 5.0),
-                          child: const Text(
-                            'IN PARTNERSHIP WITH',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        Image.asset(
-                          'assets/images/db-schenker-logo.png',
-                          height: 60,
-                          fit: BoxFit.contain,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

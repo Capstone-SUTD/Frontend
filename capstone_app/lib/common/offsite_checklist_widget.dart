@@ -120,7 +120,10 @@ class _OffsiteChecklistWidgetState extends State<OffsiteChecklistWidget> {
           borderRadius: BorderRadius.circular(8),
         ),
         child: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: CircularProgressIndicator(
+              color: Color(0xFF167D86),
+              ),
+            )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

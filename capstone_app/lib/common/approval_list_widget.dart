@@ -147,40 +147,72 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
 
     // For selectedTab == 1, display a disabled "Approved" button
     return Card(
-      child: ListTile(
-        title: Text("MSRA Approval by ${roleMapping[approval["role"]]}"),
-        subtitle: Text("Action by ${approval["name"]}"),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // For selectedTab == 0, show approve and reject buttons
-            if (widget.selectedTab == 0) ...[
-              ElevatedButton(
-                onPressed: isEnabled && !isApprovedOrRejected
-                    ? () => _approveProject(widget.projectid)
-                    : null,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                child: const Text("Approve"),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: isEnabled && !isApprovedOrRejected
-                    ? () => _showRejectionDialog(approval)
-                    : null,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text("Reject"),
-              ),
-            ],
-            // For selectedTab == 1, show the "Approved" button that does nothing when clicked
-            if (widget.selectedTab == 1) ...[
-              ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-              child: const Text("Approved"),
-              )
-            ],
-          ],
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        side: const BorderSide(color: Colors.grey, width: 1),
+        // borderRadius: BorderRadius.circular(8),
+      ),
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            left: BorderSide(
+              color: Color(0xFF167D86),
+              width: 6,
+            ),
+          ),
         ),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          title: Text("MSRA Approval by ${roleMapping[approval["role"]]}"),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Text(
+              "Action by ${approval["name"]}",
+              style: const TextStyle(fontSize: 14, color: Colors.black54),
+            ),
+          ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // For selectedTab == 0, show approve and reject buttons
+                if (widget.selectedTab == 0) ...[
+                  ElevatedButton(
+                    onPressed: isEnabled && !isApprovedOrRejected
+                        ? () => _approveProject(widget.projectid)
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white
+                    ),
+                    child: const Text("Approve"),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: isEnabled && !isApprovedOrRejected
+                        ? () => _showRejectionDialog(approval)
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white
+                    ),
+                    child: const Text("Reject"),
+                  ),
+                ],
+                // For selectedTab == 1, show the "Approved" button that does nothing when clicked
+                if (widget.selectedTab == 1) ...[
+                  ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white),
+                  child: const Text("Approved"),
+                  )
+                ],
+              ],
+            ),
+          ),
       ),
     );
   }
@@ -197,31 +229,75 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Rejection Reason"),
-          content: TextField(
-            controller: _reasonController,
-            decoration: const InputDecoration(hintText: "Enter your rejection reason here"),
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
           ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text("Cancel"),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 400,
             ),
-            TextButton(
-              onPressed: () {
-                String comments = _reasonController.text;
-
-                // Call API to reject the project
-                _rejectProject(approval, comments);
-
-                Navigator.of(context).pop();
-              },
-              child: const Text("Reject"),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Rejection Reason",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 15),
+                  TextField(
+                    controller: _reasonController,
+                    cursorColor: Colors.black87, 
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: "Enter your rejection reason here",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: const BorderSide(color: Colors.black54),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF167D86),
+                        ),
+                        child: const Text("Cancel"),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () {
+                          String comments = _reasonController.text;
+                          _rejectProject(approval, comments);
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        child: const Text("Reject"),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                ],
+              ),
             ),
-          ],
+          ),
         );
       },
     );
@@ -341,27 +417,27 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
   }
 
   Widget _buildRejectedCard(int index, Map<String, dynamic> approval) {
-  return Card(
-    child: ListTile(
-      title: Text("MSRA Rejection by ${approval["role"]}"),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Action by ${approval["name"]}"),
-          const SizedBox(height: 8),
-          Text("Comments: ${approval["comments"]}"),
-        ],
+    return Card(
+      child: ListTile(
+        title: Text("MSRA Rejection by ${approval["role"]}"),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Action by ${approval["name"]}"),
+            const SizedBox(height: 8),
+            Text("Comments: ${approval["comments"]}"),
+          ],
+        ),
+        trailing: widget.selectedTab == 2
+            ? ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text("Rejected"),
+              )
+            : null,
       ),
-      trailing: widget.selectedTab == 2
-          ? ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text("Rejected"),
-            )
-          : null,
-    ),
-  );
-}
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -427,7 +503,6 @@ class _ApprovalListWidgetState extends State<ApprovalListWidget> {
       ),
       );
     }
-
     return const Center(child: Text("No approvals available"));
   }
 }

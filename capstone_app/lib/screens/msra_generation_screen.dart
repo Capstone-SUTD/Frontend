@@ -1,9 +1,7 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../models/project_model.dart';
 import '../common/approval_list_widget.dart';
 import '../common/download_msra_widget.dart';
@@ -134,26 +132,30 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
   }
 
   void _onTabSelected(int index) {
-  if (index == 0) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ProjectScreen(
-          projectId: _project?.projectId,
-          selectedTab: 0, 
+    if (index == 0) {
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder:(_, __, ___) => ProjectScreen(
+            projectId: _project?.projectId,
+            selectedTab: 0, 
+          ),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
         ),
-      ),
-    );
+      );
+    }
+    if (index == 2) {
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => OnsiteChecklistScreen(project: _project),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+      );
+    }
   }
-  if (index == 2) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => OnsiteChecklistScreen(project: _project),
-      ),
-    );
-  }
-}
 
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context)
@@ -188,7 +190,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
         Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/stakeholder-comments'),
         headers: {
           'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json', // optional but recommended
+          'Content-Type': 'application/json',
         },
         body: jsonEncode({
           'projectid':
@@ -216,7 +218,14 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("MS/RA Generation")),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF167D86),
+        title: Text(
+          _project.projectName ?? "Project",
+          style: const TextStyle(color: Colors.white),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -237,8 +246,8 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
                 // Optional logic when a step is tappedr
               },
             ),
-            const SizedBox(height: 20),
             const Divider(),
+            const SizedBox(height: 10),
             if (_msVersions > 0 || _raVersions > 0) ...[
               DownloadMSRAWidget(
                 projectId: _project?.projectId ?? "",
@@ -246,7 +255,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
                 msVersion: _msVersions,
                 raVersion: _raVersions,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               const Divider(),
               if (_approvalStage !=
                   3) // Only render the Row if approvalStage is not 3
@@ -256,10 +265,10 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
                     _buildApprovalTab("Pending", 0),
                     _buildApprovalTab("Approved", 1),
                     _buildApprovalTab("Denied", 2),
-                    _buildApprovalTab("Reupload", 3),
+                    _buildApprovalTab("Re-Upload", 3),
                   ],
                 ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 15),
               Expanded(
                 child: _approvalStage == 3
                     ? FeedbackAndClose(
@@ -303,7 +312,7 @@ class _MSRAGenerationScreenState extends State<MSRAGenerationScreen> {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: isSelected ? Colors.orange : Colors.grey,
+              color: isSelected ? Color(0xFF167D86) : Colors.grey,
               width: 2,
             ),
           ),

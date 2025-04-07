@@ -55,45 +55,90 @@ class _AttachmentPopupState extends State<AttachmentPopup> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("Attach a File"),
-      content: SizedBox(
-        width: 300,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ElevatedButton(
-              onPressed: _pickFile,
-              child: const Text("Pick an Image"),
-            ),
-            const SizedBox(height: 8),
-            if (_pickedFileName.isNotEmpty)
-              Text("Picked File: $_pickedFileName",
-                  style: const TextStyle(fontSize: 13)),
-          ],
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Attach a File",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              ElevatedButton(
+                onPressed: _pickFile,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE0F7F7),
+                  foregroundColor: const Color(0xFF167D86),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: const Text("Pick an Image"),
+              ),
+
+              const SizedBox(height: 10),
+
+              if (_pickedFileName.isNotEmpty)
+                Text(
+                  "Picked File: $_pickedFileName",
+                  style: const TextStyle(fontSize: 13),
+                ),
+
+              const SizedBox(height: 20),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF167D86),
+                    ),
+                    child: const Text("Cancel"),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (_pickedBytes != null &&
+                          _pickedFileName.isNotEmpty) {
+                        widget.onAttach(
+                          PickedFileData(_pickedBytes!, _pickedFileName),
+                        );
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF167D86),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: const Text("Attach"),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          child: const Text("Cancel"),
-          onPressed: () => Navigator.pop(context),
-        ),
-        ElevatedButton(
-          child: const Text("Attach"),
-          onPressed: () {
-            if (_pickedBytes != null && _pickedFileName.isNotEmpty) {
-              // Send the file info back to the parent
-              widget.onAttach(PickedFileData(_pickedBytes!, _pickedFileName));
-              // The parent can pop this dialog
-            } else {
-              // If user hasn't picked anything, just close
-              Navigator.pop(context);
-            }
-          },
-        ),
-      ],
     );
   }
+
 }
 
 /// ---------------------------------------------------------------------------
@@ -140,60 +185,89 @@ class _CommentPopupState extends State<CommentPopup> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text("Comments"),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            controller: _controller,
-            maxLines: 5,
-            maxLength: maxChars,
-            onChanged: (value) {
-              setState(() {
-                isSaveEnabled = value.trim().isNotEmpty;
-                if (validationMessage != null && isSaveEnabled) {
-                  validationMessage = null;
-                }
-              });
-            },
-            decoration: InputDecoration(
-              hintText: "Type your comment here...",
-              border: const OutlineInputBorder(),
-              counterText: "${_controller.text.trim().length} / $maxChars",
-            ),
-          ),
-          if (validationMessage != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text(
-                validationMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 12),
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Comments",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-            ),
-        ],
+              const SizedBox(height: 15),
+              TextField(
+                controller: _controller,
+                cursorColor: Colors.black87, 
+                maxLines: 5,
+                maxLength: maxChars,
+                decoration: InputDecoration(
+                  hintText: "Type your comment here...",
+                  counterText: "${_controller.text.trim().length} / $maxChars",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: const BorderSide(color: Colors.black54),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 10),
+                ),
+              ),
+              if (validationMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    validationMessage!,
+                    style: const TextStyle(color: Color(0xFF167D86), fontSize: 12),
+                  ),
+                ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF167D86), // darker teal color
+                    ),
+                    child: const Text("Cancel"),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: isSaveEnabled
+                        ? () {
+                            if (_controller.text.trim().isEmpty) {
+                              setState(() {
+                                validationMessage =
+                                    "Comment cannot be empty";
+                              });
+                            } else {
+                              widget.onCommentAdded(_controller.text.trim());
+                            }
+                          }
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF167D86),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    child: const Text("Save"),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
+            ],
+          ),
+        ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
-        ),
-        ElevatedButton(
-          onPressed: isSaveEnabled
-              ? () {
-                  if (_controller.text.trim().isEmpty) {
-                    setState(() {
-                      validationMessage = "Comment cannot be empty";
-                    });
-                  } else {
-                    widget.onCommentAdded(_controller.text.trim());
-                  }
-                }
-              : null,
-          child: const Text("Save"),
-        ),
-      ],
     );
   }
 }
@@ -354,92 +428,117 @@ class _CommentsConversationPopupState extends State<CommentsConversationPopup> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text("Comments for ${widget.taskName}"),
-      content: SizedBox(
-        width: 600,
-        height: 400,
-        child: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : ListView.builder(
-                itemCount: comments.length,
-                itemBuilder: (context, index) {
-                  final comment = comments[index];
-                  final commentid = comment['commentid'];
-                  final username = comment['username'] ?? 'Unknown';
-                  final editing = isEditing[commentid] ?? false;
-                  final controller = controllers[commentid]!;
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Comments for ${widget.taskName}",
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                height: 350,
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator(
+                      color: Color(0xFF167D86),
+                      ),
+                    )
+                    : ListView.builder(
+                        itemCount: comments.length,
+                        itemBuilder: (context, index) {
+                          final comment = comments[index];
+                          final commentid = comment['commentid'];
+                          final username = comment['username'] ?? 'Unknown';
+                          final editing = isEditing[commentid] ?? false;
+                          final controller = controllers[commentid]!;
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        margin: const EdgeInsets.only(bottom: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.black26),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(username,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600)),
-                            const SizedBox(height: 6),
-                            editing
-                                ? TextField(
-                                    controller: controller,
-                                    maxLines: null,
-                                    decoration: const InputDecoration(
-                                      isDense: true,
-                                      border: InputBorder.none,
-                                    ),
-                                  )
-                                : Text(
-                                    comment['comments'] ?? '',
-                                    style: const TextStyle(fontSize: 14),
-                                  ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              // color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.black45),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                IconButton(
-                                  icon:
-                                      Icon(editing ? Icons.check : Icons.edit),
-                                  tooltip: editing ? 'Save' : 'Edit',
-                                  onPressed: () {
-                                    if (editing) {
-                                      handleUpdate(commentid);
-                                    } else {
-                                      setState(
-                                          () => isEditing[commentid] = true);
-                                    }
-                                  },
+                                Text(
+                                  username,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600, fontSize: 14),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete),
-                                  tooltip: 'Delete',
-                                  onPressed: () => handleDelete(commentid),
+                                const SizedBox(height: 6),
+                                editing
+                                    ? TextField(
+                                        controller: controller,
+                                        cursorColor: Colors.black87, 
+                                        maxLines: null,
+                                        decoration: const InputDecoration(
+                                          isDense: true,
+                                            border: InputBorder.none,
+                                            contentPadding: EdgeInsets.zero,
+                                        ),
+                                      )
+                                    : Text(
+                                        comment['comments'] ?? '',
+                                        style: const TextStyle(fontSize: 14),
+                                      ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(editing ? Icons.check : Icons.edit),
+                                      tooltip: editing ? 'Save' : 'Edit',
+                                      onPressed: () {
+                                        if (editing) {
+                                          handleUpdate(commentid);
+                                        } else {
+                                          setState(() => isEditing[commentid] = true);
+                                        }
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete),
+                                      tooltip: 'Delete',
+                                      onPressed: () => handleDelete(commentid),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
-                    ],
-                  );
-                },
               ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Close"),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF167D86), // darker teal color
+                      ),
+                  child: const Text("Close"),
+                ),
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
+
 
   @override
   void dispose() {
@@ -754,29 +853,50 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
     if (index == 0) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => ProjectScreen(
+        PageRouteBuilder(
+          pageBuilder:(_, __, ___) => ProjectScreen(
             projectId: _project?.projectId,
-            selectedTab: 0,
+            selectedTab: 0, 
           ),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
         ),
       );
     }
     if (index == 1) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => MSRAGenerationScreen(project: _project),
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => MSRAGenerationScreen(project: _project),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
         ),
       );
     }
   }
 
+  final ButtonStyle tealButtonStyle = ElevatedButton.styleFrom(
+    backgroundColor: const Color(0xFFE0F7F7),
+    foregroundColor: Colors.teal,
+    shadowColor: Colors.transparent,
+    elevation: 0,
+  );
+
+  final ButtonStyle tealOutlineStyle = OutlinedButton.styleFrom(
+    foregroundColor: const Color(0xFF167D86),
+    side: const BorderSide(color: Color(0xFF167D86)),
+  );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Onsite Checklist"),
+        backgroundColor: const Color(0xFF167D86), 
+        title: Text(
+          _project.projectName ?? "Project",
+          style: const TextStyle(color: Colors.white),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -793,6 +913,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
               onStepTapped: (_) {},
             ),
             const Divider(),
+            const SizedBox(height: 20),
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -802,7 +923,10 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
             ),
             const SizedBox(height: 10),
             isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularProgressIndicator(
+                  color: Color(0xFF167D86),
+                  ),
+                )
                 : Expanded(
                     child: ListView(
                       children: checklistData.entries.map((entry) {
@@ -824,7 +948,10 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
     Map<String, Map<String, dynamic>> subtypes,
   ) {
     return ExpansionTile(
-      title: Text(section, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(section, style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold)
+      ),
       initiallyExpanded: expandedSections[section] ?? false,
       onExpansionChanged: (value) {
         setState(() {
@@ -857,7 +984,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
             // 2) Subtype descriptions
             if (data['expanded'] == true || true)
               Padding(
-                padding: const EdgeInsets.only(left: 16.0, bottom: 8),
+                padding: const EdgeInsets.only(left: 60.0, bottom: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: (data['descriptions'] as List<String>).map((desc) {
@@ -868,14 +995,17 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
               ),
 
             // 3) Row of comment + attachment buttons
+            const SizedBox(height: 8),
+            
             Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 8),
+              padding: const EdgeInsets.only(left: 60, bottom: 8),
               child: Wrap(
                 spacing: 8.0,
                 runSpacing: 4.0,
                 children: [
                   // A) Add/Edit Comment
                   ElevatedButton(
+                    style: tealButtonStyle,
                     onPressed: () async {
                       final newComment = await showDialog<String>(
                         context: context,
@@ -900,6 +1030,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
                   // B) View Comment (only if we have one)
                   if (hasComment)
                     OutlinedButton(
+                      style: tealOutlineStyle,
                       onPressed: () {
                         showDialog(
                           context: context,
@@ -917,6 +1048,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
 
                   // C) Add/Edit Attachment
                   ElevatedButton(
+                    style: tealButtonStyle,
                     onPressed: () async {
                       final pickedData = await showDialog<PickedFileData>(
                         context: context,
@@ -946,6 +1078,7 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
                   // D) View Attachment (only if hasAttachment)
                   if (hasAttachment)
                     OutlinedButton(
+                      style: tealOutlineStyle,
                       onPressed: () async {
                         final imageBytes =
                             await fetchAttachmentImageBytes(data['taskid']);
@@ -961,19 +1094,51 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
                         }
                         showDialog(
                           context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: Text("Attachment for $subtype"),
-                            content: SizedBox(
-                              width: 400,
-                              height: 400,
-                              child: Image.memory(imageBytes),
+                          builder: (ctx) => Dialog(
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text("Close"),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 500),
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        "Attachment for $subtype",
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 15),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.memory(
+                                        imageBytes,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: TextButton(
+                                        onPressed: () => Navigator.pop(ctx),
+                                        child: const Text(
+                                          "Close",
+                                          style: TextStyle(color: Color(0xFF167D86)), // Light teal text
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
+                            ),
                           ),
                         );
                       },
@@ -983,7 +1148,10 @@ class _OnsiteChecklistScreenState extends State<OnsiteChecklistScreen> {
               ),
             ),
 
-            const Divider(),
+            if (subEntry.key != subtypes.keys.last)
+              const Divider()
+            else
+              const SizedBox(height: 10),
           ],
         );
       }).toList(),

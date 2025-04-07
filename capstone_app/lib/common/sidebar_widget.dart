@@ -7,8 +7,13 @@ import 'equipment_recommendation_widget.dart';
 
 class Sidebar extends StatefulWidget {
   final String selectedPage;
+  final VoidCallback? onEquipmentSelected; 
 
-  const Sidebar({Key? key, required this.selectedPage}) : super(key: key);
+  const Sidebar({
+    Key? key,
+    required this.selectedPage,
+    this.onEquipmentSelected,
+  }) : super(key: key);
 
   @override
   _SidebarState createState() => _SidebarState();
@@ -24,7 +29,7 @@ class _SidebarState extends State<Sidebar> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       width: sidebarWidth,
-      color: Colors.blue.shade900,
+      color: const Color(0xFF167D86),
       child: Column(
         children: [
           // Top Toggle Button
@@ -74,13 +79,10 @@ class _SidebarState extends State<Sidebar> {
                   context,
                   icon: Icons.precision_manufacturing,
                   label: 'Equipment',
-                  route: '',
-                  isSelected: false,
+                  route: '', 
+                  isSelected: widget.selectedPage == '/equipment',
                   onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (_) => const EquipmentRecommendationDialog(),
-                    );
+                    widget.onEquipmentSelected?.call();
                   },
                 ),
               ],
@@ -123,7 +125,7 @@ class _SidebarState extends State<Sidebar> {
         }
       },
       child: Container(
-        color: isSelected ? Colors.blue.shade700 : Colors.transparent,
+        color: isSelected ? Color(0xFF1FA1AD) : Colors.transparent,
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
         child: Row(
           children: [

@@ -92,14 +92,32 @@ class _DownloadMSRAWidgetState extends State<DownloadMSRAWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildDownloadButton("Download MS", "MS", selectedMSVersion),
-        _buildDownloadButton("Download RA", "RA", selectedRAVersion),
+        const Padding(
+          padding: EdgeInsets.only(left: 16.0, bottom: 4.0),
+          child: Text(
+            "Files Prepared Here",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+        // const SizedBox(height: 4), 
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildDownloadButton("Download MS", "MS", selectedMSVersion),
+            _buildDownloadButton("Download RA", "RA", selectedRAVersion),
+          ],
+        ),
       ],
     );
   }
+
 
   Widget _buildDownloadButton(String label, String fileType, int version) {
     return Column(
