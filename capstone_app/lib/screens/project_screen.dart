@@ -92,7 +92,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
     final projectName = formState?.getProjectName() ?? '';
     final client = formState?.getClient() ?? '';
     final emailSubject = formState?.getEmailSubjectHeader() ?? '';
-    final stakeholders = formState?.getSelectedStakeholders() ?? [];
+    final stakeholdersComplete = formState?.areStakeholdersComplete() ?? false;
     final cargo = cargoState?.getCargoList() ?? [];
 
     final hasAtLeastOneRow = cargo.isNotEmpty;
@@ -119,7 +119,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
     final canRun = projectName.isNotEmpty &&
         client.isNotEmpty &&
         emailSubject.isNotEmpty &&
-        stakeholders.isNotEmpty &&
+        stakeholdersComplete &&
         cargoIsValid;
 
     setState(() {
@@ -423,284 +423,308 @@ class _ProjectScreenState extends State<ProjectScreen> {
       selectedTabIndex = index;
     });
 
+    Widget screen;
+
     switch (index) {
       case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProjectScreen(projectId: _project?.projectId),
-          ),
-        );
+        screen = ProjectScreen(projectId: _project?.projectId);
         break;
       case 1:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MSRAGenerationScreen(project: _project),
-          ),
-        );
+        screen = MSRAGenerationScreen(project: _project);
         break;
       case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OnsiteChecklistScreen(project: _project),
-          ),
-        );
+        screen = OnsiteChecklistScreen(project: _project);
         break;
+      default:
+        return;
     }
+
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => screen,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+    );
   }
+
 
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: CircularProgressIndicator(
+          color: Color(0xFF167D86),
+          )
+        ),
       );
     }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(isNewProject ? "New Project" : _project!.projectName),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (widget.onPopCallback != null) {
-              widget.onPopCallback!();
-            }
-            Navigator.pop(context);
-          },
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textSelectionTheme: const TextSelectionThemeData(
+          cursorColor: Colors.black87,
+          selectionColor: Colors.black26,
+          selectionHandleColor: Colors.black45,
         ),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!isNewProject && isOOG)
-            ProjectTabWidget(
-              selectedTabIndex: selectedTabIndex,
-              onTabSelected: onTabSelected,
-            ),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ProjectFormWidget(
-                              key: _formKey,
-                              project: _project,
-                              isNewProject: isNewProject,
-                              onChanged: _evaluateRunButton,
-                            ),
-                            const SizedBox(height: 20),
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                return ConstrainedBox(
-                                  constraints: BoxConstraints(minWidth: constraints.maxWidth - 48),
-                                  child: CargoDetailsTableWidget(
-                                    key: _cargoKey,
-                                    cargoList: _project!.cargo,
-                                    isNewProject: isNewProject,
-                                    isEditable: isNewProject,
-                                    hasRun: hasRun,
-                                    onRunPressed: _onRunPressed,
-                                    resultList: resultsOOG,
-                                    enableRunButton: enableRunButton,
-                                    onCargoChanged: _evaluateRunButton,
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 20),
-                            if (isOOG) ...[
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF167D86),
+          elevation: 1,
+          title: Text(
+            isNewProject ? "New Project" : _project!.projectName,
+            style: const TextStyle(color: Colors.white),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              if (widget.onPopCallback != null) {
+                widget.onPopCallback!();
+              }
+              Navigator.pop(context);
+            },
+          ),
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!isNewProject && isOOG)
+              Column(
+                children: [
+                  const SizedBox(height: 16),
+                  ProjectTabWidget(
+                    selectedTabIndex: selectedTabIndex,
+                    onTabSelected: onTabSelected,
+                  ),
+                ],
+              ),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ProjectFormWidget(
+                                key: _formKey,
+                                project: _project,
+                                isNewProject: isNewProject,
+                                onChanged: _evaluateRunButton,
+                              ),
+                              const SizedBox(height: 20),
                               LayoutBuilder(
                                 builder: (context, constraints) {
                                   return ConstrainedBox(
                                     constraints: BoxConstraints(minWidth: constraints.maxWidth - 48),
-                                    child: WorkScopeWidget(
-                                      key: _workScopeKey,
+                                    child: CargoDetailsTableWidget(
+                                      key: _cargoKey,
+                                      cargoList: _project!.cargo,
                                       isNewProject: isNewProject,
-                                      workScopeList: isNewProject ? null : _project!.scope,
-                                      onWorkScopeChanged: _evaluateSaveButton,
+                                      isEditable: isNewProject,
+                                      hasRun: hasRun,
+                                      onRunPressed: _onRunPressed,
+                                      resultList: resultsOOG,
+                                      enableRunButton: enableRunButton,
+                                      onCargoChanged: _evaluateRunButton,
                                     ),
                                   );
                                 },
                               ),
                               const SizedBox(height: 20),
-                              if (isNewProject || (_project!.scope?.isEmpty ?? true)) ...[
-                                Container(
-                                  width: 400,
-                                  child: FileUploadWidget(
-                                    key: _fileUploadKey,
-                                  ),
+                              if (isOOG) ...[
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return ConstrainedBox(
+                                      constraints: BoxConstraints(minWidth: constraints.maxWidth - 48),
+                                      child: WorkScopeWidget(
+                                        key: _workScopeKey,
+                                        isNewProject: isNewProject,
+                                        workScopeList: isNewProject ? null : _project!.scope,
+                                        onWorkScopeChanged: _evaluateSaveButton,
+                                      ),
+                                    );
+                                  },
                                 ),
                                 const SizedBox(height: 20),
-                                if (!isSaved)
+                                if (isNewProject || (_project!.scope?.isEmpty ?? true)) ...[
+                                  Container(
+                                    width: 400,
+                                    child: FileUploadWidget(
+                                      key: _fileUploadKey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  if (!isSaved)
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        ElevatedButton(
+                                          onPressed: (isSaving || !enableSaveButton) ? null : onSavePressed,
+                                          child: isSaving
+                                              ? const Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    SizedBox(
+                                                      height: 16,
+                                                      width: 16,
+                                                      child: CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                      ),
+                                                    ),
+                                                    SizedBox(width: 10),
+                                                    Text("Saving..."),
+                                                  ],
+                                                )
+                                              : const Text("Save"),
+                                        ),
+                                        const SizedBox(width: 10),
+                                      ],
+                                    ),
+                                ],
+                                const SizedBox(height: 20),
+                                if ((isOOG && isSaved) ||
+                                    (isOOG &&
+                                        _project?.msra != true &&
+                                        !(_project!.scope?.isEmpty ?? true))) ...[
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
                                       ElevatedButton(
-                                        onPressed: (isSaving || !enableSaveButton) ? null : onSavePressed,
-                                        child: isSaving
-                                            ? const Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  SizedBox(
-                                                    height: 16,
-                                                    width: 16,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                    ),
-                                                  ),
-                                                  SizedBox(width: 10),
-                                                  Text("Saving..."),
-                                                ],
-                                              )
-                                            : const Text("Save"),
-                                      ),
-                                      const SizedBox(width: 10),
-                                    ],
-                                  ),
-                              ],
-                              const SizedBox(height: 20),
-                              if ((isOOG && isSaved) ||
-                                  (isOOG &&
-                                      _project?.msra != true &&
-                                      !(_project!.scope?.isEmpty ?? true))) ...[
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    ElevatedButton(
-                                      onPressed: (hasGenerateMSRA || isGeneratingMSRA)
-                                          ? null
-                                          : () async {
-                                            setState(() {
-                                              isGeneratingMSRA = true;
-                                            });
+                                        onPressed: (hasGenerateMSRA || isGeneratingMSRA)
+                                            ? null
+                                            : () async {
+                                              setState(() {
+                                                isGeneratingMSRA = true;
+                                              });
 
-                                              final prefs = await SharedPreferences.getInstance();
-                                              final token = prefs.getString('auth_token');
-                                              final rawProjectId = _project?.projectId;
+                                                final prefs = await SharedPreferences.getInstance();
+                                                final token = prefs.getString('auth_token');
+                                                final rawProjectId = _project?.projectId;
 
-                                              print('Type of projectId: ${rawProjectId.runtimeType}');
-                                              print('Value of projectId: $rawProjectId');
+                                                print('Type of projectId: ${rawProjectId.runtimeType}');
+                                                print('Value of projectId: $rawProjectId');
 
-                                              int? projectId;
-                                              if (rawProjectId is Set) {
-                                                final firstValue = (rawProjectId as Set).first;
-                                                projectId = int.tryParse(firstValue.toString());
-                                              } else {
-                                                projectId = int.tryParse(rawProjectId.toString());
-                                              }
-
-                                              if (projectId == null) {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(content: Text("Invalid project ID.")),
-                                                );
-                                                setState(() {
-                                                  isGeneratingMSRA = false;
-                                                });
-                                                return;
-                                              }
-
-                                              try {
-                                                final response = await http.post(
-                                                  Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/generate-docs'),
-                                                  headers: {
-                                                    'Authorization': 'Bearer $token',
-                                                    'Content-Type': 'application/json',
-                                                  },
-                                                  body: jsonEncode({'projectid': projectId}),
-                                                );
-
-                                                if (response.statusCode == 200) {
-                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                    const SnackBar(content: Text("MS/RA generated successfully")),
-                                                  );
-
-                                                  setState(() {
-                                                    hasGenerateMSRA = true;
-                                                  });
-
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          MSRAGenerationScreen(project: _project),
-                                                    ),
-                                                  );
+                                                int? projectId;
+                                                if (rawProjectId is Set) {
+                                                  final firstValue = (rawProjectId as Set).first;
+                                                  projectId = int.tryParse(firstValue.toString());
                                                 } else {
-                                                  String errorMsg = "Generation failed.";
-                                                  try{
-                                                    final decoded = jsonDecode(response.body);
-                                                    if (decoded['error'] != null){
-                                                      errorMsg = decoded['error'];
-                                                    }
-                                                  }catch (_){
-                                                    errorMsg = response.body;
-                                                  }
+                                                  projectId = int.tryParse(rawProjectId.toString());
+                                                }
+
+                                                if (projectId == null) {
                                                   ScaffoldMessenger.of(context).showSnackBar(
-                                                    SnackBar(content: Text(errorMsg)),
+                                                    const SnackBar(content: Text("Invalid project ID.")),
+                                                  );
+                                                  setState(() {
+                                                    isGeneratingMSRA = false;
+                                                  });
+                                                  return;
+                                                }
+
+                                                try {
+                                                  final response = await http.post(
+                                                    Uri.parse('https://backend-app-huhre9drhvh6dphh.southeastasia-01.azurewebsites.net/project/generate-docs'),
+                                                    headers: {
+                                                      'Authorization': 'Bearer $token',
+                                                      'Content-Type': 'application/json',
+                                                    },
+                                                    body: jsonEncode({'projectid': projectId}),
+                                                  );
+
+                                                  if (response.statusCode == 200) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(content: Text("MS/RA generated successfully")),
+                                                    );
+
+                                                    setState(() {
+                                                      hasGenerateMSRA = true;
+                                                    });
+
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            MSRAGenerationScreen(project: _project),
+                                                      ),
+                                                    );
+                                                  } else {
+                                                    String errorMsg = "Generation failed.";
+                                                    try{
+                                                      final decoded = jsonDecode(response.body);
+                                                      if (decoded['error'] != null){
+                                                        errorMsg = decoded['error'];
+                                                      }
+                                                    }catch (_){
+                                                      errorMsg = response.body;
+                                                    }
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(content: Text(errorMsg)),
+                                                    );
+                                                  }
+                                                } catch (e) {
+                                                  print("Error triggering MS/RA generation: $e");
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(
+                                                        content: Text("An error occurred while generating MS/RA")),
                                                   );
                                                 }
-                                              } catch (e) {
-                                                print("Error triggering MS/RA generation: $e");
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(
-                                                      content: Text("An error occurred while generating MS/RA")),
-                                                );
-                                              }
-                                            },
-                                      child: isGeneratingMSRA
-                                      ? const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          SizedBox(
-                                            height: 16,
-                                            width: 16,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                              },
+                                        child: isGeneratingMSRA
+                                        ? const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            SizedBox(
+                                              height: 16,
+                                              width: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                              ),
                                             ),
-                                          ),
-                                          SizedBox(width: 10),
-                                          Text("Generating..."),
-                                        ],
-                                      )
-                                      : const Text("Generate MS/RA"),
-                                    ),
-                                  ],
-                                ),
+                                            SizedBox(width: 10),
+                                            Text("Generating..."),
+                                          ],
+                                        )
+                                        : const Text("Generate MS/RA"),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                                const SizedBox(height: 30),
                               ],
-                              const SizedBox(height: 20),
                             ],
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                if ((isOOG && isSaved) || (isOOG && !(_project!.scope?.isEmpty ?? true)))
-                  Expanded(
-                    flex: 1,
-                    child: SingleChildScrollView(
-                      child: OffsiteChecklistWidget(
-                        projectId: int.tryParse(_project?.projectId.toString() ?? '0') ?? 0,
-                      ),
+                          ),
+                        );
+                      },
                     ),
                   ),
-              ],
+                  if ((isOOG && isSaved) || (isOOG && !(_project!.scope?.isEmpty ?? true)))
+                    Expanded(
+                          flex: 1,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 12.0),
+                            child: SingleChildScrollView(
+                              child: OffsiteChecklistWidget(
+                                projectId: int.tryParse(_project?.projectId.toString() ?? '0') ?? 0,
+                              ),
+                            ),
+                          ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

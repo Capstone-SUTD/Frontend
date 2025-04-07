@@ -1,9 +1,7 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../models/project_model.dart';
 import '../common/equipment_recommendation_widget.dart';
 import '../common/project_table_widget.dart';
@@ -145,7 +143,10 @@ class _AllProjectsScreenState extends State<AllProjectsScreen>
                   const SizedBox(height: 16),
                   Expanded(
                     child: isLoading
-                        ? const Center(child: CircularProgressIndicator())
+                        ? const Center(child: CircularProgressIndicator(
+                          color: Color(0xFF167D86),
+                          ),
+                        )
                         : errorMessage != null
                             ? Center(
                                 child: Column(

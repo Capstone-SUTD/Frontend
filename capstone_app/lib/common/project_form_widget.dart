@@ -148,6 +148,12 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
     });
   }
 
+  bool areStakeholdersComplete() {
+    return selectedStakeholders
+        .where((s) => s["role"] != "Additional")
+        .every((s) => s["userId"] != null && s["userId"]!.isNotEmpty);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -183,6 +189,10 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
                               isDense: true,
                               decoration: const InputDecoration(
                                 labelText: "Select Stakeholder",
+                                labelStyle: TextStyle(color: Colors.black87),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.black87),
+                                ),
                                 border: OutlineInputBorder(),
                               ),
                               items: stakeholdersList.map((s) {
@@ -339,8 +349,13 @@ class ProjectFormWidgetState extends State<ProjectFormWidget> {
       controller: controller,
       readOnly: readOnly,
       onChanged: (_) => widget.onChanged?.call(),
+      cursorColor: Colors.black87,
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: const TextStyle(color: Colors.black87),
+        focusedBorder: const OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.black87),
+        ),
         border: OutlineInputBorder(),
       ),
     );

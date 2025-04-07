@@ -197,6 +197,7 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
                       ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$'))]
                       : [],
                   onChanged: (value) => _updateCargo(index, key, value),
+                  cursorColor: Colors.black87,
                   decoration: const InputDecoration(border: InputBorder.none),
                 )
               : Text(
@@ -243,6 +244,7 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
                 FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
               ],
               onChanged: (value) => _updateCargo(index, key, value),
+              cursorColor: Colors.black87,
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(vertical: 4),
@@ -271,6 +273,7 @@ class CargoDetailsTableWidgetState extends State<CargoDetailsTableWidget> {
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
                   onChanged: (value) => _updateCargo(index, "weight", value),
+                  cursorColor: Colors.black87,
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),

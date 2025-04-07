@@ -51,7 +51,7 @@ class ProjectTabWidget extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
-              color: isSelected ? Colors.orange : Colors.transparent,
+              color: isSelected ? Color(0xFF0097A7) : Colors.transparent,
               borderRadius: borderRadius ?? BorderRadius.zero,
             ),
             alignment: Alignment.center,

@@ -408,7 +408,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             const Padding(
                               padding: EdgeInsets.only(top: 5.0),
                               child: Text(
-                                'IN PARTNERSHIP WITH',
+                                'IN COLLABORATION WITH',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,

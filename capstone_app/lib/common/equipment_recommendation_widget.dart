@@ -182,6 +182,7 @@ class _EquipmentRecommendationDialogState
             return TextField(
               controller: TextEditingController(text: value),
               readOnly: true,
+              cursorColor: Colors.black87,
               decoration: InputDecoration(
                 labelText: label,
                 isDense: true,
@@ -310,6 +311,7 @@ class _EquipmentRecommendationDialogState
             ),
             child: TextField(
               controller: controller,
+              cursorColor: Colors.black87, 
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,6}')),

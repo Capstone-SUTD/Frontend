@@ -208,6 +208,7 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
                 initialValue: _workScopeList[index][key],
                 textAlign: TextAlign.center,
                 onChanged: (value) => _updateWorkScope(index, key, value),
+                cursorColor: Colors.black87,
                 decoration: const InputDecoration(border: InputBorder.none),
               ),
       ),
@@ -256,11 +257,13 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
                           _updateWorkScope(index, "equipmentList", "$value ton crane");
                         },
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        cursorColor: Colors.black87,
                         decoration: const InputDecoration(
                           labelText: "Enter Crane Threshold (Tons)",
                           border: InputBorder.none,
                           isDense: true,
                           contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                          labelStyle: const TextStyle(color: Colors.black87),
                         ),
                       )
                     : _workScopeList[index]["scope"] == "Transportation"
@@ -283,10 +286,15 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
                                       _updateWorkScope(index, "equipmentList", newValue);
                                       FocusScope.of(context).unfocus();
                                     },
+                                    cursorColor: Colors.black87,
                                     decoration: const InputDecoration(
                                       labelText: "Select or Add Equipment",
                                       isDense: true,
                                       contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                      labelStyle: const TextStyle(color: Colors.black87),
+                                      focusedBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(color: Colors.black87, width: 2),
+                                      ),
                                     ),
                                   ),
                                   suggestionsCallback: (pattern) {
@@ -345,6 +353,7 @@ class WorkScopeWidgetState extends State<WorkScopeWidget> {
                             onChanged: (value) {
                               _updateWorkScope(index, "equipmentList", value);
                             },
+                            cursorColor: Colors.black87,
                             decoration: const InputDecoration(
                               border: InputBorder.none,
                               isDense: true,
