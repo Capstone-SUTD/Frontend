@@ -143,50 +143,66 @@ class _FeedbackAndCloseState extends State<FeedbackAndClose> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          "Feedback and Close",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textSelectionTheme: const TextSelectionThemeData(
+          cursorColor: Colors.black87,
+          selectionColor: Colors.black26,
+          selectionHandleColor: Colors.black45,
         ),
-        SizedBox(height: 10),
-        Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              children: _updatedStakeholders.map((stakeholder) {
-                bool hasComments =
-                    stakeholder.comments != null && stakeholder.comments!.isNotEmpty;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Container(
-                    width: double.infinity,
+      ),
+      child: Column(
+        children: [
+          const Text(
+            "Feedback and Close",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: _updatedStakeholders.map((stakeholder) {
+                  bool hasComments = stakeholder.comments != null &&
+                                    stakeholder.comments!.isNotEmpty;
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Card(
-                      elevation: 3,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: Colors.grey, width: 1),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
+                      child: Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(minHeight: 120),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          border: Border(
+                            left: BorderSide(
+                              color: Color(0xFF167D86), // teal border
+                              width: 6,
+                            ),
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            const SizedBox(height: 10),
                             Text(
                               "Feedback from ${stakeholder.name ?? "Unknown"}",
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 15),
                             if (hasComments)
-                              Container(
-                                width: double.infinity,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(top: 10.0),
-                                  child: Text(
-                                    stakeholder.comments!,
-                                    style: TextStyle(fontSize: 14),
-                                  ),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 10.0),
+                                child: Text(
+                                  stakeholder.comments!,
+                                  style: const TextStyle(fontSize: 14),
                                 ),
                               )
                             else
@@ -195,37 +211,63 @@ class _FeedbackAndCloseState extends State<FeedbackAndClose> {
                                 children: [
                                   TextField(
                                     controller: _controllers[stakeholder.userId],
-                                    decoration: InputDecoration(
-                                      labelText: "Enter your feedback...",
-                                      border: OutlineInputBorder(),
+                                    cursorColor: Colors.black87,
+                                    decoration: const InputDecoration(
+                                      hintText: "Enter your feedback...",
+                                      focusedBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(color: Colors.black87),
+                                      ),
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(color: Colors.grey),
+                                      ),
+                                      isDense: true,
                                     ),
                                   ),
-                                  SizedBox(height: 8),
-                                  Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: ElevatedButton(
-                                      onPressed: () => _submitFeedback(stakeholder.userId, stakeholder.role),
-                                      child: Text("Submit Feedback"),
+                                  const SizedBox(height: 20),
+                                  ElevatedButton(
+                                    onPressed: () => _submitFeedback(
+                                      stakeholder.userId,
+                                      stakeholder.role,
                                     ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF167D86),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 10),
+                                    ),
+                                    child: const Text("Submit Feedback"),
                                   ),
                                 ],
                               ),
+                              const SizedBox(height: 10),
                           ],
                         ),
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
           ),
-        ),
-        SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: _projectStage == "Project Completion" ? null : _closeProject,
-          child: Text(_projectStage == "Project Completion" ? "Project Completed" : "Close Project"),
-        ),
-      ],
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _projectStage == "Project Completion" ? null : _closeProject,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _projectStage == "Project Completion"
+                  ? Colors.grey
+                  : const Color(0xFF167D86),
+              foregroundColor: Colors.white,
+            ),
+            child: Text(
+              _projectStage == "Project Completion"
+                  ? "Project Completed"
+                  : "Close Project",
+            ),
+          ),
+        ],
+      ),
     );
   }
+
+
 }

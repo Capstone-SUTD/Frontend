@@ -137,6 +137,14 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
                   onPressed: _currentPage > 0 && _sortedProjects.isNotEmpty
                       ? () => setState(() => _currentPage--)
                       : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE0F7F7),
+                    foregroundColor: const Color(0xFF167D86),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),  
                   child: const Text("Previous"),
                 ),
                 const SizedBox(width: 8),
@@ -145,6 +153,14 @@ class _ProjectTableWidgetState extends State<ProjectTableWidget> {
                           _sortedProjects.isNotEmpty
                       ? () => setState(() => _currentPage++)
                       : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE0F7F7),
+                    foregroundColor: const Color(0xFF167D86),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ), 
                   child: const Text("Next"),
                 ),
               ],

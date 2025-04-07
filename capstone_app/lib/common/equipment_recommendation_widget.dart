@@ -288,40 +288,49 @@ class _EquipmentRecommendationDialogState
   }
 
   Widget _buildFieldRow(String label, TextEditingController controller, String unit) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 80,
-          child: Text(label, style: const TextStyle(fontSize: 14)),
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textSelectionTheme: const TextSelectionThemeData(
+          cursorColor: Colors.black87,
+          selectionColor: Colors.black26,
+          selectionHandleColor: Colors.black45,
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              inputDecorationTheme: const InputDecorationTheme(
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF167D86)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(label, style: const TextStyle(fontSize: 14)),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                inputDecorationTheme: const InputDecorationTheme(
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF167D86)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  border: OutlineInputBorder(),
+                  isDense: true,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey),
-                ),
-                border: OutlineInputBorder(),
-                isDense: true,
+              ),
+              child: TextField(
+                controller: controller,
+                cursorColor: Colors.black87, 
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,6}')),
+                ],
               ),
             ),
-            child: TextField(
-              controller: controller,
-              cursorColor: Colors.black87, 
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,6}')),
-              ],
-            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Text(unit, style: const TextStyle(color: Colors.grey)),
-      ],
+          const SizedBox(width: 8),
+          Text(unit, style: const TextStyle(color: Colors.grey)),
+        ],
+      ),
     );
   }
 }
