@@ -27,6 +27,9 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.7.0'  # Specify the Flutter version you need
+      
+      - name: Change Directory to Flutter Project
+        run: cd capstone_app
 
       - name: Install dependencies
         run: |
@@ -54,8 +57,6 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_JOLLY_FIELD_09002D200 }}
           action: "upload"
-          ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
-          # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
           app_location: "capstone_app" # App source code path (where your Flutter project is located)
           api_location: "" # API source code path (if applicable)
           output_location: "capstone_app/build/web" # Built app content directory (after flutter build web)
