@@ -26,18 +26,13 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.7.0'  # Specify the Flutter version you need
-      
-      - name: Change Directory to Flutter Project
-        run: cd capstone_app
+          flutter-version: '3.7.0'
 
-      - name: Install dependencies
+      - name: Install dependencies and build web
         run: |
+          cd capstone_app
           flutter pub get
-
-      - name: Build Flutter Web app
-        run: |
-          flutter build web  # This command builds the web app
+          flutter build web
 
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
