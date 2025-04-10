@@ -22,8 +22,23 @@ jobs:
         with:
           submodules: true
           lfs: false
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.7.0'  # Specify the Flutter version you need
+
+      - name: Install dependencies
+        run: |
+          flutter pub get
+
+      - name: Build Flutter Web app
+        run: |
+          flutter build web  # This command builds the web app
+
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
+
       - name: Get Id Token
         uses: actions/github-script@v6
         id: idtoken
@@ -32,6 +47,7 @@ jobs:
                const coredemo = require('@actions/core')
                return await coredemo.getIDToken()
            result-encoding: string
+
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -40,9 +56,9 @@ jobs:
           action: "upload"
           ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
           # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
-          app_location: "capstone_app" # App source code path
-          api_location: "" # Api source code path - optional
-          output_location: "capstone_app/build/web" # Built app content directory - optional
+          app_location: "capstone_app" # App source code path (where your Flutter project is located)
+          api_location: "" # API source code path (if applicable)
+          output_location: "capstone_app/build/web" # Built app content directory (after flutter build web)
           github_id_token: ${{ steps.idtoken.outputs.result }}
           ###### End of Repository/Build Configurations ######
 
